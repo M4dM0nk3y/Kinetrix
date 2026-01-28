@@ -3,271 +3,474 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kinetrix | Robotics Language</title>
-    <style>
-        /* --- THEME CONFIGURATION --- */
-        :root {
-            --bg-deep: #050505;
-            --bg-panel: #0a0f14;
-            --grid-line: #1f2933;
-            --text-main: #e0e6ed;
-            --text-muted: #9aa5b1;
-            
-            --core-cyan: #00f0ff;
-            --danger-red: #ff2a6d;
-            --voltage-green: #05f29b; 
+    <title>Kinetrix | High-Performance Robotics</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
-            --font-tech: 'Courier New', Courier, monospace;
-            --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    <style>
+        :root {
+            --bg-deep: #030305;
+            --bg-glass: rgba(15, 20, 25, 0.7);
+            --accent-primary: #00f2ff; /* Cyber Cyan */
+            --accent-secondary: #7000ff; /* Deep Violet */
+            --text-primary: #ffffff;
+            --text-dim: #8b9bb4;
+            --border-glass: rgba(255, 255, 255, 0.08);
+            
+            --font-display: 'Inter', sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             background-color: var(--bg-deep);
-            color: var(--text-main);
-            font-family: var(--font-body);
-            line-height: 1.6;
+            color: var(--text-primary);
+            font-family: var(--font-display);
             overflow-x: hidden;
+            min-height: 100vh;
         }
 
-        /* --- PHYSICS GRID BACKGROUND --- */
-        .physics-grid {
+        /* --- PHYSICS ENGINE BACKGROUND --- */
+        #physics-canvas {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-image: 
-                linear-gradient(var(--grid-line) 1px, transparent 1px),
-                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-            background-size: 40px 40px;
-            opacity: 0.2;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             z-index: -1;
-            pointer-events: none;
+            background: radial-gradient(circle at 50% 50%, #0a0a12 0%, #000000 100%);
+        }
+
+        /* --- HUD DECORATIONS --- */
+        .hud-line {
+            position: fixed;
+            background: var(--border-glass);
+            z-index: 0;
+        }
+        .hud-v { width: 1px; height: 100vh; left: 100px; top: 0; }
+        .hud-h { height: 1px; width: 100vw; top: 80px; left: 0; }
+        
+        .sys-stat {
+            position: fixed;
+            bottom: 30px; right: 40px;
+            font-family: var(--font-code);
+            font-size: 0.7rem;
+            color: var(--accent-primary);
+            text-align: right;
+            opacity: 0.7;
+            line-height: 1.8;
+            z-index: 10;
         }
 
         /* --- LAYOUT --- */
         .container {
-            max-width: 1000px;
+            max-width: 1100px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 120px 20px 80px;
+            position: relative;
+            z-index: 2;
         }
 
-        /* --- TYPOGRAPHY --- */
-        h1, h2, h3 {
-            font-family: var(--font-tech);
-            text-transform: uppercase;
-            letter-spacing: 2px;
+        /* --- HERO SECTION --- */
+        header {
+            margin-bottom: 100px;
+            position: relative;
         }
 
         h1 {
-            font-size: 3.5rem;
+            font-size: 5rem;
+            font-weight: 800;
+            letter-spacing: -2px;
+            background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
-            text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
         }
 
-        h3 {
-            color: var(--core-cyan);
-            margin-top: 40px;
-            margin-bottom: 15px;
-            font-size: 1.2rem;
-            border-left: 3px solid var(--core-cyan);
-            padding-left: 10px;
+        .version-badge {
+            font-family: var(--font-code);
+            font-size: 0.8rem;
+            color: var(--accent-primary);
+            border: 1px solid var(--accent-primary);
+            padding: 4px 10px;
+            border-radius: 20px;
+            vertical-align: middle;
+            margin-left: 15px;
+            text-shadow: 0 0 10px var(--accent-primary);
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
         }
 
-        .tagline {
-            color: var(--text-muted);
-            font-family: var(--font-tech);
+        .hero-desc {
             font-size: 1.2rem;
+            color: var(--text-dim);
+            max-width: 600px;
             margin-bottom: 40px;
+            line-height: 1.6;
         }
 
         /* --- BUTTONS --- */
-        .btn-group { margin-bottom: 50px; }
+        .cta-container { display: flex; gap: 20px; }
 
         .btn {
-            display: inline-block;
-            background: var(--core-cyan);
-            color: var(--bg-deep);
-            border: 1px solid var(--core-cyan);
-            padding: 14px 28px;
-            font-family: var(--font-tech);
-            font-weight: bold;
+            position: relative;
+            padding: 16px 32px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-glass);
+            color: #fff;
+            font-family: var(--font-code);
+            font-size: 0.9rem;
             text-decoration: none;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            margin-right: 15px;
-            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+            transition: 0.3s;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 2px; height: 100%;
+            background: var(--accent-primary);
+            transition: 0.3s;
         }
 
         .btn:hover {
-            background: #fff;
+            background: rgba(0, 242, 255, 0.1);
+            border-color: var(--accent-primary);
+            transform: translateX(5px);
+        }
+        
+        .btn:hover::before { width: 100%; opacity: 0.1; }
+
+        .btn-primary { 
+            background: var(--accent-primary); 
             color: #000;
-            box-shadow: 0 0 25px var(--core-cyan);
+            font-weight: 700;
+            border: none;
+        }
+        .btn-primary:hover {
+            background: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.4);
+        }
+        .btn-primary::before { display: none; }
+
+        /* --- CODE TERMINALS --- */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 30px;
+            margin-top: 60px;
         }
 
-        .btn-outline {
-            background: transparent;
-            color: var(--core-cyan);
-            box-shadow: none;
-        }
-        .btn-outline:hover {
-            background: rgba(0, 240, 255, 0.1);
-            color: #fff;
-            box-shadow: 0 0 15px var(--core-cyan);
+        .code-card {
+            background: var(--bg-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: 12px;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+            transition: transform 0.3s ease, border-color 0.3s ease;
         }
 
-        /* --- CODE PANELS --- */
-        .terminal-window {
-            background: var(--bg-panel);
-            border: 1px solid #333;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        .code-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255,255,255,0.2);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
         }
 
-        .terminal-header {
-            background: #1a1f26;
-            padding: 8px 15px;
+        .card-header {
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border-glass);
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #333;
+            background: rgba(255,255,255,0.02);
         }
 
-        .dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
-        .red { background: #ff5f56; }
-        .yellow { background: #ffbd2e; }
-        .green { background: #27c93f; }
-
-        .terminal-title {
-            margin-left: 15px;
-            font-family: var(--font-tech);
-            font-size: 0.8rem;
-            color: var(--text-muted);
+        .file-name {
+            font-family: var(--font-code);
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
+
+        .dots { display: flex; gap: 6px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #333; }
+        .active-dot { background: var(--accent-primary); box-shadow: 0 0 8px var(--accent-primary); }
 
         pre {
             padding: 20px;
+            font-family: var(--font-code);
+            font-size: 0.85rem;
+            line-height: 1.7;
             overflow-x: auto;
-            color: var(--text-main);
-            font-family: var(--font-tech);
-            font-size: 0.95rem;
+            color: #d4d4d4;
         }
 
-        /* Syntax Highlighting Sim */
-        .kwd { color: var(--danger-red); } 
-        .num { color: var(--core-cyan); }  
-        .com { color: var(--text-muted); font-style: italic; } 
-        .str { color: var(--voltage-green); }
+        /* Syntax Highlighting */
+        .kwd { color: #ff0055; font-weight: bold; }  /* Keyword */
+        .func { color: #00f2ff; }                    /* Function */
+        .num { color: #bd93f9; }                     /* Number */
+        .str { color: #50fa7b; }                     /* String */
+        .com { color: #6272a4; font-style: italic; } /* Comment */
 
-        /* --- FOOTER --- */
-        footer {
-            margin-top: 80px;
-            border-top: 1px solid var(--grid-line);
-            padding-top: 20px;
-            text-align: center;
-            font-family: var(--font-tech);
-            font-size: 0.8rem;
-            color: var(--text-muted);
+        .section-title {
+            grid-column: 1 / -1;
+            font-size: 1.5rem;
+            color: #fff;
+            margin-top: 40px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .section-title::after {
+            content: '';
+            flex-grow: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--border-glass), transparent);
         }
 
-        @media (max-width: 600px) {
-            h1 { font-size: 2.5rem; }
-            .btn { display: block; margin-bottom: 10px; text-align: center; }
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            h1 { font-size: 3rem; }
+            .hud-v, .hud-h, .sys-stat { display: none; }
+            .grid-layout { grid-template-columns: 1fr; }
+            .container { padding: 80px 20px; }
         }
     </style>
 </head>
 <body>
 
-    <div class="physics-grid"></div>
+    <canvas id="physics-canvas"></canvas>
+
+    <div class="hud-line hud-v"></div>
+    <div class="hud-line hud-h"></div>
+    
+    <div class="sys-stat">
+        SYSTEM: KINETRIX_CORE<br>
+        STATUS: ONLINE<br>
+        VERSION: 1.0.4<br>
+        PHYSICS: ACTIVE
+    </div>
 
     <div class="container">
         
         <header>
-            <h1>KINETRIX<span style="color:var(--core-cyan)">.</span>V1</h1>
-            <div class="tagline">// THE COMPILED ROBOTICS LANGUAGE.</div>
+            <h1>KINETRIX<span class="version-badge">v1.0</span></h1>
+            <p class="hero-desc">
+                The compiled robotics language for the modern engineer. 
+                High-level abstraction compiling directly to optimized C++ for real-time control.
+            </p>
             
-            <div class="btn-group">
-                <a href="https://github.com/M4dM0nk3y/Kinetrix/archive/refs/heads/main.zip" class="btn">⬇ DOWNLOAD V1.0</a>
-                <a href="https://github.com/M4dM0nk3y/Kinetrix" class="btn btn-outline">VIEW ON GITHUB</a>
+            <div class="cta-container">
+                <a href="https://github.com/M4dM0nk3y/Kinetrix/archive/refs/heads/main.zip" class="btn btn-primary">
+                    DOWNLOAD COMPILER
+                </a>
+                <a href="https://github.com/M4dM0nk3y/Kinetrix" class="btn">
+                    GITHUB REPO
+                </a>
             </div>
         </header>
 
-        <h2 style="margin-bottom: 20px;">Documentation</h2>
-        <hr style="border-color: #333; margin-bottom: 40px;">
-
-        <h3>01. Installation</h3>
-        <div class="terminal-window">
-            <div class="terminal-header"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div><div class="terminal-title">bash</div></div>
-            <pre>
+        <div class="grid-layout">
+            
+            <div class="section-title">01 // INITIALIZATION</div>
+            
+            <div class="code-card" style="grid-column: 1 / -1;">
+                <div class="card-header">
+                    <span class="file-name">terminal — bash</span>
+                    <div class="dots"><div class="dot active-dot"></div><div class="dot"></div></div>
+                </div>
+                <pre>
+<span class="com"># Clone repository to Raspberry Pi / Linux Env</span>
 git clone https://github.com/M4dM0nk3y/Kinetrix.git
+
+<span class="com"># Execute installation script</span>
 cd Kinetrix
 ./install.sh</pre>
-        </div>
+            </div>
 
-        <h3>02. Variables & Math</h3>
-        <div class="terminal-window">
-            <div class="terminal-header"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div><div class="terminal-title">vars.knx</div></div>
-            <pre>
-<span class="kwd">make var</span> speed = <span class="num">100.5</span>
-<span class="kwd">change</span> speed <span class="kwd">by</span> <span class="num">50</span>       <span class="com"># speed is now 150.5</span>
-<span class="kwd">make var</span> result = <span class="num">10</span> * <span class="num">5</span></pre>
-        </div>
+            <div class="section-title">02 // KERNEL LOGIC</div>
 
-        <h3>03. Inverse Kinematics</h3>
-        <div class="terminal-window">
-            <div class="terminal-header"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div><div class="terminal-title">robot_arm.knx</div></div>
-            <pre>
-<span class="kwd">make var</span> x = cos(<span class="num">90</span>)
-<span class="kwd">make var</span> y = sin(<span class="num">45</span>)
-<span class="kwd">make var</span> angle = acos(<span class="num">0.5</span>)      <span class="com"># Inverse Cosine</span></pre>
-        </div>
+            <div class="code-card">
+                <div class="card-header">
+                    <span class="file-name">kinematics.knx</span>
+                    <div class="dots"><div class="dot"></div><div class="dot"></div></div>
+                </div>
+                <pre>
+<span class="com"># Inverse Kinematics Calculation</span>
+<span class="kwd">make var</span> theta = <span class="num">90.5</span>
+<span class="kwd">make var</span> len = <span class="num">100</span>
 
-        <h3>04. Logic & Flow</h3>
-        <div class="terminal-window">
-            <div class="terminal-header"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div><div class="terminal-title">logic.knx</div></div>
-            <pre>
-<span class="kwd">wait</span> <span class="num">1000</span>               <span class="com"># Delay in ms</span>
+<span class="kwd">make var</span> posX = <span class="func">cos</span>(theta) * len
+<span class="kwd">make var</span> posY = <span class="func">sin</span>(theta) * len
+
+<span class="kwd">make var</span> joint_angle = <span class="func">acos</span>(<span class="num">0.5</span>)</pre>
+            </div>
+
+            <div class="code-card">
+                <div class="card-header">
+                    <span class="file-name">io_control.knx</span>
+                    <div class="dots"><div class="dot"></div><div class="dot"></div></div>
+                </div>
+                <pre>
+<span class="com"># Real-time Sensor Loop</span>
+<span class="kwd">make var</span> sensor = <span class="kwd">read analog pin</span> <span class="num">0</span>
 
 <span class="kwd">if</span> sensor > <span class="num">500</span> {
     <span class="kwd">turn on</span> <span class="num">13</span>
+    <span class="kwd">servo</span> <span class="num">9</span> <span class="kwd">set</span> <span class="num">45</span>
 } <span class="kwd">else</span> {
     <span class="kwd">turn off</span> <span class="num">13</span>
 }</pre>
-        </div>
+            </div>
 
-        <h3>05. Hardware I/O</h3>
-        <div class="terminal-window">
-            <div class="terminal-header"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div><div class="terminal-title">io.knx</div></div>
-            <pre>
-<span class="kwd">turn on</span> <span class="num">13</span>              <span class="com"># Digital Write High</span>
-<span class="kwd">turn off</span> <span class="num">13</span>             <span class="com"># Digital Write Low</span>
-<span class="kwd">servo</span> <span class="num">9</span> <span class="kwd">set</span> <span class="num">90</span>          <span class="com"># Move Servo</span>
-<span class="kwd">make var</span> val = <span class="kwd">read analog pin</span> <span class="num">0</span></pre>
-        </div>
+            <div class="section-title">03 // PROTOCOLS & MEMORY</div>
 
-        <h3>06. Memory Arrays</h3>
-        <div class="terminal-window">
-            <div class="terminal-header"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div><div class="terminal-title">memory.knx</div></div>
-            <pre>
-<span class="kwd">make array</span> readings <span class="kwd">size</span> <span class="num">10</span>
-<span class="kwd">set array</span> readings <span class="kwd">at</span> <span class="num">0</span> <span class="kwd">to</span> <span class="num">12.5</span>
-<span class="kwd">make var</span> last = readings[<span class="num">0</span>]</pre>
-        </div>
+            <div class="code-card">
+                <div class="card-header">
+                    <span class="file-name">memory_alloc.knx</span>
+                    <div class="dots"><div class="dot"></div><div class="dot"></div></div>
+                </div>
+                <pre>
+<span class="com"># Dynamic Array Allocation</span>
+<span class="kwd">make array</span> telemetry <span class="kwd">size</span> <span class="num">128</span>
 
-        <h3>07. Drone Protocols (I2C)</h3>
-        <div class="terminal-window">
-            <div class="terminal-header"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div><div class="terminal-title">drone.knx</div></div>
-            <pre>
+<span class="kwd">set array</span> telemetry <span class="kwd">at</span> <span class="num">0</span> <span class="kwd">to</span> <span class="num">12.5</span>
+<span class="kwd">make var</span> last_val = telemetry[<span class="num">0</span>]</pre>
+            </div>
+
+            <div class="code-card">
+                <div class="card-header">
+                    <span class="file-name">i2c_bus.knx</span>
+                    <div class="dots"><div class="dot"></div><div class="dot"></div></div>
+                </div>
+                <pre>
+<span class="com"># I2C Communication (MPU6050)</span>
 <span class="kwd">i2c begin</span>
-<span class="kwd">i2c start</span> <span class="num">0x68</span>          <span class="com"># Talk to MPU6050</span>
-<span class="kwd">i2c send</span> <span class="num">0x6B</span>           <span class="com"># Wake up sensor</span>
+<span class="kwd">i2c start</span> <span class="num">0x68</span>      <span class="com"># Device Addr</span>
+<span class="kwd">i2c send</span> <span class="num">0x6B</span>       <span class="com"># Register</span>
 <span class="kwd">i2c stop</span>
-<span class="kwd">make var</span> data = <span class="kwd">read i2c</span> <span class="num">0x68</span></pre>
+
+<span class="kwd">make var</span> raw = <span class="kwd">read i2c</span> <span class="num">0x68</span></pre>
+            </div>
         </div>
-
-        <footer>
-            MAINTAINED BY M4DM0NK3Y &copy; 2026
+        
+        <footer style="margin-top: 100px; padding: 40px 0; border-top: 1px solid var(--border-glass); text-align: center; color: var(--text-dim); font-size: 0.8rem;">
+            ENGINEERED BY M4DM0NK3Y &copy; 2026 // KINETRIX SYSTEMS
         </footer>
-
     </div>
+
+    <script>
+        const canvas = document.getElementById('physics-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        let particles = [];
+
+        // Configuration
+        const particleCount = 60;
+        const connectionDistance = 150;
+        const mouseDistance = 200;
+
+        // Resize handling
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Mouse tracking
+        let mouse = { x: null, y: null };
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.x;
+            mouse.y = e.y;
+        });
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 2 + 1;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Bounce off edges
+                if (this.x < 0 || this.x > width) this.vx *= -1;
+                if (this.y < 0 || this.y > height) this.vy *= -1;
+
+                // Mouse interaction
+                if (mouse.x != null) {
+                    let dx = mouse.x - this.x;
+                    let dy = mouse.y - this.y;
+                    let distance = Math.sqrt(dx*dx + dy*dy);
+                    if (distance < mouseDistance) {
+                        const forceDirectionX = dx / distance;
+                        const forceDirectionY = dy / distance;
+                        const force = (mouseDistance - distance) / mouseDistance;
+                        const directionX = forceDirectionX * force * 0.6; // Push strength
+                        const directionY = forceDirectionY * force * 0.6;
+                        this.vx -= directionX;
+                        this.vy -= directionY;
+                    }
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = 'rgba(0, 242, 255, 0.5)';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function init() {
+            particles = [];
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+                
+                // Draw connections
+                for (let j = i; j < particles.length; j++) {
+                    let dx = particles[i].x - particles[j].x;
+                    let dy = particles[i].y - particles[j].y;
+                    let distance = Math.sqrt(dx*dx + dy*dy);
+
+                    if (distance < connectionDistance) {
+                        ctx.beginPath();
+                        let opacity = 1 - (distance / connectionDistance);
+                        ctx.strokeStyle = 'rgba(0, 242, 255, ' + opacity * 0.15 + ')';
+                        ctx.lineWidth = 1;
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        init();
+        animate();
+    </script>
 </body>
 </html>
