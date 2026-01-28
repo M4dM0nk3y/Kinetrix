@@ -7,20 +7,17 @@
     <style>
         /* --- THEME CONFIGURATION --- */
         :root {
-            /* Palette: Dark Matter & Electric Potential */
-            --bg-deep: #050505;       /* Void Black */
-            --bg-panel: #0a0f14;      /* Dark Metal */
-            --grid-line: #1f2933;     /* Faint Grid */
-            --text-main: #e0e6ed;     /* Off-White */
-            --text-muted: #9aa5b1;    /* Grey */
+            --bg-deep: #050505;
+            --bg-panel: #0a0f14;
+            --grid-line: #1f2933;
+            --text-main: #e0e6ed;
+            --text-muted: #9aa5b1;
             
-            /* Accents */
-            --core-cyan: #00f0ff;     /* Energy / Code */
-            --danger-red: #ff2a6d;    /* Errors / Alerts */
-            --voltage-green: #05f29b; /* Success / Power */
+            --core-cyan: #00f0ff;
+            --danger-red: #ff2a6d;
+            --voltage-green: #05f29b; 
 
-            /* Fonts */
-            --font-tech: 'Courier New', Courier, monospace; /* For headers/code */
+            --font-tech: 'Courier New', Courier, monospace;
             --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
@@ -54,7 +51,7 @@
             padding: 40px 20px;
         }
 
-        /* --- TYPOGRAPHY & GLOW --- */
+        /* --- TYPOGRAPHY --- */
         h1, h2, h3 {
             font-family: var(--font-tech);
             text-transform: uppercase;
@@ -67,44 +64,55 @@
             text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
         }
 
-        .tagline {
+        h3 {
             color: var(--core-cyan);
+            margin-top: 40px;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            border-left: 3px solid var(--core-cyan);
+            padding-left: 10px;
+        }
+
+        .tagline {
+            color: var(--text-muted);
             font-family: var(--font-tech);
             font-size: 1.2rem;
             margin-bottom: 40px;
-            border-left: 3px solid var(--core-cyan);
-            padding-left: 15px;
         }
 
         /* --- BUTTONS --- */
+        .btn-group { margin-bottom: 50px; }
+
         .btn {
             display: inline-block;
-            background: transparent;
-            color: var(--core-cyan);
+            background: var(--core-cyan);
+            color: var(--bg-deep);
             border: 1px solid var(--core-cyan);
-            padding: 12px 24px;
+            padding: 14px 28px;
             font-family: var(--font-tech);
             font-weight: bold;
             text-decoration: none;
             transition: all 0.3s ease;
             cursor: pointer;
             margin-right: 15px;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
         }
 
         .btn:hover {
-            background: var(--core-cyan);
-            color: var(--bg-deep);
-            box-shadow: 0 0 15px var(--core-cyan);
+            background: #fff;
+            color: #000;
+            box-shadow: 0 0 25px var(--core-cyan);
         }
 
-        .btn-secondary {
-            border-color: var(--text-muted);
-            color: var(--text-muted);
+        .btn-outline {
+            background: transparent;
+            color: var(--core-cyan);
+            box-shadow: none;
         }
-        .btn-secondary:hover {
-            background: var(--text-muted);
-            color: var(--bg-deep);
-            box-shadow: 0 0 15px var(--text-muted);
+        .btn-outline:hover {
+            background: rgba(0, 240, 255, 0.1);
+            color: #fff;
+            box-shadow: 0 0 15px var(--core-cyan);
         }
 
         /* --- CODE PANELS --- */
@@ -112,13 +120,10 @@
             background: var(--bg-panel);
             border: 1px solid #333;
             border-radius: 4px;
-            margin: 40px 0;
+            margin-bottom: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            position: relative;
-            overflow: hidden;
         }
 
-        /* The glowing top bar of the terminal */
         .terminal-header {
             background: #1a1f26;
             padding: 8px 15px;
@@ -148,10 +153,10 @@
         }
 
         /* Syntax Highlighting Sim */
-        .kwd { color: var(--danger-red); } /* Keywords like 'make', 'turn' */
-        .num { color: var(--core-cyan); }  /* Numbers */
-        .com { color: var(--text-muted); font-style: italic; } /* Comments */
-        .str { color: var(--voltage-green); } /* Strings */
+        .kwd { color: var(--danger-red); } 
+        .num { color: var(--core-cyan); }  
+        .com { color: var(--text-muted); font-style: italic; } 
+        .str { color: var(--voltage-green); }
 
         /* --- FOOTER --- */
         footer {
@@ -164,10 +169,9 @@
             color: var(--text-muted);
         }
 
-        /* --- RESPONSIVE --- */
         @media (max-width: 600px) {
             h1 { font-size: 2.5rem; }
-            .container { padding: 20px; }
+            .btn { display: block; margin-bottom: 10px; text-align: center; }
         }
     </style>
 </head>
@@ -179,46 +183,85 @@
         
         <header>
             <h1>KINETRIX<span style="color:var(--core-cyan)">.</span>V1</h1>
-            <div class="tagline">
-                // THE COMPILED ROBOTICS LANGUAGE FOR THE MODERN ENGINEER.
-            </div>
+            <div class="tagline">// THE COMPILED ROBOTICS LANGUAGE.</div>
             
-            <a href="https://github.com/M4dM0nk3y/Kinetrix" class="btn">VIEW ON GITHUB</a>
-            <a href="#docs" class="btn btn-secondary">READ DOCS</a>
+            <div class="btn-group">
+                <a href="https://github.com/M4dM0nk3y/Kinetrix/archive/refs/heads/main.zip" class="btn">⬇ DOWNLOAD V1.0</a>
+                <a href="https://github.com/M4dM0nk3y/Kinetrix" class="btn btn-outline">VIEW ON GITHUB</a>
+            </div>
         </header>
 
+        <h2 style="margin-bottom: 20px;">Documentation</h2>
+        <hr style="border-color: #333; margin-bottom: 40px;">
+
+        <h3>01. Installation</h3>
         <div class="terminal-window">
-            <div class="terminal-header">
-                <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
-                <div class="terminal-title">bash — pi@raspberrypi:~/projects</div>
-            </div>
+            <div class="terminal-header"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div><div class="terminal-title">bash</div></div>
             <pre>
-<span class="com"># Install Kinetrix directly on your hardware</span>
 git clone https://github.com/M4dM0nk3y/Kinetrix.git
 cd Kinetrix
 ./install.sh</pre>
         </div>
 
-        <h2 id="docs" style="margin-top: 60px;">Syntax Overview</h2>
-        <p style="color:var(--text-muted); margin-bottom: 20px;">High-level abstraction compiling to optimized C++.</p>
-
+        <h3>02. Variables & Math</h3>
         <div class="terminal-window">
-            <div class="terminal-header">
-                <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
-                <div class="terminal-title">main.knx</div>
-            </div>
+            <div class="terminal-header"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div><div class="terminal-title">vars.knx</div></div>
             <pre>
-<span class="com"># Inverse Kinematics Logic</span>
-<span class="kwd">make var</span> theta = <span class="num">90.5</span>
-<span class="kwd">make var</span> targetX = cos(theta) * <span class="num">100</span>
+<span class="kwd">make var</span> speed = <span class="num">100.5</span>
+<span class="kwd">change</span> speed <span class="kwd">by</span> <span class="num">50</span>       <span class="com"># speed is now 150.5</span>
+<span class="kwd">make var</span> result = <span class="num">10</span> * <span class="num">5</span></pre>
+        </div>
 
-<span class="com"># Hardware I/O Control</span>
-<span class="kwd">if</span> sensor_val > <span class="num">500</span> {
+        <h3>03. Inverse Kinematics</h3>
+        <div class="terminal-window">
+            <div class="terminal-header"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div><div class="terminal-title">robot_arm.knx</div></div>
+            <pre>
+<span class="kwd">make var</span> x = cos(<span class="num">90</span>)
+<span class="kwd">make var</span> y = sin(<span class="num">45</span>)
+<span class="kwd">make var</span> angle = acos(<span class="num">0.5</span>)      <span class="com"># Inverse Cosine</span></pre>
+        </div>
+
+        <h3>04. Logic & Flow</h3>
+        <div class="terminal-window">
+            <div class="terminal-header"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div><div class="terminal-title">logic.knx</div></div>
+            <pre>
+<span class="kwd">wait</span> <span class="num">1000</span>               <span class="com"># Delay in ms</span>
+
+<span class="kwd">if</span> sensor > <span class="num">500</span> {
     <span class="kwd">turn on</span> <span class="num">13</span>
-    <span class="kwd">servo</span> <span class="num">9</span> <span class="kwd">set</span> <span class="num">45</span>
 } <span class="kwd">else</span> {
     <span class="kwd">turn off</span> <span class="num">13</span>
 }</pre>
+        </div>
+
+        <h3>05. Hardware I/O</h3>
+        <div class="terminal-window">
+            <div class="terminal-header"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div><div class="terminal-title">io.knx</div></div>
+            <pre>
+<span class="kwd">turn on</span> <span class="num">13</span>              <span class="com"># Digital Write High</span>
+<span class="kwd">turn off</span> <span class="num">13</span>             <span class="com"># Digital Write Low</span>
+<span class="kwd">servo</span> <span class="num">9</span> <span class="kwd">set</span> <span class="num">90</span>          <span class="com"># Move Servo</span>
+<span class="kwd">make var</span> val = <span class="kwd">read analog pin</span> <span class="num">0</span></pre>
+        </div>
+
+        <h3>06. Memory Arrays</h3>
+        <div class="terminal-window">
+            <div class="terminal-header"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div><div class="terminal-title">memory.knx</div></div>
+            <pre>
+<span class="kwd">make array</span> readings <span class="kwd">size</span> <span class="num">10</span>
+<span class="kwd">set array</span> readings <span class="kwd">at</span> <span class="num">0</span> <span class="kwd">to</span> <span class="num">12.5</span>
+<span class="kwd">make var</span> last = readings[<span class="num">0</span>]</pre>
+        </div>
+
+        <h3>07. Drone Protocols (I2C)</h3>
+        <div class="terminal-window">
+            <div class="terminal-header"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div><div class="terminal-title">drone.knx</div></div>
+            <pre>
+<span class="kwd">i2c begin</span>
+<span class="kwd">i2c start</span> <span class="num">0x68</span>          <span class="com"># Talk to MPU6050</span>
+<span class="kwd">i2c send</span> <span class="num">0x6B</span>           <span class="com"># Wake up sensor</span>
+<span class="kwd">i2c stop</span>
+<span class="kwd">make var</span> data = <span class="kwd">read i2c</span> <span class="num">0x68</span></pre>
         </div>
 
         <footer>
