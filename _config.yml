@@ -1,3 +1,4 @@
-theme: jekyll-theme-minimal
+theme: jekyll-theme-slate
 title: Kinetrix
 description: The Compiled Robotics Language for Raspberry Pi
+show_downloads: true
