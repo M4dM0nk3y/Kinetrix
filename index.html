@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kinetrix | Robotics Language</title>
+    <style>
+        /* --- THEME CONFIGURATION --- */
+        :root {
+            /* Palette: Dark Matter & Electric Potential */
+            --bg-deep: #050505;       /* Void Black */
+            --bg-panel: #0a0f14;      /* Dark Metal */
+            --grid-line: #1f2933;     /* Faint Grid */
+            --text-main: #e0e6ed;     /* Off-White */
+            --text-muted: #9aa5b1;    /* Grey */
+            
+            /* Accents */
+            --core-cyan: #00f0ff;     /* Energy / Code */
+            --danger-red: #ff2a6d;    /* Errors / Alerts */
+            --voltage-green: #05f29b; /* Success / Power */
+
+            /* Fonts */
+            --font-tech: 'Courier New', Courier, monospace; /* For headers/code */
+            --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* --- PHYSICS GRID BACKGROUND --- */
+        .physics-grid {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: 0.2;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* --- LAYOUT --- */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* --- TYPOGRAPHY & GLOW --- */
+        h1, h2, h3 {
+            font-family: var(--font-tech);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+        }
+
+        .tagline {
+            color: var(--core-cyan);
+            font-family: var(--font-tech);
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+            border-left: 3px solid var(--core-cyan);
+            padding-left: 15px;
+        }
+
+        /* --- BUTTONS --- */
+        .btn {
+            display: inline-block;
+            background: transparent;
+            color: var(--core-cyan);
+            border: 1px solid var(--core-cyan);
+            padding: 12px 24px;
+            font-family: var(--font-tech);
+            font-weight: bold;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-right: 15px;
+        }
+
+        .btn:hover {
+            background: var(--core-cyan);
+            color: var(--bg-deep);
+            box-shadow: 0 0 15px var(--core-cyan);
+        }
+
+        .btn-secondary {
+            border-color: var(--text-muted);
+            color: var(--text-muted);
+        }
+        .btn-secondary:hover {
+            background: var(--text-muted);
+            color: var(--bg-deep);
+            box-shadow: 0 0 15px var(--text-muted);
+        }
+
+        /* --- CODE PANELS --- */
+        .terminal-window {
+            background: var(--bg-panel);
+            border: 1px solid #333;
+            border-radius: 4px;
+            margin: 40px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* The glowing top bar of the terminal */
+        .terminal-header {
+            background: #1a1f26;
+            padding: 8px 15px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+
+        .dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+        .red { background: #ff5f56; }
+        .yellow { background: #ffbd2e; }
+        .green { background: #27c93f; }
+
+        .terminal-title {
+            margin-left: 15px;
+            font-family: var(--font-tech);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        pre {
+            padding: 20px;
+            overflow-x: auto;
+            color: var(--text-main);
+            font-family: var(--font-tech);
+            font-size: 0.95rem;
+        }
+
+        /* Syntax Highlighting Sim */
+        .kwd { color: var(--danger-red); } /* Keywords like 'make', 'turn' */
+        .num { color: var(--core-cyan); }  /* Numbers */
+        .com { color: var(--text-muted); font-style: italic; } /* Comments */
+        .str { color: var(--voltage-green); } /* Strings */
+
+        /* --- FOOTER --- */
+        footer {
+            margin-top: 80px;
+            border-top: 1px solid var(--grid-line);
+            padding-top: 20px;
+            text-align: center;
+            font-family: var(--font-tech);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 600px) {
+            h1 { font-size: 2.5rem; }
+            .container { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="physics-grid"></div>
+
+    <div class="container">
+        
+        <header>
+            <h1>KINETRIX<span style="color:var(--core-cyan)">.</span>V1</h1>
+            <div class="tagline">
+                // THE COMPILED ROBOTICS LANGUAGE FOR THE MODERN ENGINEER.
+            </div>
+            
+            <a href="https://github.com/M4dM0nk3y/Kinetrix" class="btn">VIEW ON GITHUB</a>
+            <a href="#docs" class="btn btn-secondary">READ DOCS</a>
+        </header>
+
+        <div class="terminal-window">
+            <div class="terminal-header">
+                <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+                <div class="terminal-title">bash — pi@raspberrypi:~/projects</div>
+            </div>
+            <pre>
+<span class="com"># Install Kinetrix directly on your hardware</span>
+git clone https://github.com/M4dM0nk3y/Kinetrix.git
+cd Kinetrix
+./install.sh</pre>
+        </div>
+
+        <h2 id="docs" style="margin-top: 60px;">Syntax Overview</h2>
+        <p style="color:var(--text-muted); margin-bottom: 20px;">High-level abstraction compiling to optimized C++.</p>
+
+        <div class="terminal-window">
+            <div class="terminal-header">
+                <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+                <div class="terminal-title">main.knx</div>
+            </div>
+            <pre>
+<span class="com"># Inverse Kinematics Logic</span>
+<span class="kwd">make var</span> theta = <span class="num">90.5</span>
+<span class="kwd">make var</span> targetX = cos(theta) * <span class="num">100</span>
+
+<span class="com"># Hardware I/O Control</span>
+<span class="kwd">if</span> sensor_val > <span class="num">500</span> {
+    <span class="kwd">turn on</span> <span class="num">13</span>
+    <span class="kwd">servo</span> <span class="num">9</span> <span class="kwd">set</span> <span class="num">45</span>
+} <span class="kwd">else</span> {
+    <span class="kwd">turn off</span> <span class="num">13</span>
+}</pre>
+        </div>
+
+        <footer>
+            MAINTAINED BY M4DM0NK3Y &copy; 2026
+        </footer>
+
+    </div>
+</body>
+</html>
