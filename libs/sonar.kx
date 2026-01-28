@@ -1,0 +1,13 @@
+# Standard Sonar Library
+# Works with HC-SR04 Ultrasonic Sensor
+
+def get_distance_from(pin_num) {
+    # 1. Measure the Echo time (in microseconds)
+    make var duration = read pulse pin pin_num
+    
+    # 2. Convert to centimeters (cm = duration / 58)
+    make var dist = duration / 58
+    
+    print "Distance (cm):"
+    print dist
+}

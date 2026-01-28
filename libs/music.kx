@@ -1,0 +1,11 @@
+# Standard Music Library
+# Defines note frequencies
+
+def play_alert {
+    # Play 'C' then 'E'
+    tone pin 8 freq 261
+    wait 200
+    tone pin 8 freq 329
+    wait 200
+    notone pin 8
+}
