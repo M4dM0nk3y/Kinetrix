@@ -36,10 +36,7 @@
             min-height: 100vh;
         }
 
-        /* FIX: Ensures links don't hide behind the sticky navbar */
-        section, .section-container {
-            scroll-margin-top: 100px;
-        }
+        section, .section-container { scroll-margin-top: 100px; }
 
         /* --- BACKGROUND FX --- */
         #canvas-layer {
@@ -56,10 +53,7 @@
             transform: translateY(20px);
             transition: opacity 0.6s ease-out, transform 0.6s ease-out;
         }
-        .fade-in-section.is-visible {
-            opacity: 1;
-            transform: none;
-        }
+        .fade-in-section.is-visible { opacity: 1; transform: none; }
 
         /* --- NAVIGATION --- */
         nav {
@@ -98,12 +92,7 @@
         .nav-links a:hover { color: #fff; }
 
         /* --- HERO --- */
-        header {
-            padding: 180px 20px 100px;
-            max-width: 1200px;
-            margin: 0 auto;
-            text-align: center;
-        }
+        header { padding: 180px 20px 100px; max-width: 1200px; margin: 0 auto; text-align: center; }
 
         h1 {
             font-size: 5.5rem;
@@ -128,132 +117,87 @@
             margin-bottom: 20px;
         }
 
-        .hero-sub {
-            font-size: 1.3rem;
-            color: var(--text-dim);
-            max-width: 650px;
-            margin: 0 auto 50px;
-            line-height: 1.6;
-        }
+        .hero-sub { font-size: 1.3rem; color: var(--text-dim); max-width: 650px; margin: 0 auto 50px; line-height: 1.6; }
 
         /* --- BUTTONS --- */
         .btn-group { display: flex; justify-content: center; gap: 20px; }
-        
         .btn {
-            padding: 16px 36px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 1rem;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            padding: 16px 36px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 1rem;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; align-items: center; gap: 10px;
         }
-
         .btn-primary { background: var(--text-primary); color: #000; }
         .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 0 30px rgba(255, 255, 255, 0.3); }
-
-        .btn-glass {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid var(--border-light);
-            color: #fff;
-            backdrop-filter: blur(5px);
-        }
-        .btn-glass:hover {
-            border-color: var(--accent-cyan);
-            color: var(--accent-cyan);
-            background: rgba(0, 242, 255, 0.05);
-        }
+        .btn-glass { background: rgba(255,255,255,0.05); border: 1px solid var(--border-light); color: #fff; backdrop-filter: blur(5px); }
+        .btn-glass:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); background: rgba(0, 242, 255, 0.05); }
 
         /* --- STATS BAR --- */
         .stats-bar {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            max-width: 1000px;
-            margin: 0 auto;
-            border-top: 1px solid var(--border-light);
-            border-bottom: 1px solid var(--border-light);
-            background: rgba(255,255,255,0.02);
-            backdrop-filter: blur(10px);
+            display: grid; grid-template-columns: repeat(4, 1fr); max-width: 1000px; margin: 0 auto;
+            border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light);
+            background: rgba(255,255,255,0.02); backdrop-filter: blur(10px);
         }
         .stat-item { padding: 25px; text-align: center; border-right: 1px solid var(--border-light); }
         .stat-item:last-child { border: none; }
         .stat-val { display: block; font-family: var(--font-code); font-size: 1.5rem; color: var(--accent-cyan); margin-bottom: 5px; }
         .stat-label { font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
 
-        /* --- SHARED SECTION STYLES --- */
         .section-container { max-width: 1200px; margin: 120px auto; padding: 0 20px; }
         .section-header { margin-bottom: 60px; border-left: 3px solid var(--accent-cyan); padding-left: 20px; }
         .section-header h2 { font-size: 2rem; margin-bottom: 10px; }
         .section-header p { color: var(--text-dim); }
 
-        /* --- COMPARISON TABLE (NEW) --- */
+        /* --- COMPARISON TABLE --- */
         .comparison-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-family: var(--font-code);
-            font-size: 0.9rem;
-            background: var(--bg-glass);
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid var(--border-light);
+            width: 100%; border-collapse: collapse; font-family: var(--font-code); font-size: 0.9rem;
+            background: var(--bg-glass); border-radius: 12px; overflow: hidden; border: 1px solid var(--border-light);
         }
-        .comparison-table th, .comparison-table td {
-            padding: 20px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-light);
-        }
+        .comparison-table th, .comparison-table td { padding: 20px; text-align: left; border-bottom: 1px solid var(--border-light); }
         .comparison-table th { background: rgba(255,255,255,0.05); color: var(--text-dim); font-weight: normal; }
         .comparison-table tr:last-child td { border-bottom: none; }
+        .check { color: var(--accent-success); } .cross { color: #ff5f56; } .best { color: var(--accent-cyan); font-weight: bold; }
         
-        .check { color: var(--accent-success); }
-        .cross { color: #ff5f56; }
-        .best { color: var(--accent-cyan); font-weight: bold; }
+        .disclaimer { margin-top: 15px; font-size: 0.75rem; color: var(--text-dim); text-align: right; font-style: italic; opacity: 0.7; }
 
         /* --- FEATURES --- */
         .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
-        .feature-card {
-            background: var(--bg-glass);
-            border: 1px solid var(--border-light);
-            padding: 40px;
-            border-radius: 16px;
-            transition: transform 0.1s ease;
-        }
-        .icon-box {
-            width: 50px; height: 50px; background: rgba(0, 242, 255, 0.1);
-            border-radius: 10px; display: flex; align-items: center; justify-content: center;
-            color: var(--accent-cyan); font-size: 1.2rem; margin-bottom: 25px;
-        }
+        .feature-card { background: var(--bg-glass); border: 1px solid var(--border-light); padding: 40px; border-radius: 16px; transition: transform 0.1s ease; }
+        .icon-box { width: 50px; height: 50px; background: rgba(0, 242, 255, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--accent-cyan); font-size: 1.2rem; margin-bottom: 25px; }
 
-        /* --- TERMINAL WINDOW --- */
-        .terminal-container {
-            background: #0f111a;
-            border-radius: 12px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            border: 1px solid #333;
-            overflow: hidden;
-            font-family: var(--font-code);
-            margin-bottom: 40px;
-        }
-        .term-header {
-            background: #1a1e29; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333;
-        }
+        /* --- TERMINAL --- */
+        .terminal-container { background: #0f111a; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid #333; overflow: hidden; font-family: var(--font-code); margin-bottom: 40px; }
+        .term-header { background: #1a1e29; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
         .term-controls { display: flex; gap: 8px; }
-        .control { width: 12px; height: 12px; border-radius: 50%; }
-        .red { background: #ff5f56; } .yellow { background: #ffbd2e; } .green { background: #27c93f; }
+        .control { width: 12px; height: 12px; border-radius: 50%; } .red { background: #ff5f56; } .yellow { background: #ffbd2e; } .green { background: #27c93f; }
         .term-title { color: var(--text-dim); font-size: 0.8rem; }
         .term-body { padding: 30px; position: relative; }
-        
-        .copy-btn {
-            position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.1); border: none; color: #fff;
-            padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; transition: 0.2s; opacity: 0;
-        }
+        .copy-btn { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; transition: 0.2s; opacity: 0; }
         .term-body:hover .copy-btn { opacity: 1; }
         .copy-btn:hover { background: var(--accent-cyan); color: #000; }
-
         pre { white-space: pre-wrap; color: #d4d4d4; font-size: 0.9rem; line-height: 1.7; }
         .kwd { color: #ff79c6; } .func { color: #8be9fd; } .str { color: #f1fa8c; } .num { color: #bd93f9; } .com { color: #6272a4; font-style: italic; }
+
+        /* --- THE MANIFESTO (NEW) --- */
+        .manifesto-section {
+            padding: 100px 20px;
+            text-align: center;
+            background: linear-gradient(180deg, transparent 0%, rgba(0, 242, 255, 0.05) 100%);
+            border-top: 1px solid var(--border-light);
+        }
+        .manifesto-text {
+            font-size: 2.5rem;
+            font-weight: 800;
+            line-height: 1.4;
+            max-width: 900px;
+            margin: 0 auto;
+            color: #fff;
+        }
+        .manifesto-highlight { color: var(--accent-cyan); }
+        .manifesto-sub {
+            margin-top: 30px;
+            font-size: 1.1rem;
+            color: var(--text-dim);
+            font-family: var(--font-code);
+        }
 
         /* --- FOOTER --- */
         footer { border-top: 1px solid var(--border-light); background: #010102; padding: 80px 20px 40px; font-size: 0.9rem; color: var(--text-dim); }
@@ -270,6 +214,7 @@
             .stats-bar { grid-template-columns: 1fr 1fr; }
             .stat-item { border-bottom: 1px solid var(--border-light); }
             .nav-links { display: none; }
+            .manifesto-text { font-size: 1.8rem; }
         }
     </style>
 </head>
@@ -404,6 +349,7 @@
                     </tr>
                 </tbody>
             </table>
+            <div class="disclaimer">* Benchmarks based on standard GPIO toggle frequency and inverse kinematics loop tests on Raspberry Pi 4.</div>
         </div>
     </div>
 
@@ -483,6 +429,17 @@ cd Kinetrix
 <span class="kwd">make var</span> servo_val = theta * <span class="num">180</span> / <span class="num">3.14159</span></pre>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div class="manifesto-section fade-in-section">
+        <div class="manifesto-text">
+            Kinetrix is not for web developers.<br>
+            It is not for data analysts.<br>
+            <span class="manifesto-highlight">It is for the engineers who build the future.</span>
+        </div>
+        <div class="manifesto-sub">
+            // IF YOU WANT TO MOVE ATOMS, NOT JUST PIXELS... WELCOME HOME.
         </div>
     </div>
 
