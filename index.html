@@ -176,7 +176,7 @@
         pre { white-space: pre-wrap; color: #d4d4d4; font-size: 0.9rem; line-height: 1.7; }
         .kwd { color: #ff79c6; } .func { color: #8be9fd; } .str { color: #f1fa8c; } .num { color: #bd93f9; } .com { color: #6272a4; font-style: italic; }
 
-        /* --- THE MANIFESTO (NEW) --- */
+        /* --- MANIFESTO --- */
         .manifesto-section {
             padding: 100px 20px;
             text-align: center;
@@ -349,7 +349,7 @@
                     </tr>
                 </tbody>
             </table>
-            <div class="disclaimer">* Benchmarks based on standard GPIO toggle frequency and inverse kinematics loop tests on Raspberry Pi 5.</div>
+            <div class="disclaimer">* Benchmarks based on standard GPIO toggle frequency and inverse kinematics loop tests on Raspberry Pi 4.</div>
         </div>
     </div>
 
@@ -479,6 +479,7 @@ cd Kinetrix
     </footer>
 
     <script>
+        /* --- UTILITIES --- */
         function copyToClipboard(btn) {
             const pre = btn.nextElementSibling;
             navigator.clipboard.writeText(pre.innerText).then(() => {
@@ -501,6 +502,7 @@ cd Kinetrix
         }, { threshold: 0.1 });
         document.querySelectorAll('.fade-in-section').forEach(section => observer.observe(section));
 
+        /* --- 3D TILT EFFECT --- */
         document.querySelectorAll('.tilt-card').forEach(card => {
             card.addEventListener('mousemove', (e) => {
                 const rect = card.getBoundingClientRect();
@@ -511,6 +513,7 @@ cd Kinetrix
             card.addEventListener('mouseleave', () => card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)');
         });
 
+        /* --- TYPEWRITER TERMINAL --- */
         const typeText = [
             "> Initializing Kinetrix Compiler...",
             "> Parsing source code...",
@@ -548,44 +551,123 @@ cd Kinetrix
         });
         typeObserver.observe(typeWriterElement);
 
+
+        /* --- NEW HYPER-PHYSICS ENGINE --- */
         const canvas = document.getElementById('canvas-layer');
         const ctx = canvas.getContext('2d');
-        let width, height, particles = [];
+        let width, height;
+        let particles = [];
+        let mouse = { x: -1000, y: -1000 }; // Start off-screen
 
-        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+        // Resize Canvas
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
         window.addEventListener('resize', resize);
         resize();
 
+        // Track Mouse
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        // SHOCKWAVE EFFECT (CLICK)
+        window.addEventListener('mousedown', (e) => {
+            particles.forEach(p => {
+                let dx = p.x - e.clientX;
+                let dy = p.y - e.clientY;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < 300) { // Blast radius
+                    let force = (300 - dist) / 300;
+                    let angle = Math.atan2(dy, dx);
+                    p.vx += Math.cos(angle) * force * 15; // Blast power
+                    p.vy += Math.sin(angle) * force * 15;
+                }
+            });
+        });
+
         class Particle {
-            constructor() { this.reset(); }
-            reset() {
-                this.x = Math.random() * width; this.y = Math.random() * height;
-                this.vx = (Math.random() - 0.5) * 0.5; this.vy = (Math.random() - 0.5) * 0.5;
-                this.size = Math.random() * 2; this.alpha = Math.random() * 0.5 + 0.1;
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 1.5; // Velocity X
+                this.vy = (Math.random() - 0.5) * 1.5; // Velocity Y
+                this.size = Math.random() * 2;
+                this.friction = 0.98; // Slows down over time (Air resistance)
             }
+
             update() {
-                this.x += this.vx; this.y += this.vy;
-                if (this.x < 0 || this.x > width || this.y < 0 || this.y > height) this.reset();
+                // 1. Mouse Gravity Well (Attraction)
+                let dx = mouse.x - this.x;
+                let dy = mouse.y - this.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist < 250) { // Gravity radius
+                    let force = (250 - dist) / 250;
+                    this.vx += (dx / dist) * force * 0.5; // Pull X
+                    this.vy += (dy / dist) * force * 0.5; // Pull Y
+                }
+
+                // 2. Apply Velocity
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // 3. Apply Friction (Stabilization)
+                this.vx *= this.friction;
+                this.vy *= this.friction;
+
+                // 4. Keep a minimum ambient movement so they don't stop completely
+                if (Math.abs(this.vx) < 0.2) this.vx += (Math.random() - 0.5) * 0.1;
+                if (Math.abs(this.vy) < 0.2) this.vy += (Math.random() - 0.5) * 0.1;
+
+                // 5. Bounce off edges
+                if (this.x < 0 || this.x > width) this.vx *= -1;
+                if (this.y < 0 || this.y > height) this.vy *= -1;
             }
+
             draw() {
-                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(112, 0, 255, ${this.alpha})`; ctx.fill();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                // Color based on speed (Faster = Brighter Cyan)
+                let speed = Math.abs(this.vx) + Math.abs(this.vy);
+                let alpha = Math.min(0.8, speed * 0.2 + 0.1);
+                ctx.fillStyle = `rgba(0, 242, 255, ${alpha})`; 
+                ctx.fill();
             }
         }
-        for(let i=0; i<80; i++) particles.push(new Particle());
+
+        // Initialize Swarm
+        for(let i=0; i<100; i++) particles.push(new Particle());
 
         function animate() {
             ctx.clearRect(0, 0, width, height);
-            particles.forEach(p => {
-                p.update(); p.draw();
-                particles.forEach(p2 => {
-                    let dx = p.x - p2.x, dy = p.y - p2.y, dist = Math.sqrt(dx*dx + dy*dy);
-                    if (dist < 100) {
-                        ctx.beginPath(); ctx.strokeStyle = `rgba(0, 242, 255, ${0.1 - dist/1000})`;
-                        ctx.lineWidth = 0.5; ctx.moveTo(p.x, p.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+
+            particles.forEach((p, index) => {
+                p.update();
+                p.draw();
+
+                // Draw Connections
+                for (let j = index + 1; j < particles.length; j++) {
+                    let p2 = particles[j];
+                    let dx = p.x - p2.x;
+                    let dy = p.y - p2.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+
+                    if (dist < 120) {
+                        ctx.beginPath();
+                        // Opacity based on distance (Closer = Solid line)
+                        let opacity = (1 - dist / 120) * 0.5;
+                        ctx.strokeStyle = `rgba(112, 0, 255, ${opacity})`; // Violet connections
+                        ctx.lineWidth = 0.5;
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.stroke();
                     }
-                });
+                }
             });
+
             requestAnimationFrame(animate);
         }
         animate();
