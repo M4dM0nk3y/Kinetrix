@@ -15,18 +15,13 @@
         :root {
             --bg-deep: #030305;
             --bg-glass: rgba(20, 25, 35, 0.6);
-            --bg-glass-strong: rgba(20, 25, 35, 0.85);
-            
             --accent-cyan: #00f2ff;
             --accent-violet: #7000ff;
             --accent-success: #00ff9d;
-            
             --text-primary: #ffffff;
             --text-dim: #94a3b8;
-            
             --border-light: rgba(255, 255, 255, 0.1);
-            --shadow-glow: 0 0 20px rgba(0, 242, 255, 0.15);
-
+            
             --font-display: 'Inter', sans-serif;
             --font-code: 'JetBrains Mono', monospace;
         }
@@ -41,6 +36,11 @@
             min-height: 100vh;
         }
 
+        /* FIX: Ensures links don't hide behind the sticky navbar */
+        section, .section-container {
+            scroll-margin-top: 100px;
+        }
+
         /* --- BACKGROUND FX --- */
         #canvas-layer {
             position: fixed;
@@ -51,27 +51,10 @@
         }
 
         /* --- ANIMATIONS --- */
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
-        }
-        
-        @keyframes scanline {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(100%); }
-        }
-
-        @keyframes cursor-blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
-        }
-
         .fade-in-section {
             opacity: 0;
             transform: translateY(20px);
             transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-            will-change: opacity, visibility;
         }
         .fade-in-section.is-visible {
             opacity: 1;
@@ -113,11 +96,6 @@
             position: relative;
         }
         .nav-links a:hover { color: #fff; }
-        .nav-links a::after {
-            content: ''; position: absolute; bottom: -5px; left: 0; width: 0%; height: 2px;
-            background: var(--accent-cyan); transition: 0.3s;
-        }
-        .nav-links a:hover::after { width: 100%; }
 
         /* --- HERO --- */
         header {
@@ -125,7 +103,6 @@
             max-width: 1200px;
             margin: 0 auto;
             text-align: center;
-            position: relative;
         }
 
         h1 {
@@ -149,7 +126,6 @@
             font-size: 0.8rem;
             border: 1px solid rgba(0, 242, 255, 0.3);
             margin-bottom: 20px;
-            box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
         }
 
         .hero-sub {
@@ -170,21 +146,13 @@
             font-weight: 600;
             font-size: 1rem;
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            position: relative;
-            overflow: hidden;
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
-        .btn-primary {
-            background: var(--text-primary);
-            color: #000;
-        }
-        .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
-        }
+        .btn-primary { background: var(--text-primary); color: #000; }
+        .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 0 30px rgba(255, 255, 255, 0.3); }
 
         .btn-glass {
             background: rgba(255,255,255,0.05);
@@ -198,7 +166,7 @@
             background: rgba(0, 242, 255, 0.05);
         }
 
-        /* --- STATS HUD --- */
+        /* --- STATS BAR --- */
         .stats-bar {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -209,83 +177,54 @@
             background: rgba(255,255,255,0.02);
             backdrop-filter: blur(10px);
         }
-        
-        .stat-item {
-            padding: 25px;
-            text-align: center;
-            border-right: 1px solid var(--border-light);
-        }
+        .stat-item { padding: 25px; text-align: center; border-right: 1px solid var(--border-light); }
         .stat-item:last-child { border: none; }
-        
-        .stat-val {
-            display: block;
-            font-family: var(--font-code);
-            font-size: 1.5rem;
-            color: var(--accent-cyan);
-            margin-bottom: 5px;
-        }
-        .stat-label {
-            font-size: 0.8rem;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+        .stat-val { display: block; font-family: var(--font-code); font-size: 1.5rem; color: var(--accent-cyan); margin-bottom: 5px; }
+        .stat-label { font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
 
-        /* --- FEATURE CARDS (3D TILT) --- */
-        .section-container {
-            max-width: 1200px;
-            margin: 120px auto;
-            padding: 0 20px;
-        }
-
-        .section-header {
-            margin-bottom: 60px;
-            border-left: 3px solid var(--accent-cyan);
-            padding-left: 20px;
-        }
+        /* --- SHARED SECTION STYLES --- */
+        .section-container { max-width: 1200px; margin: 120px auto; padding: 0 20px; }
+        .section-header { margin-bottom: 60px; border-left: 3px solid var(--accent-cyan); padding-left: 20px; }
         .section-header h2 { font-size: 2rem; margin-bottom: 10px; }
         .section-header p { color: var(--text-dim); }
 
-        .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            perspective: 1000px;
+        /* --- COMPARISON TABLE (NEW) --- */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--font-code);
+            font-size: 0.9rem;
+            background: var(--bg-glass);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-light);
         }
+        .comparison-table th, .comparison-table td {
+            padding: 20px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .comparison-table th { background: rgba(255,255,255,0.05); color: var(--text-dim); font-weight: normal; }
+        .comparison-table tr:last-child td { border-bottom: none; }
+        
+        .check { color: var(--accent-success); }
+        .cross { color: #ff5f56; }
+        .best { color: var(--accent-cyan); font-weight: bold; }
 
+        /* --- FEATURES --- */
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
         .feature-card {
             background: var(--bg-glass);
             border: 1px solid var(--border-light);
             padding: 40px;
             border-radius: 16px;
-            transition: transform 0.1s ease; /* Fast for tilt */
-            position: relative;
-            overflow: hidden;
+            transition: transform 0.1s ease;
         }
-        
-        .feature-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%);
-            opacity: 0; transition: opacity 0.3s;
-        }
-        .feature-card:hover::before { opacity: 1; }
-
         .icon-box {
-            width: 50px; height: 50px;
-            background: rgba(0, 242, 255, 0.1);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--accent-cyan);
-            font-size: 1.2rem;
-            margin-bottom: 25px;
+            width: 50px; height: 50px; background: rgba(0, 242, 255, 0.1);
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            color: var(--accent-cyan); font-size: 1.2rem; margin-bottom: 25px;
         }
-
-        .feature-card h3 { font-size: 1.3rem; margin-bottom: 15px; }
-        .feature-card p { color: var(--text-dim); line-height: 1.6; font-size: 0.95rem; }
 
         /* --- TERMINAL WINDOW --- */
         .terminal-container {
@@ -297,89 +236,40 @@
             font-family: var(--font-code);
             margin-bottom: 40px;
         }
-        
         .term-header {
-            background: #1a1e29;
-            padding: 12px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #333;
+            background: #1a1e29; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333;
         }
         .term-controls { display: flex; gap: 8px; }
         .control { width: 12px; height: 12px; border-radius: 50%; }
-        .red { background: #ff5f56; }
-        .yellow { background: #ffbd2e; }
-        .green { background: #27c93f; }
-        
+        .red { background: #ff5f56; } .yellow { background: #ffbd2e; } .green { background: #27c93f; }
         .term-title { color: var(--text-dim); font-size: 0.8rem; }
-        
-        .term-body {
-            padding: 30px;
-            position: relative;
-        }
+        .term-body { padding: 30px; position: relative; }
         
         .copy-btn {
-            position: absolute;
-            top: 20px; right: 20px;
-            background: rgba(255,255,255,0.1);
-            border: none;
-            color: #fff;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            transition: 0.2s;
-            opacity: 0;
+            position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.1); border: none; color: #fff;
+            padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; transition: 0.2s; opacity: 0;
         }
         .term-body:hover .copy-btn { opacity: 1; }
         .copy-btn:hover { background: var(--accent-cyan); color: #000; }
 
-        /* Syntax Highlighting */
         pre { white-space: pre-wrap; color: #d4d4d4; font-size: 0.9rem; line-height: 1.7; }
-        .kwd { color: #ff79c6; }
-        .func { color: #8be9fd; }
-        .str { color: #f1fa8c; }
-        .num { color: #bd93f9; }
-        .com { color: #6272a4; font-style: italic; }
-        .op { color: #ff79c6; }
+        .kwd { color: #ff79c6; } .func { color: #8be9fd; } .str { color: #f1fa8c; } .num { color: #bd93f9; } .com { color: #6272a4; font-style: italic; }
 
         /* --- FOOTER --- */
-        footer {
-            border-top: 1px solid var(--border-light);
-            background: #010102;
-            padding: 80px 20px 40px;
-            font-size: 0.9rem;
-            color: var(--text-dim);
-        }
-        .footer-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 40px;
-        }
+        footer { border-top: 1px solid var(--border-light); background: #010102; padding: 80px 20px 40px; font-size: 0.9rem; color: var(--text-dim); }
+        .footer-content { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px; }
         .footer-col h4 { color: #fff; margin-bottom: 20px; font-size: 1rem; }
         .footer-col ul { list-style: none; }
         .footer-col li { margin-bottom: 10px; }
         .footer-col a { color: var(--text-dim); text-decoration: none; transition: 0.2s; }
         .footer-col a:hover { color: var(--accent-cyan); }
-        
-        .copyright {
-            text-align: center;
-            margin-top: 80px;
-            padding-top: 20px;
-            border-top: 1px solid #111;
-            font-size: 0.8rem;
-        }
+        .copyright { text-align: center; margin-top: 80px; padding-top: 20px; border-top: 1px solid #111; font-size: 0.8rem; }
 
-        /* --- RESPONSIVE --- */
         @media (max-width: 768px) {
             h1 { font-size: 3rem; }
             .stats-bar { grid-template-columns: 1fr 1fr; }
             .stat-item { border-bottom: 1px solid var(--border-light); }
-            .stat-item:nth-child(2), .stat-item:nth-child(4) { border-right: none; }
-            .nav-links { display: none; } /* Simplified for mobile */
+            .nav-links { display: none; }
         }
     </style>
 </head>
@@ -390,13 +280,13 @@
     <nav>
         <div class="logo">
             <i class="fa-solid fa-cube fa-spin" style="--fa-animation-duration: 10s;"></i>
-            KINETRIX<span>.IO</span>
+            KINETRIX<span>.KX</span>
         </div>
         <div class="nav-links">
             <a href="#features">Features</a>
+            <a href="#comparison">Benchmarks</a>
             <a href="#docs">Documentation</a>
             <a href="#install">Installation</a>
-            <a href="https://github.com/M4dM0nk3y/Kinetrix">GitHub</a>
         </div>
         <a href="https://github.com/M4dM0nk3y/Kinetrix/archive/refs/heads/main.zip" class="btn-glass" style="padding: 8px 20px; border-radius: 4px; text-decoration: none; font-size: 0.8rem;">
             v1.0 DOWNLOAD
@@ -446,23 +336,74 @@
             <h2>Why Kinetrix?</h2>
             <p>Designed for the edge. Optimized for control.</p>
         </div>
-
         <div class="feature-grid">
             <div class="feature-card tilt-card fade-in-section">
                 <div class="icon-box"><i class="fa-solid fa-bolt"></i></div>
                 <h3>Real-Time Core</h3>
-                <p>Deterministic execution model ensures your servos and sensors react instantly. No garbage collection pauses.</p>
+                <p>Deterministic execution model ensures your servos and sensors react instantly. No garbage collection.</p>
             </div>
             <div class="feature-card tilt-card fade-in-section">
                 <div class="icon-box"><i class="fa-solid fa-microchip"></i></div>
                 <h3>Hardware Native</h3>
-                <p>Direct memory access to GPIO, I2C, and SPI interfaces. If the hardware can do it, Kinetrix can control it.</p>
+                <p>Direct memory access to GPIO, I2C, and SPI. If the hardware can do it, Kinetrix can control it.</p>
             </div>
             <div class="feature-card tilt-card fade-in-section">
                 <div class="icon-box"><i class="fa-solid fa-code-branch"></i></div>
                 <h3>Math Integrated</h3>
-                <p>Built-in Inverse Kinematics and Matrix math libraries optimized for robotic arms and drone flight controllers.</p>
+                <p>Built-in Inverse Kinematics and Matrix math libraries optimized for robotic arms.</p>
             </div>
+        </div>
+    </div>
+
+    <div class="section-container" id="comparison">
+        <div class="section-header fade-in-section">
+            <h2>Language Comparison</h2>
+            <p>How Kinetrix stacks up against the industry standards.</p>
+        </div>
+        
+        <div class="fade-in-section">
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th style="color: var(--accent-cyan);">KINETRIX</th>
+                        <th>PYTHON</th>
+                        <th>C++</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Syntax Difficulty</td>
+                        <td class="best">Simple (English-like)</td>
+                        <td class="best">Simple</td>
+                        <td class="cross">Complex</td>
+                    </tr>
+                    <tr>
+                        <td>Execution Speed</td>
+                        <td class="best">Native (Fast)</td>
+                        <td class="cross">Interpreted (Slow)</td>
+                        <td class="best">Native (Fast)</td>
+                    </tr>
+                    <tr>
+                        <td>Compilation</td>
+                        <td class="best">Auto Transpile to C++</td>
+                        <td class="cross">None (Runtime)</td>
+                        <td>Manual GCC</td>
+                    </tr>
+                    <tr>
+                        <td>Robotics Math</td>
+                        <td class="best">Built-in (Kinematics)</td>
+                        <td>Requires NumPy</td>
+                        <td>External Libs</td>
+                    </tr>
+                    <tr>
+                        <td>Hardware Access</td>
+                        <td class="best"><i class="fa-solid fa-check check"></i> Direct</td>
+                        <td><i class="fa-solid fa-check check"></i> Via Libraries</td>
+                        <td><i class="fa-solid fa-check check"></i> Direct</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -471,7 +412,6 @@
             <h2>Compiler Pipeline</h2>
             <p>See how Kinetrix transforms logic into machine code.</p>
         </div>
-
         <div class="terminal-container fade-in-section">
             <div class="term-header">
                 <div class="term-controls"><div class="control red"></div><div class="control yellow"></div><div class="control green"></div></div>
@@ -544,7 +484,6 @@ cd Kinetrix
                 </div>
             </div>
         </div>
-
     </div>
 
     <footer>
@@ -556,9 +495,9 @@ cd Kinetrix
             <div class="footer-col">
                 <h4>Resources</h4>
                 <ul>
-                    <li><a href="#">Documentation</a></li>
-                    <li><a href="#">API Reference</a></li>
-                    <li><a href="#">Examples</a></li>
+                    <li><a href="#docs">Documentation</a></li>
+                    <li><a href="#comparison">Comparison vs Python</a></li>
+                    <li><a href="#install">Examples</a></li>
                 </ul>
             </div>
             <div class="footer-col">
@@ -583,11 +522,9 @@ cd Kinetrix
     </footer>
 
     <script>
-        // --- 1. COPY TO CLIPBOARD ---
         function copyToClipboard(btn) {
             const pre = btn.nextElementSibling;
-            const text = pre.innerText;
-            navigator.clipboard.writeText(text).then(() => {
+            navigator.clipboard.writeText(pre.innerText).then(() => {
                 const originalText = btn.innerText;
                 btn.innerText = "Copied!";
                 btn.style.background = "#00ff9d";
@@ -600,41 +537,23 @@ cd Kinetrix
             });
         }
 
-        // --- 2. SCROLL ANIMATION (INTERSECTION OBSERVER) ---
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('is-visible');
-                }
+                if (entry.isIntersecting) entry.target.classList.add('is-visible');
             });
         }, { threshold: 0.1 });
+        document.querySelectorAll('.fade-in-section').forEach(section => observer.observe(section));
 
-        document.querySelectorAll('.fade-in-section').forEach(section => {
-            observer.observe(section);
-        });
-
-        // --- 3. 3D TILT EFFECT ---
         document.querySelectorAll('.tilt-card').forEach(card => {
             card.addEventListener('mousemove', (e) => {
                 const rect = card.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-                
-                const rotateX = ((y - centerY) / centerY) * -5; // Max 5deg tilt
-                const rotateY = ((x - centerX) / centerX) * 5;
-
-                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                card.style.transform = `perspective(1000px) rotateX(${-y/10}deg) rotateY(${x/10}deg) scale(1.02)`;
             });
-
-            card.addEventListener('mouseleave', () => {
-                card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)';
-            });
+            card.addEventListener('mouseleave', () => card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)');
         });
 
-        // --- 4. TYPEWRITER EFFECT ---
         const typeText = [
             "> Initializing Kinetrix Compiler...",
             "> Parsing source code...",
@@ -652,15 +571,14 @@ cd Kinetrix
                 if (charIndex < typeText[lineIndex].length) {
                     typeWriterElement.innerHTML += typeText[lineIndex].charAt(charIndex);
                     charIndex++;
-                    setTimeout(typeLine, 30); // Typing speed
+                    setTimeout(typeLine, 30);
                 } else {
                     typeWriterElement.innerHTML += "<br>";
                     lineIndex++;
                     charIndex = 0;
-                    setTimeout(typeLine, 400); // Pause between lines
+                    setTimeout(typeLine, 400);
                 }
             } else {
-                // Reset loop
                 setTimeout(() => {
                     typeWriterElement.innerHTML = "";
                     lineIndex = 0;
@@ -668,74 +586,46 @@ cd Kinetrix
                 }, 3000);
             }
         }
-        // Start typing when element is in view
         const typeObserver = new IntersectionObserver((entries) => {
             if(entries[0].isIntersecting && lineIndex === 0) typeLine();
         });
         typeObserver.observe(typeWriterElement);
 
-
-        // --- 5. PARTICLE PHYSICS ENGINE ---
         const canvas = document.getElementById('canvas-layer');
         const ctx = canvas.getContext('2d');
-        let width, height;
-        let particles = [];
+        let width, height, particles = [];
 
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-        }
+        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
         window.addEventListener('resize', resize);
         resize();
 
         class Particle {
-            constructor() {
-                this.reset();
-            }
+            constructor() { this.reset(); }
             reset() {
-                this.x = Math.random() * width;
-                this.y = Math.random() * height;
-                this.vx = (Math.random() - 0.5) * 0.5;
-                this.vy = (Math.random() - 0.5) * 0.5;
-                this.size = Math.random() * 2;
-                this.alpha = Math.random() * 0.5 + 0.1;
+                this.x = Math.random() * width; this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.5; this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 2; this.alpha = Math.random() * 0.5 + 0.1;
             }
             update() {
-                this.x += this.vx;
-                this.y += this.vy;
+                this.x += this.vx; this.y += this.vy;
                 if (this.x < 0 || this.x > width || this.y < 0 || this.y > height) this.reset();
             }
             draw() {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(112, 0, 255, ${this.alpha})`; // Violet particles
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(112, 0, 255, ${this.alpha})`; ctx.fill();
             }
         }
-
-        function initParticles() {
-            particles = [];
-            for(let i=0; i<80; i++) particles.push(new Particle());
-        }
-        initParticles();
+        for(let i=0; i<80; i++) particles.push(new Particle());
 
         function animate() {
             ctx.clearRect(0, 0, width, height);
             particles.forEach(p => {
-                p.update();
-                p.draw();
-                // Link nearby particles
+                p.update(); p.draw();
                 particles.forEach(p2 => {
-                    let dx = p.x - p2.x;
-                    let dy = p.y - p2.y;
-                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    let dx = p.x - p2.x, dy = p.y - p2.y, dist = Math.sqrt(dx*dx + dy*dy);
                     if (dist < 100) {
-                        ctx.beginPath();
-                        ctx.strokeStyle = `rgba(0, 242, 255, ${0.1 - dist/1000})`; // Cyan lines
-                        ctx.lineWidth = 0.5;
-                        ctx.moveTo(p.x, p.y);
-                        ctx.lineTo(p2.x, p2.y);
-                        ctx.stroke();
+                        ctx.beginPath(); ctx.strokeStyle = `rgba(0, 242, 255, ${0.1 - dist/1000})`;
+                        ctx.lineWidth = 0.5; ctx.moveTo(p.x, p.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
                     }
                 });
             });
