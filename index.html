@@ -15,6 +15,7 @@
         :root {
             --bg-deep: #030305;
             --bg-glass: rgba(20, 25, 35, 0.6);
+            --bg-glass-form: rgba(255, 255, 255, 0.03);
             --accent-cyan: #00f2ff;
             --accent-violet: #7000ff;
             --accent-success: #00ff9d;
@@ -123,9 +124,9 @@
         .btn-group { display: flex; justify-content: center; gap: 20px; }
         .btn {
             padding: 16px 36px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 1rem;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; align-items: center; gap: 10px;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; align-items: center; gap: 10px; cursor: pointer;
         }
-        .btn-primary { background: var(--text-primary); color: #000; }
+        .btn-primary { background: var(--text-primary); color: #000; border: none; }
         .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 0 30px rgba(255, 255, 255, 0.3); }
         .btn-glass { background: rgba(255,255,255,0.05); border: 1px solid var(--border-light); color: #fff; backdrop-filter: blur(5px); }
         .btn-glass:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); background: rgba(0, 242, 255, 0.05); }
@@ -155,7 +156,6 @@
         .comparison-table th { background: rgba(255,255,255,0.05); color: var(--text-dim); font-weight: normal; }
         .comparison-table tr:last-child td { border-bottom: none; }
         .check { color: var(--accent-success); } .cross { color: #ff5f56; } .best { color: var(--accent-cyan); font-weight: bold; }
-        
         .disclaimer { margin-top: 15px; font-size: 0.75rem; color: var(--text-dim); text-align: right; font-style: italic; opacity: 0.7; }
 
         /* --- FEATURES --- */
@@ -176,28 +176,27 @@
         pre { white-space: pre-wrap; color: #d4d4d4; font-size: 0.9rem; line-height: 1.7; }
         .kwd { color: #ff79c6; } .func { color: #8be9fd; } .str { color: #f1fa8c; } .num { color: #bd93f9; } .com { color: #6272a4; font-style: italic; }
 
+        /* --- CONTACT FORM --- */
+        .contact-form {
+            display: grid; gap: 20px; max-width: 600px; margin: 0 auto;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%; padding: 15px; background: var(--bg-glass-form); border: 1px solid var(--border-light);
+            color: #fff; font-family: var(--font-code); border-radius: 6px; transition: 0.3s;
+        }
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none; border-color: var(--accent-cyan); box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
+        }
+        .form-group textarea { height: 150px; resize: vertical; }
+        .form-label { display: block; margin-bottom: 8px; color: var(--text-dim); font-size: 0.9rem; font-family: var(--font-code); }
+
         /* --- MANIFESTO --- */
         .manifesto-section {
-            padding: 100px 20px;
-            text-align: center;
-            background: linear-gradient(180deg, transparent 0%, rgba(0, 242, 255, 0.05) 100%);
-            border-top: 1px solid var(--border-light);
+            padding: 100px 20px; text-align: center; background: linear-gradient(180deg, transparent 0%, rgba(0, 242, 255, 0.05) 100%); border-top: 1px solid var(--border-light);
         }
-        .manifesto-text {
-            font-size: 2.5rem;
-            font-weight: 800;
-            line-height: 1.4;
-            max-width: 900px;
-            margin: 0 auto;
-            color: #fff;
-        }
+        .manifesto-text { font-size: 2.5rem; font-weight: 800; line-height: 1.4; max-width: 900px; margin: 0 auto; color: #fff; }
         .manifesto-highlight { color: var(--accent-cyan); }
-        .manifesto-sub {
-            margin-top: 30px;
-            font-size: 1.1rem;
-            color: var(--text-dim);
-            font-family: var(--font-code);
-        }
+        .manifesto-sub { margin-top: 30px; font-size: 1.1rem; color: var(--text-dim); font-family: var(--font-code); }
 
         /* --- FOOTER --- */
         footer { border-top: 1px solid var(--border-light); background: #010102; padding: 80px 20px 40px; font-size: 0.9rem; color: var(--text-dim); }
@@ -230,8 +229,8 @@
         <div class="nav-links">
             <a href="#features">Features</a>
             <a href="#comparison">Benchmarks</a>
-            <a href="#docs">Documentation</a>
-            <a href="#install">Installation</a>
+            <a href="#docs">Docs</a>
+            <a href="#contact">Contact</a>
         </div>
         <a href="https://github.com/M4dM0nk3y/Kinetrix/archive/refs/heads/main.zip" class="btn-glass" style="padding: 8px 20px; border-radius: 4px; text-decoration: none; font-size: 0.8rem;">
             v1.0 DOWNLOAD
@@ -305,7 +304,6 @@
             <h2>Language Comparison</h2>
             <p>How Kinetrix stacks up against the industry standards.</p>
         </div>
-        
         <div class="fade-in-section">
             <table class="comparison-table">
                 <thead>
@@ -432,6 +430,38 @@ cd Kinetrix
         </div>
     </div>
 
+    <div class="section-container" id="contact">
+        <div class="section-header fade-in-section">
+            <h2>Secure Transmission</h2>
+            <p>Establish a direct link with the developer. Encrypted & Private.</p>
+        </div>
+        
+        <div class="fade-in-section">
+            <form action="https://formspree.io/f/xbdyjawq" method="POST" class="contact-form">
+                
+                <div class="form-group">
+                    <label class="form-label">IDENTIFIER (NAME)</label>
+                    <input type="text" name="name" required placeholder="John Doe">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">RETURN ADDRESS (EMAIL)</label>
+                    <input type="email" name="email" required placeholder="email@example.com">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">DATA PACKET (MESSAGE)</label>
+                    <textarea name="message" required placeholder="Enter your query..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="justify-content: center; width: 100%;">
+                    <i class="fa-solid fa-paper-plane"></i> TRANSMIT SIGNAL
+                </button>
+
+            </form>
+        </div>
+    </div>
+
     <div class="manifesto-section fade-in-section">
         <div class="manifesto-text">
             Kinetrix is not for web developers.<br>
@@ -551,15 +581,13 @@ cd Kinetrix
         });
         typeObserver.observe(typeWriterElement);
 
-
-        /* --- NEW HYPER-PHYSICS ENGINE --- */
+        /* --- HYPER-PHYSICS ENGINE --- */
         const canvas = document.getElementById('canvas-layer');
         const ctx = canvas.getContext('2d');
         let width, height;
         let particles = [];
-        let mouse = { x: -1000, y: -1000 }; // Start off-screen
+        let mouse = { x: -1000, y: -1000 }; 
 
-        // Resize Canvas
         function resize() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
@@ -567,22 +595,20 @@ cd Kinetrix
         window.addEventListener('resize', resize);
         resize();
 
-        // Track Mouse
         window.addEventListener('mousemove', (e) => {
             mouse.x = e.clientX;
             mouse.y = e.clientY;
         });
 
-        // SHOCKWAVE EFFECT (CLICK)
         window.addEventListener('mousedown', (e) => {
             particles.forEach(p => {
                 let dx = p.x - e.clientX;
                 let dy = p.y - e.clientY;
                 let dist = Math.sqrt(dx*dx + dy*dy);
-                if (dist < 300) { // Blast radius
+                if (dist < 300) { 
                     let force = (300 - dist) / 300;
                     let angle = Math.atan2(dy, dx);
-                    p.vx += Math.cos(angle) * force * 15; // Blast power
+                    p.vx += Math.cos(angle) * force * 15;
                     p.vy += Math.sin(angle) * force * 15;
                 }
             });
@@ -592,37 +618,31 @@ cd Kinetrix
             constructor() {
                 this.x = Math.random() * width;
                 this.y = Math.random() * height;
-                this.vx = (Math.random() - 0.5) * 1.5; // Velocity X
-                this.vy = (Math.random() - 0.5) * 1.5; // Velocity Y
+                this.vx = (Math.random() - 0.5) * 1.5;
+                this.vy = (Math.random() - 0.5) * 1.5;
                 this.size = Math.random() * 2;
-                this.friction = 0.98; // Slows down over time (Air resistance)
+                this.friction = 0.98;
             }
 
             update() {
-                // 1. Mouse Gravity Well (Attraction)
                 let dx = mouse.x - this.x;
                 let dy = mouse.y - this.y;
                 let dist = Math.sqrt(dx*dx + dy*dy);
                 
-                if (dist < 250) { // Gravity radius
+                if (dist < 250) { 
                     let force = (250 - dist) / 250;
-                    this.vx += (dx / dist) * force * 0.5; // Pull X
-                    this.vy += (dy / dist) * force * 0.5; // Pull Y
+                    this.vx += (dx / dist) * force * 0.5;
+                    this.vy += (dy / dist) * force * 0.5;
                 }
 
-                // 2. Apply Velocity
                 this.x += this.vx;
                 this.y += this.vy;
-
-                // 3. Apply Friction (Stabilization)
                 this.vx *= this.friction;
                 this.vy *= this.friction;
 
-                // 4. Keep a minimum ambient movement so they don't stop completely
                 if (Math.abs(this.vx) < 0.2) this.vx += (Math.random() - 0.5) * 0.1;
                 if (Math.abs(this.vy) < 0.2) this.vy += (Math.random() - 0.5) * 0.1;
 
-                // 5. Bounce off edges
                 if (this.x < 0 || this.x > width) this.vx *= -1;
                 if (this.y < 0 || this.y > height) this.vy *= -1;
             }
@@ -630,7 +650,6 @@ cd Kinetrix
             draw() {
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                // Color based on speed (Faster = Brighter Cyan)
                 let speed = Math.abs(this.vx) + Math.abs(this.vy);
                 let alpha = Math.min(0.8, speed * 0.2 + 0.1);
                 ctx.fillStyle = `rgba(0, 242, 255, ${alpha})`; 
@@ -638,28 +657,22 @@ cd Kinetrix
             }
         }
 
-        // Initialize Swarm
         for(let i=0; i<100; i++) particles.push(new Particle());
 
         function animate() {
             ctx.clearRect(0, 0, width, height);
-
             particles.forEach((p, index) => {
                 p.update();
                 p.draw();
-
-                // Draw Connections
                 for (let j = index + 1; j < particles.length; j++) {
                     let p2 = particles[j];
                     let dx = p.x - p2.x;
                     let dy = p.y - p2.y;
                     let dist = Math.sqrt(dx*dx + dy*dy);
-
                     if (dist < 120) {
                         ctx.beginPath();
-                        // Opacity based on distance (Closer = Solid line)
                         let opacity = (1 - dist / 120) * 0.5;
-                        ctx.strokeStyle = `rgba(112, 0, 255, ${opacity})`; // Violet connections
+                        ctx.strokeStyle = `rgba(112, 0, 255, ${opacity})`;
                         ctx.lineWidth = 0.5;
                         ctx.moveTo(p.x, p.y);
                         ctx.lineTo(p2.x, p2.y);
@@ -667,7 +680,6 @@ cd Kinetrix
                     }
                 }
             });
-
             requestAnimationFrame(animate);
         }
         animate();
