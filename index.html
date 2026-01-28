@@ -3,27 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kinetrix | High-Performance Robotics</title>
+    <title>Kinetrix | The Ultimate Robotics Language</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         :root {
             --bg-deep: #030305;
-            --bg-glass: rgba(15, 20, 25, 0.7);
-            --accent-primary: #00f2ff; /* Cyber Cyan */
-            --accent-secondary: #7000ff; /* Deep Violet */
-            --text-primary: #ffffff;
-            --text-dim: #8b9bb4;
-            --border-glass: rgba(255, 255, 255, 0.08);
+            --bg-glass: rgba(20, 25, 35, 0.6);
+            --bg-glass-strong: rgba(20, 25, 35, 0.85);
             
+            --accent-cyan: #00f2ff;
+            --accent-violet: #7000ff;
+            --accent-success: #00ff9d;
+            
+            --text-primary: #ffffff;
+            --text-dim: #94a3b8;
+            
+            --border-light: rgba(255, 255, 255, 0.1);
+            --shadow-glow: 0 0 20px rgba(0, 242, 255, 0.15);
+
             --font-display: 'Inter', sans-serif;
             --font-code: 'JetBrains Mono', monospace;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; scroll-behavior: smooth; }
 
         body {
             background-color: var(--bg-deep);
@@ -33,352 +41,646 @@
             min-height: 100vh;
         }
 
-        /* --- PHYSICS ENGINE BACKGROUND --- */
-        #physics-canvas {
+        /* --- BACKGROUND FX --- */
+        #canvas-layer {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: -1;
-            background: radial-gradient(circle at 50% 50%, #0a0a12 0%, #000000 100%);
+            background: radial-gradient(circle at 50% 50%, #0d1117 0%, #000000 100%);
         }
 
-        /* --- HUD DECORATIONS --- */
-        .hud-line {
-            position: fixed;
-            background: var(--border-glass);
-            z-index: 0;
+        /* --- ANIMATIONS --- */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
         }
-        .hud-v { width: 1px; height: 100vh; left: 100px; top: 0; }
-        .hud-h { height: 1px; width: 100vw; top: 80px; left: 0; }
         
-        .sys-stat {
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+
+        @keyframes cursor-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .fade-in-section {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+            will-change: opacity, visibility;
+        }
+        .fade-in-section.is-visible {
+            opacity: 1;
+            transform: none;
+        }
+
+        /* --- NAVIGATION --- */
+        nav {
             position: fixed;
-            bottom: 30px; right: 40px;
+            top: 0; left: 0; width: 100%;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            background: rgba(3, 3, 5, 0.7);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .logo {
             font-family: var(--font-code);
-            font-size: 0.7rem;
-            color: var(--accent-primary);
-            text-align: right;
-            opacity: 0.7;
-            line-height: 1.8;
-            z-index: 10;
+            font-weight: 700;
+            font-size: 1.2rem;
+            letter-spacing: -1px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
+        .logo span { color: var(--accent-cyan); }
 
-        /* --- LAYOUT --- */
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 120px 20px 80px;
+        .nav-links { display: flex; gap: 30px; }
+        .nav-links a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: 0.3s;
             position: relative;
-            z-index: 2;
         }
+        .nav-links a:hover { color: #fff; }
+        .nav-links a::after {
+            content: ''; position: absolute; bottom: -5px; left: 0; width: 0%; height: 2px;
+            background: var(--accent-cyan); transition: 0.3s;
+        }
+        .nav-links a:hover::after { width: 100%; }
 
-        /* --- HERO SECTION --- */
+        /* --- HERO --- */
         header {
-            margin-bottom: 100px;
+            padding: 180px 20px 100px;
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
             position: relative;
         }
 
         h1 {
-            font-size: 5rem;
+            font-size: 5.5rem;
             font-weight: 800;
-            letter-spacing: -2px;
-            background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+            line-height: 1;
+            margin-bottom: 25px;
+            background: linear-gradient(180deg, #fff 0%, #94a3b8 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
+            letter-spacing: -3px;
         }
-
-        .version-badge {
+        
+        .hero-tag {
+            display: inline-block;
+            background: rgba(0, 242, 255, 0.1);
+            color: var(--accent-cyan);
+            padding: 6px 16px;
+            border-radius: 30px;
             font-family: var(--font-code);
             font-size: 0.8rem;
-            color: var(--accent-primary);
-            border: 1px solid var(--accent-primary);
-            padding: 4px 10px;
-            border-radius: 20px;
-            vertical-align: middle;
-            margin-left: 15px;
-            text-shadow: 0 0 10px var(--accent-primary);
-            box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            margin-bottom: 20px;
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
         }
 
-        .hero-desc {
-            font-size: 1.2rem;
+        .hero-sub {
+            font-size: 1.3rem;
             color: var(--text-dim);
-            max-width: 600px;
-            margin-bottom: 40px;
+            max-width: 650px;
+            margin: 0 auto 50px;
             line-height: 1.6;
         }
 
         /* --- BUTTONS --- */
-        .cta-container { display: flex; gap: 20px; }
-
+        .btn-group { display: flex; justify-content: center; gap: 20px; }
+        
         .btn {
-            position: relative;
-            padding: 16px 32px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--border-glass);
-            color: #fff;
-            font-family: var(--font-code);
-            font-size: 0.9rem;
+            padding: 16px 36px;
+            border-radius: 6px;
             text-decoration: none;
-            transition: 0.3s;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
             overflow: hidden;
             display: flex;
             align-items: center;
             gap: 10px;
-            backdrop-filter: blur(10px);
         }
 
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 2px; height: 100%;
-            background: var(--accent-primary);
-            transition: 0.3s;
-        }
-
-        .btn:hover {
-            background: rgba(0, 242, 255, 0.1);
-            border-color: var(--accent-primary);
-            transform: translateX(5px);
-        }
-        
-        .btn:hover::before { width: 100%; opacity: 0.1; }
-
-        .btn-primary { 
-            background: var(--accent-primary); 
+        .btn-primary {
+            background: var(--text-primary);
             color: #000;
-            font-weight: 700;
-            border: none;
         }
         .btn-primary:hover {
-            background: #fff;
-            transform: translateY(-2px);
-            box-shadow: 0 0 30px rgba(0, 242, 255, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
         }
-        .btn-primary::before { display: none; }
 
-        /* --- CODE TERMINALS --- */
-        .grid-layout {
+        .btn-glass {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-light);
+            color: #fff;
+            backdrop-filter: blur(5px);
+        }
+        .btn-glass:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            background: rgba(0, 242, 255, 0.05);
+        }
+
+        /* --- STATS HUD --- */
+        .stats-bar {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-            gap: 30px;
-            margin-top: 60px;
-        }
-
-        .code-card {
-            background: var(--bg-glass);
-            border: 1px solid var(--border-glass);
-            border-radius: 12px;
-            overflow: hidden;
-            backdrop-filter: blur(20px);
-            transition: transform 0.3s ease, border-color 0.3s ease;
-        }
-
-        .code-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(255,255,255,0.2);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-        }
-
-        .card-header {
-            padding: 12px 20px;
-            border-bottom: 1px solid var(--border-glass);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            grid-template-columns: repeat(4, 1fr);
+            max-width: 1000px;
+            margin: 0 auto;
+            border-top: 1px solid var(--border-light);
+            border-bottom: 1px solid var(--border-light);
             background: rgba(255,255,255,0.02);
+            backdrop-filter: blur(10px);
         }
-
-        .file-name {
+        
+        .stat-item {
+            padding: 25px;
+            text-align: center;
+            border-right: 1px solid var(--border-light);
+        }
+        .stat-item:last-child { border: none; }
+        
+        .stat-val {
+            display: block;
             font-family: var(--font-code);
-            font-size: 0.75rem;
+            font-size: 1.5rem;
+            color: var(--accent-cyan);
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 0.8rem;
             color: var(--text-dim);
             text-transform: uppercase;
             letter-spacing: 1px;
         }
 
-        .dots { display: flex; gap: 6px; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: #333; }
-        .active-dot { background: var(--accent-primary); box-shadow: 0 0 8px var(--accent-primary); }
-
-        pre {
-            padding: 20px;
-            font-family: var(--font-code);
-            font-size: 0.85rem;
-            line-height: 1.7;
-            overflow-x: auto;
-            color: #d4d4d4;
+        /* --- FEATURE CARDS (3D TILT) --- */
+        .section-container {
+            max-width: 1200px;
+            margin: 120px auto;
+            padding: 0 20px;
         }
 
-        /* Syntax Highlighting */
-        .kwd { color: #ff0055; font-weight: bold; }  /* Keyword */
-        .func { color: #00f2ff; }                    /* Function */
-        .num { color: #bd93f9; }                     /* Number */
-        .str { color: #50fa7b; }                     /* String */
-        .com { color: #6272a4; font-style: italic; } /* Comment */
+        .section-header {
+            margin-bottom: 60px;
+            border-left: 3px solid var(--accent-cyan);
+            padding-left: 20px;
+        }
+        .section-header h2 { font-size: 2rem; margin-bottom: 10px; }
+        .section-header p { color: var(--text-dim); }
 
-        .section-title {
-            grid-column: 1 / -1;
-            font-size: 1.5rem;
-            color: #fff;
-            margin-top: 40px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            perspective: 1000px;
+        }
+
+        .feature-card {
+            background: var(--bg-glass);
+            border: 1px solid var(--border-light);
+            padding: 40px;
+            border-radius: 16px;
+            transition: transform 0.1s ease; /* Fast for tilt */
+            position: relative;
+            overflow: hidden;
         }
         
-        .section-title::after {
+        .feature-card::before {
             content: '';
-            flex-grow: 1;
-            height: 1px;
-            background: linear-gradient(90deg, var(--border-glass), transparent);
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .feature-card:hover::before { opacity: 1; }
+
+        .icon-box {
+            width: 50px; height: 50px;
+            background: rgba(0, 242, 255, 0.1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-cyan);
+            font-size: 1.2rem;
+            margin-bottom: 25px;
+        }
+
+        .feature-card h3 { font-size: 1.3rem; margin-bottom: 15px; }
+        .feature-card p { color: var(--text-dim); line-height: 1.6; font-size: 0.95rem; }
+
+        /* --- TERMINAL WINDOW --- */
+        .terminal-container {
+            background: #0f111a;
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            overflow: hidden;
+            font-family: var(--font-code);
+            margin-bottom: 40px;
+        }
+        
+        .term-header {
+            background: #1a1e29;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+        .term-controls { display: flex; gap: 8px; }
+        .control { width: 12px; height: 12px; border-radius: 50%; }
+        .red { background: #ff5f56; }
+        .yellow { background: #ffbd2e; }
+        .green { background: #27c93f; }
+        
+        .term-title { color: var(--text-dim); font-size: 0.8rem; }
+        
+        .term-body {
+            padding: 30px;
+            position: relative;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 20px; right: 20px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: 0.2s;
+            opacity: 0;
+        }
+        .term-body:hover .copy-btn { opacity: 1; }
+        .copy-btn:hover { background: var(--accent-cyan); color: #000; }
+
+        /* Syntax Highlighting */
+        pre { white-space: pre-wrap; color: #d4d4d4; font-size: 0.9rem; line-height: 1.7; }
+        .kwd { color: #ff79c6; }
+        .func { color: #8be9fd; }
+        .str { color: #f1fa8c; }
+        .num { color: #bd93f9; }
+        .com { color: #6272a4; font-style: italic; }
+        .op { color: #ff79c6; }
+
+        /* --- FOOTER --- */
+        footer {
+            border-top: 1px solid var(--border-light);
+            background: #010102;
+            padding: 80px 20px 40px;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+        }
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+        }
+        .footer-col h4 { color: #fff; margin-bottom: 20px; font-size: 1rem; }
+        .footer-col ul { list-style: none; }
+        .footer-col li { margin-bottom: 10px; }
+        .footer-col a { color: var(--text-dim); text-decoration: none; transition: 0.2s; }
+        .footer-col a:hover { color: var(--accent-cyan); }
+        
+        .copyright {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid #111;
+            font-size: 0.8rem;
         }
 
         /* --- RESPONSIVE --- */
         @media (max-width: 768px) {
             h1 { font-size: 3rem; }
-            .hud-v, .hud-h, .sys-stat { display: none; }
-            .grid-layout { grid-template-columns: 1fr; }
-            .container { padding: 80px 20px; }
+            .stats-bar { grid-template-columns: 1fr 1fr; }
+            .stat-item { border-bottom: 1px solid var(--border-light); }
+            .stat-item:nth-child(2), .stat-item:nth-child(4) { border-right: none; }
+            .nav-links { display: none; } /* Simplified for mobile */
         }
     </style>
 </head>
 <body>
 
-    <canvas id="physics-canvas"></canvas>
+    <canvas id="canvas-layer"></canvas>
 
-    <div class="hud-line hud-v"></div>
-    <div class="hud-line hud-h"></div>
-    
-    <div class="sys-stat">
-        SYSTEM: KINETRIX_CORE<br>
-        STATUS: ONLINE<br>
-        VERSION: 1.0.4<br>
-        PHYSICS: ACTIVE
-    </div>
+    <nav>
+        <div class="logo">
+            <i class="fa-solid fa-cube fa-spin" style="--fa-animation-duration: 10s;"></i>
+            KINETRIX<span>.IO</span>
+        </div>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#docs">Documentation</a>
+            <a href="#install">Installation</a>
+            <a href="https://github.com/M4dM0nk3y/Kinetrix">GitHub</a>
+        </div>
+        <a href="https://github.com/M4dM0nk3y/Kinetrix/archive/refs/heads/main.zip" class="btn-glass" style="padding: 8px 20px; border-radius: 4px; text-decoration: none; font-size: 0.8rem;">
+            v1.0 DOWNLOAD
+        </a>
+    </nav>
 
-    <div class="container">
-        
-        <header>
-            <h1>KINETRIX<span class="version-badge">v1.0</span></h1>
-            <p class="hero-desc">
-                The compiled robotics language for the modern engineer. 
-                High-level abstraction compiling directly to optimized C++ for real-time control.
+    <header>
+        <div class="fade-in-section">
+            <div class="hero-tag">🚀 NOW IN PUBLIC BETA</div>
+            <h1>ROBOTICS<br>RE-ENGINEERED.</h1>
+            <p class="hero-sub">
+                The first compiled language built specifically for Raspberry Pi and Arduino constraints. 
+                Write high-level code. Compile to raw C++. Zero overhead.
             </p>
-            
-            <div class="cta-container">
-                <a href="https://github.com/M4dM0nk3y/Kinetrix/archive/refs/heads/main.zip" class="btn btn-primary">
-                    DOWNLOAD COMPILER
+            <div class="btn-group">
+                <a href="#install" class="btn btn-primary">
+                    <i class="fa-solid fa-terminal"></i> Start Coding
                 </a>
-                <a href="https://github.com/M4dM0nk3y/Kinetrix" class="btn">
-                    GITHUB REPO
+                <a href="#docs" class="btn btn-glass">
+                    <i class="fa-solid fa-book"></i> Read Docs
                 </a>
-            </div>
-        </header>
-
-        <div class="grid-layout">
-            
-            <div class="section-title">01 // INITIALIZATION</div>
-            
-            <div class="code-card" style="grid-column: 1 / -1;">
-                <div class="card-header">
-                    <span class="file-name">terminal — bash</span>
-                    <div class="dots"><div class="dot active-dot"></div><div class="dot"></div></div>
-                </div>
-                <pre>
-<span class="com"># Clone repository to Raspberry Pi / Linux Env</span>
-git clone https://github.com/M4dM0nk3y/Kinetrix.git
-
-<span class="com"># Execute installation script</span>
-cd Kinetrix
-./install.sh</pre>
-            </div>
-
-            <div class="section-title">02 // KERNEL LOGIC</div>
-
-            <div class="code-card">
-                <div class="card-header">
-                    <span class="file-name">kinematics.knx</span>
-                    <div class="dots"><div class="dot"></div><div class="dot"></div></div>
-                </div>
-                <pre>
-<span class="com"># Inverse Kinematics Calculation</span>
-<span class="kwd">make var</span> theta = <span class="num">90.5</span>
-<span class="kwd">make var</span> len = <span class="num">100</span>
-
-<span class="kwd">make var</span> posX = <span class="func">cos</span>(theta) * len
-<span class="kwd">make var</span> posY = <span class="func">sin</span>(theta) * len
-
-<span class="kwd">make var</span> joint_angle = <span class="func">acos</span>(<span class="num">0.5</span>)</pre>
-            </div>
-
-            <div class="code-card">
-                <div class="card-header">
-                    <span class="file-name">io_control.knx</span>
-                    <div class="dots"><div class="dot"></div><div class="dot"></div></div>
-                </div>
-                <pre>
-<span class="com"># Real-time Sensor Loop</span>
-<span class="kwd">make var</span> sensor = <span class="kwd">read analog pin</span> <span class="num">0</span>
-
-<span class="kwd">if</span> sensor > <span class="num">500</span> {
-    <span class="kwd">turn on</span> <span class="num">13</span>
-    <span class="kwd">servo</span> <span class="num">9</span> <span class="kwd">set</span> <span class="num">45</span>
-} <span class="kwd">else</span> {
-    <span class="kwd">turn off</span> <span class="num">13</span>
-}</pre>
-            </div>
-
-            <div class="section-title">03 // PROTOCOLS & MEMORY</div>
-
-            <div class="code-card">
-                <div class="card-header">
-                    <span class="file-name">memory_alloc.knx</span>
-                    <div class="dots"><div class="dot"></div><div class="dot"></div></div>
-                </div>
-                <pre>
-<span class="com"># Dynamic Array Allocation</span>
-<span class="kwd">make array</span> telemetry <span class="kwd">size</span> <span class="num">128</span>
-
-<span class="kwd">set array</span> telemetry <span class="kwd">at</span> <span class="num">0</span> <span class="kwd">to</span> <span class="num">12.5</span>
-<span class="kwd">make var</span> last_val = telemetry[<span class="num">0</span>]</pre>
-            </div>
-
-            <div class="code-card">
-                <div class="card-header">
-                    <span class="file-name">i2c_bus.knx</span>
-                    <div class="dots"><div class="dot"></div><div class="dot"></div></div>
-                </div>
-                <pre>
-<span class="com"># I2C Communication (MPU6050)</span>
-<span class="kwd">i2c begin</span>
-<span class="kwd">i2c start</span> <span class="num">0x68</span>      <span class="com"># Device Addr</span>
-<span class="kwd">i2c send</span> <span class="num">0x6B</span>       <span class="com"># Register</span>
-<span class="kwd">i2c stop</span>
-
-<span class="kwd">make var</span> raw = <span class="kwd">read i2c</span> <span class="num">0x68</span></pre>
             </div>
         </div>
-        
-        <footer style="margin-top: 100px; padding: 40px 0; border-top: 1px solid var(--border-glass); text-align: center; color: var(--text-dim); font-size: 0.8rem;">
-            ENGINEERED BY M4DM0NK3Y &copy; 2026 // KINETRIX SYSTEMS
-        </footer>
+    </header>
+
+    <section class="stats-bar fade-in-section">
+        <div class="stat-item">
+            <span class="stat-val">&lt;1ms</span>
+            <span class="stat-label">Execution Latency</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-val">C++17</span>
+            <span class="stat-label">Native Compilation</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-val">100%</span>
+            <span class="stat-label">Hardware Access</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-val">4KB</span>
+            <span class="stat-label">Min Runtime Size</span>
+        </div>
+    </section>
+
+    <div class="section-container" id="features">
+        <div class="section-header fade-in-section">
+            <h2>Why Kinetrix?</h2>
+            <p>Designed for the edge. Optimized for control.</p>
+        </div>
+
+        <div class="feature-grid">
+            <div class="feature-card tilt-card fade-in-section">
+                <div class="icon-box"><i class="fa-solid fa-bolt"></i></div>
+                <h3>Real-Time Core</h3>
+                <p>Deterministic execution model ensures your servos and sensors react instantly. No garbage collection pauses.</p>
+            </div>
+            <div class="feature-card tilt-card fade-in-section">
+                <div class="icon-box"><i class="fa-solid fa-microchip"></i></div>
+                <h3>Hardware Native</h3>
+                <p>Direct memory access to GPIO, I2C, and SPI interfaces. If the hardware can do it, Kinetrix can control it.</p>
+            </div>
+            <div class="feature-card tilt-card fade-in-section">
+                <div class="icon-box"><i class="fa-solid fa-code-branch"></i></div>
+                <h3>Math Integrated</h3>
+                <p>Built-in Inverse Kinematics and Matrix math libraries optimized for robotic arms and drone flight controllers.</p>
+            </div>
+        </div>
     </div>
 
+    <div class="section-container" style="background: radial-gradient(circle at center, rgba(112, 0, 255, 0.05), transparent 70%);">
+        <div class="section-header fade-in-section" style="text-align: center; border: none;">
+            <h2>Compiler Pipeline</h2>
+            <p>See how Kinetrix transforms logic into machine code.</p>
+        </div>
+
+        <div class="terminal-container fade-in-section">
+            <div class="term-header">
+                <div class="term-controls"><div class="control red"></div><div class="control yellow"></div><div class="control green"></div></div>
+                <div class="term-title">build_process.sh</div>
+            </div>
+            <div class="term-body" style="font-size: 0.85rem;">
+                <div id="typewriter" style="color: var(--accent-success); min-height: 150px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-container" id="docs">
+        <div class="section-header fade-in-section">
+            <h2>Syntax Reference</h2>
+            <p>Clean. Readable. Powerful.</p>
+        </div>
+
+        <div class="fade-in-section">
+            <h4 style="margin-bottom: 15px; color: #fff;">01. Installation</h4>
+            <div class="terminal-container" id="install">
+                <div class="term-header">
+                    <div class="term-controls"><div class="control red"></div><div class="control yellow"></div></div>
+                    <div class="term-title">bash</div>
+                </div>
+                <div class="term-body">
+                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                    <pre>git clone https://github.com/M4dM0nk3y/Kinetrix.git
+cd Kinetrix
+./install.sh</pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="fade-in-section">
+            <h4 style="margin-bottom: 15px; color: #fff;">02. Logic & Control</h4>
+            <div class="terminal-container">
+                <div class="term-header">
+                    <div class="term-controls"><div class="control red"></div><div class="control yellow"></div></div>
+                    <div class="term-title">main.knx</div>
+                </div>
+                <div class="term-body">
+                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                    <pre><span class="com"># Read Sensor and Actuate</span>
+<span class="kwd">make var</span> dist = <span class="func">read analog pin</span> <span class="num">0</span>
+
+<span class="kwd">if</span> dist < <span class="num">20</span> {
+    <span class="kwd">turn on</span> <span class="num">13</span>
+    <span class="kwd">servo</span> <span class="num">9</span> <span class="kwd">set</span> <span class="num">180</span>
+} <span class="kwd">else</span> {
+    <span class="kwd">turn off</span> <span class="num">13</span>
+    <span class="kwd">wait</span> <span class="num">100</span>
+}</pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="fade-in-section">
+            <h4 style="margin-bottom: 15px; color: #fff;">03. Inverse Kinematics</h4>
+            <div class="terminal-container">
+                <div class="term-header">
+                    <div class="term-controls"><div class="control red"></div><div class="control yellow"></div></div>
+                    <div class="term-title">arm.knx</div>
+                </div>
+                <div class="term-body">
+                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                    <pre><span class="com"># Calculate Joint Angles</span>
+<span class="kwd">make var</span> target_x = <span class="num">50.5</span>
+<span class="kwd">make var</span> theta = <span class="func">acos</span>(target_x / <span class="num">100</span>)
+<span class="kwd">make var</span> servo_val = theta * <span class="num">180</span> / <span class="num">3.14159</span></pre>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-col">
+                <div class="logo" style="margin-bottom: 20px;">KINETRIX</div>
+                <p>Empowering the next generation of robotics engineers with efficient, compiled tools.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="#">Documentation</a></li>
+                    <li><a href="#">API Reference</a></li>
+                    <li><a href="#">Examples</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Community</h4>
+                <ul>
+                    <li><a href="https://github.com/M4dM0nk3y/Kinetrix">GitHub</a></li>
+                    <li><a href="#">Discord</a></li>
+                    <li><a href="#">Contribute</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="#">MIT License</a></li>
+                    <li><a href="#">Privacy Policy</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="copyright">
+            &copy; 2026 M4DM0NK3Y. All rights reserved. Built for the future.
+        </div>
+    </footer>
+
     <script>
-        const canvas = document.getElementById('physics-canvas');
+        // --- 1. COPY TO CLIPBOARD ---
+        function copyToClipboard(btn) {
+            const pre = btn.nextElementSibling;
+            const text = pre.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = btn.innerText;
+                btn.innerText = "Copied!";
+                btn.style.background = "#00ff9d";
+                btn.style.color = "#000";
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.style.background = "";
+                    btn.style.color = "";
+                }, 2000);
+            });
+        }
+
+        // --- 2. SCROLL ANIMATION (INTERSECTION OBSERVER) ---
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.fade-in-section').forEach(section => {
+            observer.observe(section);
+        });
+
+        // --- 3. 3D TILT EFFECT ---
+        document.querySelectorAll('.tilt-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                const rotateX = ((y - centerY) / centerY) * -5; // Max 5deg tilt
+                const rotateY = ((x - centerX) / centerX) * 5;
+
+                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+            });
+
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)';
+            });
+        });
+
+        // --- 4. TYPEWRITER EFFECT ---
+        const typeText = [
+            "> Initializing Kinetrix Compiler...",
+            "> Parsing source code...",
+            "> Optimizing logic trees...",
+            "> Generating C++ intermediates...",
+            "> GCC Build: SUCCESS [0.04s]",
+            "> Uploading to Device... DONE."
+        ];
+        const typeWriterElement = document.getElementById('typewriter');
+        let lineIndex = 0;
+        let charIndex = 0;
+
+        function typeLine() {
+            if (lineIndex < typeText.length) {
+                if (charIndex < typeText[lineIndex].length) {
+                    typeWriterElement.innerHTML += typeText[lineIndex].charAt(charIndex);
+                    charIndex++;
+                    setTimeout(typeLine, 30); // Typing speed
+                } else {
+                    typeWriterElement.innerHTML += "<br>";
+                    lineIndex++;
+                    charIndex = 0;
+                    setTimeout(typeLine, 400); // Pause between lines
+                }
+            } else {
+                // Reset loop
+                setTimeout(() => {
+                    typeWriterElement.innerHTML = "";
+                    lineIndex = 0;
+                    typeLine();
+                }, 3000);
+            }
+        }
+        // Start typing when element is in view
+        const typeObserver = new IntersectionObserver((entries) => {
+            if(entries[0].isIntersecting && lineIndex === 0) typeLine();
+        });
+        typeObserver.observe(typeWriterElement);
+
+
+        // --- 5. PARTICLE PHYSICS ENGINE ---
+        const canvas = document.getElementById('canvas-layer');
         const ctx = canvas.getContext('2d');
-        
         let width, height;
         let particles = [];
 
-        // Configuration
-        const particleCount = 60;
-        const connectionDistance = 150;
-        const mouseDistance = 200;
-
-        // Resize handling
         function resize() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
@@ -386,90 +688,59 @@ cd Kinetrix
         window.addEventListener('resize', resize);
         resize();
 
-        // Mouse tracking
-        let mouse = { x: null, y: null };
-        window.addEventListener('mousemove', (e) => {
-            mouse.x = e.x;
-            mouse.y = e.y;
-        });
-
         class Particle {
             constructor() {
+                this.reset();
+            }
+            reset() {
                 this.x = Math.random() * width;
                 this.y = Math.random() * height;
                 this.vx = (Math.random() - 0.5) * 0.5;
                 this.vy = (Math.random() - 0.5) * 0.5;
-                this.size = Math.random() * 2 + 1;
+                this.size = Math.random() * 2;
+                this.alpha = Math.random() * 0.5 + 0.1;
             }
-
             update() {
                 this.x += this.vx;
                 this.y += this.vy;
-
-                // Bounce off edges
-                if (this.x < 0 || this.x > width) this.vx *= -1;
-                if (this.y < 0 || this.y > height) this.vy *= -1;
-
-                // Mouse interaction
-                if (mouse.x != null) {
-                    let dx = mouse.x - this.x;
-                    let dy = mouse.y - this.y;
-                    let distance = Math.sqrt(dx*dx + dy*dy);
-                    if (distance < mouseDistance) {
-                        const forceDirectionX = dx / distance;
-                        const forceDirectionY = dy / distance;
-                        const force = (mouseDistance - distance) / mouseDistance;
-                        const directionX = forceDirectionX * force * 0.6; // Push strength
-                        const directionY = forceDirectionY * force * 0.6;
-                        this.vx -= directionX;
-                        this.vy -= directionY;
-                    }
-                }
+                if (this.x < 0 || this.x > width || this.y < 0 || this.y > height) this.reset();
             }
-
             draw() {
-                ctx.fillStyle = 'rgba(0, 242, 255, 0.5)';
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(112, 0, 255, ${this.alpha})`; // Violet particles
                 ctx.fill();
             }
         }
 
-        function init() {
+        function initParticles() {
             particles = [];
-            for (let i = 0; i < particleCount; i++) {
-                particles.push(new Particle());
-            }
+            for(let i=0; i<80; i++) particles.push(new Particle());
         }
+        initParticles();
 
         function animate() {
             ctx.clearRect(0, 0, width, height);
-            
-            for (let i = 0; i < particles.length; i++) {
-                particles[i].update();
-                particles[i].draw();
-                
-                // Draw connections
-                for (let j = i; j < particles.length; j++) {
-                    let dx = particles[i].x - particles[j].x;
-                    let dy = particles[i].y - particles[j].y;
-                    let distance = Math.sqrt(dx*dx + dy*dy);
-
-                    if (distance < connectionDistance) {
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+                // Link nearby particles
+                particles.forEach(p2 => {
+                    let dx = p.x - p2.x;
+                    let dy = p.y - p2.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 100) {
                         ctx.beginPath();
-                        let opacity = 1 - (distance / connectionDistance);
-                        ctx.strokeStyle = 'rgba(0, 242, 255, ' + opacity * 0.15 + ')';
-                        ctx.lineWidth = 1;
-                        ctx.moveTo(particles[i].x, particles[i].y);
-                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(0, 242, 255, ${0.1 - dist/1000})`; // Cyan lines
+                        ctx.lineWidth = 0.5;
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
                         ctx.stroke();
                     }
-                }
-            }
+                });
+            });
             requestAnimationFrame(animate);
         }
-
-        init();
         animate();
     </script>
 </body>
