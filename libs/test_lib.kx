@@ -1,6 +1,0 @@
-def library_test {
-    print "The Linker is Working!"
-    turn on 13
-    wait 500
-    turn off 13
-}
