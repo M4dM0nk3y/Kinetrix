@@ -91,9 +91,7 @@
         .msg-text { font-size: 0.95rem; color: var(--text-dim); line-height: 1.5; word-break: break-word; }
 
         /* ADMIN DELETE BUTTON */
-        .delete-btn {
-            display: none; margin-left: auto; color: #444; cursor: pointer; transition: 0.2s; font-size: 0.8rem;
-        }
+        .delete-btn { display: none; margin-left: auto; color: #444; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
         .delete-btn:hover { color: var(--accent-danger); }
         body.is-admin .delete-btn { display: block; }
 
@@ -190,7 +188,7 @@
             <div class="input-area">
                 <div class="input-box">
                     <input type="text" id="chatInput" placeholder="Transmit encrypted data..." disabled>
-                    <i class="fa-solid fa-paper-plane add-btn" onclick="sendMessage()" style="cursor: pointer; color: var(--accent-cyan);"></i>
+                    <i class="fa-solid fa-paper-plane add-btn" style="color: var(--accent-cyan); cursor:pointer;" onclick="sendMessage()"></i>
                 </div>
             </div>
         </main>
@@ -213,7 +211,7 @@
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         // =========================================================
-        // YOUR PUBLIC KEYS (SAFE TO SHOW)
+        // YOUR FIREBASE KEYS (Restored)
         // =========================================================
         const firebaseConfig = {
             apiKey: "AIzaSyAfnqjlv6QbYE4RhyeX_asispfFUB4H4HE",
@@ -231,7 +229,6 @@
         const auth = getAuth(app);
         const messagesRef = ref(db, 'messages');
 
-        // UI
         const authScreen = document.getElementById('authScreen');
         const appContainer = document.getElementById('appContainer');
         const emailInput = document.getElementById('emailInput');
@@ -241,7 +238,7 @@
         const chatInput = document.getElementById('chatInput');
         const msgList = document.getElementById('msgList');
 
-        // --- AUTH & ADMIN CHECK (OBFUSCATED) ---
+        // --- AUTH & ADMIN CHECK ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 authScreen.style.display = 'none';
@@ -250,15 +247,12 @@
                 chatInput.disabled = false;
                 msgList.innerHTML = ""; 
 
-                // ===============================================
                 // ADMIN CHECK (Using your UID)
-                // ===============================================
                 if (user.uid === "iIKUMQdG9QN7q1lqQXdlKA1o74I2") {
                     document.body.classList.add('is-admin');
                 } else {
                     document.body.classList.remove('is-admin');
                 }
-
             } else {
                 authScreen.style.display = 'flex';
                 appContainer.classList.remove('logged-in');
@@ -292,21 +286,17 @@
         window.deleteMessage = function(key) {
             if (!confirm("CONFIRM DELETION: This cannot be undone.")) return;
             const exactMsgRef = ref(db, 'messages/' + key);
-            remove(exactMsgRef)
-                .then(() => console.log("Terminated."))
-                .catch((error) => alert("Error: " + error.message));
+            remove(exactMsgRef);
         };
 
         // --- RENDER ---
         onChildAdded(messagesRef, (snapshot) => {
             const data = snapshot.val();
-            const key = snapshot.key;
-            renderMessage(data.user, data.text, data.timestamp, key);
+            renderMessage(data.user, data.text, data.timestamp, snapshot.key);
         });
 
         onChildRemoved(messagesRef, (snapshot) => {
-            const key = snapshot.key;
-            const el = document.getElementById(key);
+            const el = document.getElementById(snapshot.key);
             if (el) { el.classList.add('deleting'); setTimeout(() => el.remove(), 300); }
         });
 
@@ -341,12 +331,20 @@
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        /* --- HYPER-PHYSICS ENGINE (Copied from Main Page) --- */
+        /* =========================================================
+           ADVANCED NEURAL NETWORK PHYSICS ENGINE
+           ========================================================= */
         const canvas = document.getElementById('fx-canvas');
         const ctx = canvas.getContext('2d');
         let width, height;
-        let particles = [];
-        let mouse = { x: -1000, y: -1000 }; 
+        
+        // Mouse State
+        let mouse = { x: null, y: null, radius: 150 };
+
+        window.addEventListener('mousemove', (event) => {
+            mouse.x = event.x;
+            mouse.y = event.y;
+        });
 
         function resize() {
             width = canvas.width = window.innerWidth;
@@ -355,93 +353,100 @@
         window.addEventListener('resize', resize);
         resize();
 
-        window.addEventListener('mousemove', (e) => {
-            mouse.x = e.clientX;
-            mouse.y = e.clientY;
-        });
-
-        window.addEventListener('mousedown', (e) => {
-            particles.forEach(p => {
-                let dx = p.x - e.clientX;
-                let dy = p.y - e.clientY;
-                let dist = Math.sqrt(dx*dx + dy*dy);
-                if (dist < 300) { 
-                    let force = (300 - dist) / 300;
-                    let angle = Math.atan2(dy, dx);
-                    p.vx += Math.cos(angle) * force * 15;
-                    p.vy += Math.sin(angle) * force * 15;
-                }
-            });
-        });
-
         class Particle {
             constructor() {
                 this.x = Math.random() * width;
                 this.y = Math.random() * height;
-                this.vx = (Math.random() - 0.5) * 1.5;
-                this.vy = (Math.random() - 0.5) * 1.5;
-                this.size = Math.random() * 2;
-                this.friction = 0.98;
+                this.vx = (Math.random() - 0.5) * 1; 
+                this.vy = (Math.random() - 0.5) * 1; 
+                this.size = Math.random() * 2 + 1;
+                this.baseX = this.x;
+                this.baseY = this.y;
+                this.density = (Math.random() * 30) + 1;
             }
 
             update() {
-                let dx = mouse.x - this.x;
-                let dy = mouse.y - this.y;
-                let dist = Math.sqrt(dx*dx + dy*dy);
-                
-                if (dist < 250) { 
-                    let force = (250 - dist) / 250;
-                    this.vx += (dx / dist) * force * 0.5;
-                    this.vy += (dy / dist) * force * 0.5;
+                // Mouse Interaction (Gravity Well)
+                if (mouse.x != null) {
+                    let dx = mouse.x - this.x;
+                    let dy = mouse.y - this.y;
+                    let distance = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if (distance < mouse.radius) {
+                        const forceDirectionX = dx / distance;
+                        const forceDirectionY = dy / distance;
+                        const force = (mouse.radius - distance) / mouse.radius;
+                        const directionX = forceDirectionX * force * this.density;
+                        const directionY = forceDirectionY * force * this.density;
+                        
+                        this.vx += directionX * 0.05;
+                        this.vy += directionY * 0.05;
+                    }
                 }
 
+                // Normal Movement
                 this.x += this.vx;
                 this.y += this.vy;
-                this.vx *= this.friction;
-                this.vy *= this.friction;
 
-                if (Math.abs(this.vx) < 0.2) this.vx += (Math.random() - 0.5) * 0.1;
-                if (Math.abs(this.vy) < 0.2) this.vy += (Math.random() - 0.5) * 0.1;
-
+                // Wall Bouncing
                 if (this.x < 0 || this.x > width) this.vx *= -1;
                 if (this.y < 0 || this.y > height) this.vy *= -1;
+
+                // Friction (Slow down if too fast)
+                if(Math.abs(this.vx) > 2) this.vx *= 0.9;
+                if(Math.abs(this.vy) > 2) this.vy *= 0.9;
             }
 
             draw() {
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                let speed = Math.abs(this.vx) + Math.abs(this.vy);
-                let alpha = Math.min(0.8, speed * 0.2 + 0.1);
-                ctx.fillStyle = `rgba(0, 242, 255, ${alpha})`; 
+                ctx.fillStyle = 'rgba(0, 242, 255, 0.8)';
                 ctx.fill();
             }
         }
 
-        for(let i=0; i<100; i++) particles.push(new Particle());
+        // Initialize Particles
+        let particlesArray = [];
+        function init() {
+            particlesArray = [];
+            let numberOfParticles = (canvas.height * canvas.width) / 15000; // Density
+            for (let i = 0; i < numberOfParticles; i++) {
+                particlesArray.push(new Particle());
+            }
+        }
 
-        function animate() {
-            ctx.clearRect(0, 0, width, height);
-            particles.forEach((p, index) => {
-                p.update();
-                p.draw();
-                for (let j = index + 1; j < particles.length; j++) {
-                    let p2 = particles[j];
-                    let dx = p.x - p2.x;
-                    let dy = p.y - p2.y;
-                    let dist = Math.sqrt(dx*dx + dy*dy);
-                    if (dist < 120) {
+        function connect() {
+            for (let a = 0; a < particlesArray.length; a++) {
+                for (let b = a; b < particlesArray.length; b++) {
+                    let distance = ((particlesArray[a].x - particlesArray[b].x) * (particlesArray[a].x - particlesArray[b].x))
+                                 + ((particlesArray[a].y - particlesArray[b].y) * (particlesArray[a].y - particlesArray[b].y));
+                    
+                    // Draw Line if close enough
+                    if (distance < (canvas.width/9) * (canvas.height/9)) {
+                        let opacityValue = 1 - (distance / 20000);
+                        ctx.strokeStyle = 'rgba(0, 242, 255,' + opacityValue + ')';
+                        ctx.lineWidth = 1;
                         ctx.beginPath();
-                        let opacity = (1 - dist / 120) * 0.5;
-                        ctx.strokeStyle = `rgba(112, 0, 255, ${opacity})`;
-                        ctx.lineWidth = 0.5;
-                        ctx.moveTo(p.x, p.y);
-                        ctx.lineTo(p2.x, p2.y);
+                        ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
+                        ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
                         ctx.stroke();
                     }
                 }
-            });
-            requestAnimationFrame(animate);
+            }
         }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            ctx.clearRect(0, 0, width, height);
+            
+            for (let i = 0; i < particlesArray.length; i++) {
+                particlesArray[i].update();
+                particlesArray[i].draw();
+            }
+            connect();
+        }
+
+        init();
         animate();
     </script>
 </body>
