@@ -212,6 +212,9 @@
         import { getDatabase, ref, push, remove, onChildAdded, onChildRemoved } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+        // =========================================================
+        // YOUR PUBLIC KEYS (SAFE TO SHOW)
+        // =========================================================
         const firebaseConfig = {
             apiKey: "AIzaSyAfnqjlv6QbYE4RhyeX_asispfFUB4H4HE",
             authDomain: "kinetrix-community.firebaseapp.com",
@@ -221,12 +224,14 @@
             messagingSenderId: "354416625031",
             appId: "1:354416625031:web:bc2eca4beb0f22ea707f22"
         };
+        // =========================================================
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const auth = getAuth(app);
         const messagesRef = ref(db, 'messages');
 
+        // UI
         const authScreen = document.getElementById('authScreen');
         const appContainer = document.getElementById('appContainer');
         const emailInput = document.getElementById('emailInput');
@@ -236,7 +241,7 @@
         const chatInput = document.getElementById('chatInput');
         const msgList = document.getElementById('msgList');
 
-        // --- AUTH & ADMIN CHECK ---
+        // --- AUTH & ADMIN CHECK (OBFUSCATED) ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 authScreen.style.display = 'none';
@@ -245,7 +250,9 @@
                 chatInput.disabled = false;
                 msgList.innerHTML = ""; 
 
+                // ===============================================
                 // ADMIN CHECK (Using your UID)
+                // ===============================================
                 if (user.uid === "iIKUMQdG9QN7q1lqQXdlKA1o74I2") {
                     document.body.classList.add('is-admin');
                 } else {
@@ -270,6 +277,7 @@
         };
         window.handleLogout = function() { signOut(auth); };
 
+        // --- CHAT LOGIC ---
         window.sendMessage = function() {
             const text = chatInput.value;
             const user = auth.currentUser;
@@ -289,6 +297,7 @@
                 .catch((error) => alert("Error: " + error.message));
         };
 
+        // --- RENDER ---
         onChildAdded(messagesRef, (snapshot) => {
             const data = snapshot.val();
             const key = snapshot.key;
@@ -332,13 +341,108 @@
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        const cvs = document.getElementById('fx-canvas'); const ctx = cvs.getContext('2d'); let w, h;
-        function resize() { w = cvs.width = window.innerWidth; h = cvs.height = window.innerHeight; }
-        window.addEventListener('resize', resize); resize();
-        let parts = []; for(let i=0; i<40; i++) parts.push({x: Math.random()*w, y: Math.random()*h, vx: (Math.random()-0.5)*0.5, vy: (Math.random()-0.5)*0.5});
-        function anim() { ctx.clearRect(0,0,w,h); ctx.fillStyle = 'rgba(0, 242, 255, 0.2)';
-            parts.forEach(p => { p.x += p.vx; p.y += p.vy; if(p.x<0) p.x=w; if(p.x>w) p.x=0; if(p.y<0) p.y=h; if(p.y>h) p.y=0; ctx.beginPath(); ctx.arc(p.x, p.y, 1, 0, Math.PI*2); ctx.fill(); });
-            requestAnimationFrame(anim); } anim();
+        /* --- HYPER-PHYSICS ENGINE (Copied from Main Page) --- */
+        const canvas = document.getElementById('fx-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+        let mouse = { x: -1000, y: -1000 }; 
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        window.addEventListener('mousedown', (e) => {
+            particles.forEach(p => {
+                let dx = p.x - e.clientX;
+                let dy = p.y - e.clientY;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < 300) { 
+                    let force = (300 - dist) / 300;
+                    let angle = Math.atan2(dy, dx);
+                    p.vx += Math.cos(angle) * force * 15;
+                    p.vy += Math.sin(angle) * force * 15;
+                }
+            });
+        });
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 1.5;
+                this.vy = (Math.random() - 0.5) * 1.5;
+                this.size = Math.random() * 2;
+                this.friction = 0.98;
+            }
+
+            update() {
+                let dx = mouse.x - this.x;
+                let dy = mouse.y - this.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist < 250) { 
+                    let force = (250 - dist) / 250;
+                    this.vx += (dx / dist) * force * 0.5;
+                    this.vy += (dy / dist) * force * 0.5;
+                }
+
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vx *= this.friction;
+                this.vy *= this.friction;
+
+                if (Math.abs(this.vx) < 0.2) this.vx += (Math.random() - 0.5) * 0.1;
+                if (Math.abs(this.vy) < 0.2) this.vy += (Math.random() - 0.5) * 0.1;
+
+                if (this.x < 0 || this.x > width) this.vx *= -1;
+                if (this.y < 0 || this.y > height) this.vy *= -1;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                let speed = Math.abs(this.vx) + Math.abs(this.vy);
+                let alpha = Math.min(0.8, speed * 0.2 + 0.1);
+                ctx.fillStyle = `rgba(0, 242, 255, ${alpha})`; 
+                ctx.fill();
+            }
+        }
+
+        for(let i=0; i<100; i++) particles.push(new Particle());
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            particles.forEach((p, index) => {
+                p.update();
+                p.draw();
+                for (let j = index + 1; j < particles.length; j++) {
+                    let p2 = particles[j];
+                    let dx = p.x - p2.x;
+                    let dy = p.y - p2.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 120) {
+                        ctx.beginPath();
+                        let opacity = (1 - dist / 120) * 0.5;
+                        ctx.strokeStyle = `rgba(112, 0, 255, ${opacity})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.stroke();
+                    }
+                }
+            });
+            requestAnimationFrame(animate);
+        }
+        animate();
     </script>
 </body>
 </html>
