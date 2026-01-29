@@ -44,7 +44,7 @@
         .app-container {
             display: grid; grid-template-columns: 250px 1fr 250px;
             width: 100%; height: 100%;
-            opacity: 0; transition: opacity 1s; /* Hidden until login */
+            opacity: 0; transition: opacity 1s;
         }
         .app-container.logged-in { opacity: 1; }
 
@@ -77,8 +77,9 @@
         .messages-list::-webkit-scrollbar { width: 8px; }
         .messages-list::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
 
-        .msg { display: flex; gap: 15px; animation: fadeIn 0.3s ease; }
+        .msg { display: flex; gap: 15px; animation: fadeIn 0.3s ease; position: relative; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .msg.deleting { opacity: 0; transform: scale(0.9); transition: 0.3s; }
 
         .avatar {
             width: 40px; height: 40px; border-radius: 50%; background: #222; flex-shrink: 0;
@@ -88,6 +89,13 @@
         .msg-content h4 { font-size: 0.9rem; color: #fff; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
         .timestamp { font-size: 0.7rem; color: #555; font-weight: 400; }
         .msg-text { font-size: 0.95rem; color: var(--text-dim); line-height: 1.5; word-break: break-word; }
+
+        /* ADMIN DELETE BUTTON */
+        .delete-btn {
+            display: none; margin-left: auto; color: #444; cursor: pointer; transition: 0.2s; font-size: 0.8rem;
+        }
+        .delete-btn:hover { color: var(--accent-danger); }
+        body.is-admin .delete-btn { display: block; }
 
         .input-area { padding: 20px 25px; background: var(--bg-sidebar); border-top: 1px solid var(--border); }
         .input-box {
@@ -101,7 +109,6 @@
         .member { display: flex; align-items: center; gap: 10px; padding: 8px 0; opacity: 0.8; transition: 0.2s; }
         .bot-tag { background: var(--accent-violet); font-size: 0.6rem; padding: 1px 4px; border-radius: 3px; color: #fff; }
 
-        /* --- AUTH SCREEN --- */
         .auth-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #050508; z-index: 2000;
@@ -119,15 +126,12 @@
         }
         .auth-btn {
             width: 100%; padding: 15px; border: none; font-weight: 700; cursor: pointer;
-            border-radius: 4px; font-family: var(--font-code); transition: 0.2s;
-            margin-bottom: 10px;
+            border-radius: 4px; font-family: var(--font-code); transition: 0.2s; margin-bottom: 10px;
         }
         .btn-login { background: var(--accent-cyan); color: #000; }
         .btn-login:hover { box-shadow: 0 0 20px rgba(0, 242, 255, 0.4); }
-        
         .btn-register { background: transparent; border: 1px solid var(--accent-violet); color: var(--accent-violet); }
         .btn-register:hover { background: var(--accent-violet); color: #fff; }
-
         .error-msg { color: var(--accent-danger); font-size: 0.8rem; margin-bottom: 15px; display: none; }
 
         @media (max-width: 900px) {
@@ -145,12 +149,9 @@
         <div class="auth-box">
             <h2 style="color:#fff; margin-bottom:5px; font-family: var(--font-code);">SECURE LOGIN</h2>
             <p style="color:#666; margin-bottom:30px; font-size:0.8rem;">AUTHENTICATION REQUIRED TO ACCESS MAINFRAME</p>
-            
             <div id="authError" class="error-msg">INVALID CREDENTIALS</div>
-
             <input type="email" id="emailInput" class="auth-input" placeholder="ACCESS ID (EMAIL)">
             <input type="password" id="passInput" class="auth-input" placeholder="PASSPHRASE">
-            
             <button class="auth-btn btn-login" onclick="handleLogin()">AUTHENTICATE</button>
             <button class="auth-btn btn-register" onclick="handleRegister()">NEW USER REGISTRATION</button>
         </div>
@@ -159,20 +160,16 @@
     <div class="app-container" id="appContainer">
         <nav class="sidebar">
             <div class="server-header"><i class="fa-solid fa-cube"></i> KINETRIX<span>.NET</span></div>
-            
             <div style="margin-bottom: 25px;">
                 <div class="group-title">Secure Channels</div>
                 <div class="channel active"><i class="fa-solid fa-hashtag"></i> <span>global-uplink</span></div>
             </div>
-
             <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid #222;">
                 <div style="font-size:0.7rem; color:#666; margin-bottom:10px;">LOGGED IN AS:</div>
                 <div id="currentUserDisplay" style="color:var(--accent-cyan); font-family:var(--font-code); font-size:0.8rem; margin-bottom:15px; overflow:hidden; text-overflow:ellipsis;">...</div>
-                
                 <a href="#" onclick="handleLogout()" class="channel" style="color: var(--accent-danger);">
                     <i class="fa-solid fa-power-off"></i> <span>Disconnect</span>
                 </a>
-                
                 <a href="index.html" class="channel" style="color: var(--accent-violet); margin-top: 5px;">
                     <i class="fa-solid fa-arrow-left"></i> <span>Exit to Home</span>
                 </a>
@@ -185,15 +182,11 @@
                 <h3>global-uplink</h3>
                 <div class="topic">Encrypted Stream. Authorized Personnel Only.</div>
             </div>
-
             <div class="messages-list" id="msgList">
                 <div class="msg" style="opacity: 0.5;">
-                    <div class="msg-content">
-                        <div class="msg-text"><i>Establishing secure handshake...</i></div>
-                    </div>
+                    <div class="msg-content"><div class="msg-text"><i>Establishing secure handshake...</i></div></div>
                 </div>
             </div>
-
             <div class="input-area">
                 <div class="input-box">
                     <input type="text" id="chatInput" placeholder="Transmit encrypted data..." disabled>
@@ -216,12 +209,9 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, push, remove, onChildAdded, onChildRemoved } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // =========================================================
-        // YOUR FIREBASE KEYS (Extracted from your screenshot)
-        // =========================================================
         const firebaseConfig = {
             apiKey: "AIzaSyAfnqjlv6QbYE4RhyeX_asispfFUB4H4HE",
             authDomain: "kinetrix-community.firebaseapp.com",
@@ -231,15 +221,12 @@
             messagingSenderId: "354416625031",
             appId: "1:354416625031:web:bc2eca4beb0f22ea707f22"
         };
-        // =========================================================
 
-        // Init Firebase
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const auth = getAuth(app);
         const messagesRef = ref(db, 'messages');
 
-        // UI Elements
         const authScreen = document.getElementById('authScreen');
         const appContainer = document.getElementById('appContainer');
         const emailInput = document.getElementById('emailInput');
@@ -249,91 +236,78 @@
         const chatInput = document.getElementById('chatInput');
         const msgList = document.getElementById('msgList');
 
-        // --- AUTH LOGIC ---
-
-        // Check Login Status
+        // --- AUTH & ADMIN CHECK ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // User is signed in
                 authScreen.style.display = 'none';
                 appContainer.classList.add('logged-in');
                 currentUserDisplay.textContent = user.email;
                 chatInput.disabled = false;
-                msgList.innerHTML = ""; // Clear "Connecting..."
+                msgList.innerHTML = ""; 
+
+                // ADMIN CHECK (Using your UID)
+                if (user.uid === "iIKUMQdG9QN7q1lqQXdlKA1o74I2") {
+                    document.body.classList.add('is-admin');
+                } else {
+                    document.body.classList.remove('is-admin');
+                }
+
             } else {
-                // User is signed out
                 authScreen.style.display = 'flex';
                 appContainer.classList.remove('logged-in');
                 chatInput.disabled = true;
+                document.body.classList.remove('is-admin');
             }
         });
 
         window.handleLogin = function() {
-            const email = emailInput.value;
-            const pass = passInput.value;
-            signInWithEmailAndPassword(auth, email, pass)
-                .catch((error) => {
-                    authError.textContent = "ACCESS DENIED: " + error.message;
-                    authError.style.display = "block";
-                });
+            signInWithEmailAndPassword(auth, emailInput.value, passInput.value)
+                .catch((error) => { authError.textContent = "ACCESS DENIED: " + error.message; authError.style.display = "block"; });
         };
-
         window.handleRegister = function() {
-            const email = emailInput.value;
-            const pass = passInput.value;
-            createUserWithEmailAndPassword(auth, email, pass)
-                .then((userCredential) => {
-                    // Signed in automatically
-                    authError.style.display = "none";
-                })
-                .catch((error) => {
-                    authError.textContent = "REGISTRATION FAILED: " + error.message;
-                    authError.style.display = "block";
-                });
+            createUserWithEmailAndPassword(auth, emailInput.value, passInput.value)
+                .catch((error) => { authError.textContent = "REGISTRATION FAILED: " + error.message; authError.style.display = "block"; });
         };
-
-        window.handleLogout = function() {
-            signOut(auth);
-        };
-
-        // --- CHAT LOGIC ---
+        window.handleLogout = function() { signOut(auth); };
 
         window.sendMessage = function() {
             const text = chatInput.value;
             const user = auth.currentUser;
-            
             if(text.trim() === "" || !user) return;
-
-            // Extract "Name" from email (before @)
             const nickname = user.email.split('@')[0];
-
-            push(messagesRef, {
-                user: nickname,
-                text: text,
-                timestamp: Date.now()
-            });
-
+            push(messagesRef, { user: nickname, text: text, timestamp: Date.now() });
             chatInput.value = "";
         };
+        chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') window.sendMessage(); });
 
-        chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') window.sendMessage();
-        });
+        // --- ADMIN DELETE LOGIC ---
+        window.deleteMessage = function(key) {
+            if (!confirm("CONFIRM DELETION: This cannot be undone.")) return;
+            const exactMsgRef = ref(db, 'messages/' + key);
+            remove(exactMsgRef)
+                .then(() => console.log("Terminated."))
+                .catch((error) => alert("Error: " + error.message));
+        };
 
-        // --- LISTEN FOR MESSAGES ---
         onChildAdded(messagesRef, (snapshot) => {
             const data = snapshot.val();
-            renderMessage(data.user, data.text, data.timestamp);
+            const key = snapshot.key;
+            renderMessage(data.user, data.text, data.timestamp, key);
         });
 
-        function renderMessage(user, text, ts) {
+        onChildRemoved(messagesRef, (snapshot) => {
+            const key = snapshot.key;
+            const el = document.getElementById(key);
+            if (el) { el.classList.add('deleting'); setTimeout(() => el.remove(), 300); }
+        });
+
+        function renderMessage(user, text, ts, key) {
             const date = new Date(ts);
             const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
             const div = document.createElement('div');
             div.className = 'msg';
-            
-            // Hardcode Admin Check
+            div.id = key;
+
             let isDev = (user.toLowerCase().includes("m4dm0nk3y") || user.toLowerCase().includes("sol"));
             let nameColor = isDev ? 'var(--accent-cyan)' : '#fff';
             let tag = isDev ? '<span class="bot-tag" style="background:var(--accent-cyan); color:black;">DEV</span>' : '';
@@ -342,46 +316,29 @@
                 <div class="avatar" style="background:${isDev ? 'var(--accent-cyan)' : '#222'}; color:${isDev ? 'black' : 'var(--accent-cyan)'}">
                     ${user.substring(0,2)}
                 </div>
-                <div class="msg-content">
-                    <h4 style="color:${nameColor}">${user} ${tag} <span class="timestamp">${timeStr}</span></h4>
+                <div class="msg-content" style="flex:1;">
+                    <div style="display:flex; align-items:center;">
+                        <h4 style="color:${nameColor}">${user} ${tag} <span class="timestamp">${timeStr}</span></h4>
+                        <i class="fa-solid fa-trash delete-btn" onclick="deleteMessage('${key}')" title="Terminate Signal"></i>
+                    </div>
                     <div class="msg-text">${escapeHtml(text)}</div>
                 </div>
             `;
-            
             msgList.appendChild(div);
             msgList.scrollTop = msgList.scrollHeight;
         }
 
         function escapeHtml(text) {
-            return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // --- BACKGROUND FX ---
-        const cvs = document.getElementById('fx-canvas');
-        const ctx = cvs.getContext('2d');
-        let w, h;
+        const cvs = document.getElementById('fx-canvas'); const ctx = cvs.getContext('2d'); let w, h;
         function resize() { w = cvs.width = window.innerWidth; h = cvs.height = window.innerHeight; }
         window.addEventListener('resize', resize); resize();
-        
-        let parts = [];
-        for(let i=0; i<40; i++) parts.push({x: Math.random()*w, y: Math.random()*h, vx: (Math.random()-0.5)*0.5, vy: (Math.random()-0.5)*0.5});
-        
-        function anim() {
-            ctx.clearRect(0,0,w,h);
-            ctx.fillStyle = 'rgba(0, 242, 255, 0.2)';
-            parts.forEach(p => {
-                p.x += p.vx; p.y += p.vy;
-                if(p.x<0) p.x=w; if(p.x>w) p.x=0; if(p.y<0) p.y=h; if(p.y>h) p.y=0;
-                ctx.beginPath(); ctx.arc(p.x, p.y, 1, 0, Math.PI*2); ctx.fill();
-            });
-            requestAnimationFrame(anim);
-        }
-        anim();
+        let parts = []; for(let i=0; i<40; i++) parts.push({x: Math.random()*w, y: Math.random()*h, vx: (Math.random()-0.5)*0.5, vy: (Math.random()-0.5)*0.5});
+        function anim() { ctx.clearRect(0,0,w,h); ctx.fillStyle = 'rgba(0, 242, 255, 0.2)';
+            parts.forEach(p => { p.x += p.vx; p.y += p.vy; if(p.x<0) p.x=w; if(p.x>w) p.x=0; if(p.y<0) p.y=h; if(p.y>h) p.y=0; ctx.beginPath(); ctx.arc(p.x, p.y, 1, 0, Math.PI*2); ctx.fill(); });
+            requestAnimationFrame(anim); } anim();
     </script>
 </body>
 </html>
