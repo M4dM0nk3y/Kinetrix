@@ -68,6 +68,7 @@
             background: rgba(3, 3, 5, 0.7);
             backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border-light);
+            transition: padding 0.3s ease;
         }
 
         .logo {
@@ -96,7 +97,7 @@
         header { padding: 180px 20px 100px; max-width: 1200px; margin: 0 auto; text-align: center; }
 
         h1 {
-            font-size: 5.5rem;
+            font-size: clamp(3rem, 8vw, 5.5rem); /* Auto-scaling font */
             font-weight: 800;
             line-height: 1;
             margin-bottom: 25px;
@@ -121,7 +122,7 @@
         .hero-sub { font-size: 1.3rem; color: var(--text-dim); max-width: 650px; margin: 0 auto 50px; line-height: 1.6; }
 
         /* --- BUTTONS --- */
-        .btn-group { display: flex; justify-content: center; gap: 20px; }
+        .btn-group { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
         .btn {
             padding: 16px 36px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 1rem;
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; align-items: center; gap: 10px; cursor: pointer;
@@ -208,12 +209,37 @@
         .footer-col a:hover { color: var(--accent-cyan); }
         .copyright { text-align: center; margin-top: 80px; padding-top: 20px; border-top: 1px solid #111; font-size: 0.8rem; }
 
-        @media (max-width: 768px) {
+        /* --- RESPONSIVE AUTO-ADJUSTMENT --- */
+        @media (max-width: 900px) {
+            nav { padding: 15px 20px; }
+            .nav-links { display: none; }
             h1 { font-size: 3rem; }
             .stats-bar { grid-template-columns: 1fr 1fr; }
             .stat-item { border-bottom: 1px solid var(--border-light); }
-            .nav-links { display: none; }
-            .manifesto-text { font-size: 1.8rem; }
+            
+            /* Add side padding for tablets */
+            .section-container { padding: 0 40px; } 
+        }
+
+        @media (max-width: 600px) {
+            header { padding: 140px 20px 60px; }
+            h1 { font-size: 2.5rem; letter-spacing: -1px; }
+            .hero-sub { font-size: 1rem; }
+            
+            /* Stack buttons on mobile */
+            .btn-group { flex-direction: column; width: 100%; }
+            .btn { width: 100%; justify-content: center; }
+            
+            /* More breathing room on mobile */
+            .section-container { padding: 0 25px; margin: 80px auto; }
+            
+            .feature-card { padding: 30px 20px; }
+            
+            /* Table scroll for mobile */
+            .comparison-table { display: block; overflow-x: auto; white-space: nowrap; }
+            
+            /* Adjust footer grid */
+            .footer-content { grid-template-columns: 1fr; text-align: center; }
         }
     </style>
 </head>
@@ -581,105 +607,161 @@ cd Kinetrix
         });
         typeObserver.observe(typeWriterElement);
 
-        /* --- HYPER-PHYSICS ENGINE --- */
+        /* =========================================================================
+           THE ROBOTICS SIMULATION ENGINE (Inverse Kinematics + Swarm Physics)
+           ========================================================================= */
         const canvas = document.getElementById('canvas-layer');
         const ctx = canvas.getContext('2d');
         let width, height;
-        let particles = [];
-        let mouse = { x: -1000, y: -1000 }; 
+        let mouse = { x: 0, y: 0 };
 
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-        }
+        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
         window.addEventListener('resize', resize);
+        window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
         resize();
 
-        window.addEventListener('mousemove', (e) => {
-            mouse.x = e.clientX;
-            mouse.y = e.clientY;
-        });
+        // 1. LIDAR GRID BACKGROUND
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(0, 242, 255, 0.03)';
+            ctx.lineWidth = 1;
+            const step = 50;
+            const offset = (Date.now() / 50) % step;
+            for(let x = 0; x < width; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke(); }
+            for(let y = offset; y < height; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); }
+        }
 
-        window.addEventListener('mousedown', (e) => {
-            particles.forEach(p => {
-                let dx = p.x - e.clientX;
-                let dy = p.y - e.clientY;
-                let dist = Math.sqrt(dx*dx + dy*dy);
-                if (dist < 300) { 
-                    let force = (300 - dist) / 300;
-                    let angle = Math.atan2(dy, dx);
-                    p.vx += Math.cos(angle) * force * 15;
-                    p.vy += Math.sin(angle) * force * 15;
-                }
-            });
-        });
-
-        class Particle {
-            constructor() {
-                this.x = Math.random() * width;
-                this.y = Math.random() * height;
-                this.vx = (Math.random() - 0.5) * 1.5;
-                this.vy = (Math.random() - 0.5) * 1.5;
-                this.size = Math.random() * 2;
-                this.friction = 0.98;
+        // 2. INVERSE KINEMATICS (ROBOT ARM)
+        class Segment {
+            constructor(x, y, length, angle) {
+                this.x = x; this.y = y; this.length = length; this.angle = angle;
+                this.parent = null;
             }
+            calculateEnd() {
+                this.endX = this.x + Math.cos(this.angle) * this.length;
+                this.endY = this.y + Math.sin(this.angle) * this.length;
+            }
+            pointAt(tx, ty) {
+                const dx = tx - this.x; const dy = ty - this.y;
+                this.angle = Math.atan2(dy, dx);
+            }
+            drag(tx, ty) {
+                this.pointAt(tx, ty);
+                this.x = tx - Math.cos(this.angle) * this.length;
+                this.y = ty - Math.sin(this.angle) * this.length;
+                if(this.parent) {
+                    this.parent.drag(this.x, this.y);
+                }
+            }
+            render() {
+                this.calculateEnd();
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y); ctx.lineTo(this.endX, this.endY);
+                ctx.strokeStyle = 'rgba(0, 242, 255, 0.5)'; ctx.lineWidth = 4; ctx.stroke();
+                // Joint
+                ctx.beginPath(); ctx.arc(this.x, this.y, 4, 0, Math.PI*2); ctx.fillStyle = '#fff'; ctx.fill();
+            }
+        }
+        
+        // Build Arm
+        const armSegments = [];
+        const numSegs = 3; const segLen = 100;
+        for(let i=0; i<numSegs; i++) {
+            let s = new Segment(0, 0, segLen, 0);
+            if(i > 0) s.parent = armSegments[i-1];
+            armSegments.push(s);
+        }
 
-            update() {
-                let dx = mouse.x - this.x;
-                let dy = mouse.y - this.y;
-                let dist = Math.sqrt(dx*dx + dy*dy);
+        // 3. DRONE SWARM (BOIDS PHYSICS)
+        class Drone {
+            constructor() {
+                this.pos = { x: Math.random()*width, y: Math.random()*height };
+                this.vel = { x: Math.random()-0.5, y: Math.random()-0.5 };
+                this.acc = { x: 0, y: 0 };
+                this.maxSpeed = 4;
+                this.maxForce = 0.1;
+            }
+            
+            update(target) {
+                // Seek Target (Arm End Effector)
+                let desired = { x: target.x - this.pos.x, y: target.y - this.pos.y };
+                let d = Math.sqrt(desired.x**2 + desired.y**2);
+                desired.x = (desired.x / d) * this.maxSpeed;
+                desired.y = (desired.y / d) * this.maxSpeed;
                 
-                if (dist < 250) { 
-                    let force = (250 - dist) / 250;
-                    this.vx += (dx / dist) * force * 0.5;
-                    this.vy += (dy / dist) * force * 0.5;
+                let steer = { x: desired.x - this.vel.x, y: desired.y - this.vel.y };
+                // Limit force
+                let steerLen = Math.sqrt(steer.x**2 + steer.y**2);
+                if(steerLen > this.maxForce) {
+                    steer.x = (steer.x/steerLen) * this.maxForce;
+                    steer.y = (steer.y/steerLen) * this.maxForce;
                 }
 
-                this.x += this.vx;
-                this.y += this.vy;
-                this.vx *= this.friction;
-                this.vy *= this.friction;
+                // Add random noise (Drone hover jitter)
+                this.acc.x += steer.x + (Math.random()-0.5)*0.2;
+                this.acc.y += steer.y + (Math.random()-0.5)*0.2;
 
-                if (Math.abs(this.vx) < 0.2) this.vx += (Math.random() - 0.5) * 0.1;
-                if (Math.abs(this.vy) < 0.2) this.vy += (Math.random() - 0.5) * 0.1;
-
-                if (this.x < 0 || this.x > width) this.vx *= -1;
-                if (this.y < 0 || this.y > height) this.vy *= -1;
+                this.vel.x += this.acc.x; this.vel.y += this.acc.y;
+                // Limit speed
+                let speed = Math.sqrt(this.vel.x**2 + this.vel.y**2);
+                if(speed > this.maxSpeed) {
+                    this.vel.x = (this.vel.x/speed) * this.maxSpeed;
+                    this.vel.y = (this.vel.y/speed) * this.maxSpeed;
+                }
+                
+                this.pos.x += this.vel.x; this.pos.y += this.vel.y;
+                this.acc = {x:0, y:0};
             }
 
             draw() {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                let speed = Math.abs(this.vx) + Math.abs(this.vy);
-                let alpha = Math.min(0.8, speed * 0.2 + 0.1);
-                ctx.fillStyle = `rgba(0, 242, 255, ${alpha})`; 
-                ctx.fill();
+                // Drone Body
+                ctx.save();
+                ctx.translate(this.pos.x, this.pos.y);
+                ctx.rotate(Math.atan2(this.vel.y, this.vel.x));
+                
+                ctx.fillStyle = 'rgba(112, 0, 255, 0.8)';
+                ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-5, 5); ctx.lineTo(-5, -5); ctx.fill();
+                
+                // Thrust trail
+                ctx.strokeStyle = `rgba(0, 242, 255, ${Math.random()})`;
+                ctx.beginPath(); ctx.moveTo(-5, 0); ctx.lineTo(-10 - Math.random()*10, 0); ctx.stroke();
+                
+                ctx.restore();
             }
         }
+        
+        const drones = [];
+        for(let i=0; i<8; i++) drones.push(new Drone());
 
-        for(let i=0; i<100; i++) particles.push(new Particle());
-
+        // MAIN LOOP
         function animate() {
             ctx.clearRect(0, 0, width, height);
-            particles.forEach((p, index) => {
-                p.update();
-                p.draw();
-                for (let j = index + 1; j < particles.length; j++) {
-                    let p2 = particles[j];
-                    let dx = p.x - p2.x;
-                    let dy = p.y - p2.y;
-                    let dist = Math.sqrt(dx*dx + dy*dy);
-                    if (dist < 120) {
-                        ctx.beginPath();
-                        let opacity = (1 - dist / 120) * 0.5;
-                        ctx.strokeStyle = `rgba(112, 0, 255, ${opacity})`;
-                        ctx.lineWidth = 0.5;
-                        ctx.moveTo(p.x, p.y);
-                        ctx.lineTo(p2.x, p2.y);
-                        ctx.stroke();
-                    }
-                }
-            });
+            drawGrid();
+
+            // 1. Update Arm (Inverse Kinematics)
+            let targetX = mouse.x; let targetY = mouse.y;
+            // Drag last segment to mouse
+            let end = armSegments[armSegments.length-1];
+            end.drag(targetX, targetY);
+            
+            // Lock base to bottom right corner (simulating a factory robot)
+            let base = armSegments[0];
+            let baseX = width - 100; let baseY = height; // Base position
+            // Shift entire arm back so base is pinned
+            let diffX = base.x - baseX; let diffY = base.y - baseY;
+            for(let s of armSegments) { s.x -= diffX; s.y -= diffY; s.calculateEnd(); }
+            
+            // Draw Arm
+            for(let s of armSegments) s.render();
+            // Draw End Effector (Gripper)
+            ctx.beginPath(); ctx.arc(end.endX, end.endY, 8, 0, Math.PI*2);
+            ctx.fillStyle = '#00f2ff'; ctx.shadowBlur = 15; ctx.shadowColor = '#00f2ff'; ctx.fill(); ctx.shadowBlur = 0;
+
+            // 2. Update Drones (Swarm Logic)
+            for(let d of drones) {
+                d.update({x: end.endX, y: end.endY}); // Drones follow the robot arm's hand
+                d.draw();
+            }
+
             requestAnimationFrame(animate);
         }
         animate();
