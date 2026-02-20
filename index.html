@@ -553,6 +553,73 @@ section { position: relative; z-index: 1; }
 }
 .footer-copy { color: #334155; font-size: .75rem; margin-top: 1rem; }
 
+/* ====== INSTALL BOX ====== */
+.install-box {
+  background: rgba(0,212,255,0.04);
+  border: 1px solid rgba(0,212,255,0.25);
+  border-radius: var(--r2);
+  padding: 1.5rem 2rem;
+  margin-bottom: 1.5rem;
+}
+.install-label {
+  font-size: .75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--accent);
+  margin-bottom: .75rem;
+}
+.install-cmd-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.install-cmd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .85rem;
+  color: #cdd9e5;
+  background: rgba(0,0,0,0.4);
+  padding: .7rem 1rem;
+  border-radius: var(--r);
+  flex: 1;
+  user-select: all;
+  word-break: break-all;
+}
+.install-copy-btn {
+  padding: .6rem 1.2rem;
+  background: rgba(0,212,255,0.1);
+  border: 1px solid rgba(0,212,255,0.3);
+  color: var(--accent);
+  border-radius: 6px;
+  font-size: .82rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .2s, border-color .2s;
+  white-space: nowrap;
+}
+.install-copy-btn:hover { background: rgba(0,212,255,0.2); border-color: var(--accent); }
+.install-copy-btn.copied { color: var(--accent3); border-color: var(--accent3); background: rgba(16,185,129,0.1); }
+.or-divider {
+  text-align: center;
+  position: relative;
+  margin: 2rem 0 1.5rem;
+  color: var(--muted);
+  font-size: .8rem;
+}
+.or-divider::before, .or-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 42%;
+  height: 1px;
+  background: var(--border);
+}
+.or-divider::before { left: 0; }
+.or-divider::after  { right: 0; }
+.or-divider span { background: var(--bg2); padding: 0 1rem; }
+.cta-center { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; padding-top: .5rem; }
+
 /* ====== ANIMATIONS ====== */
 @keyframes fadeIn { from{opacity:0} to{opacity:1} }
 @keyframes fadeInDown { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
@@ -1132,12 +1199,24 @@ Cmd + Shift + B
   <div class="section-inner">
     <div class="section-tag">Get Started</div>
     <h2 class="section-title">Up and Running in 5 Minutes</h2>
+
+    <!-- ONE-LINE INSTALL -->
+    <div class="install-box tilt-card">
+      <div class="install-label">⚡ One-line install (Mac / Linux)</div>
+      <div class="install-cmd-row">
+        <code class="install-cmd" id="install-cmd-text">curl -fsSL https://raw.githubusercontent.com/M4dM0nk3y/Kinetrix/main/install.sh | bash</code>
+        <button class="install-copy-btn" onclick="copyInstall()" title="Copy to clipboard">📋 Copy</button>
+      </div>
+    </div>
+
+    <div class="or-divider"><span>or install manually</span></div>
+
     <div class="steps-grid">
       <div class="step-card tilt-card">
         <div class="step-num">01</div>
         <h3>Clone the Repo</h3>
         <pre class="code-body small">git clone https://github.com/M4dM0nk3y/Kinetrix
-cd kinetrix</pre>
+cd Kinetrix</pre>
       </div>
       <div class="step-card tilt-card">
         <div class="step-num">02</div>
@@ -1167,6 +1246,7 @@ nano my_robot.kx
     </div>
     <div class="cta-center">
       <a href="https://github.com/M4dM0nk3y/Kinetrix" class="btn-primary magnetic" target="_blank">View on GitHub ↗</a>
+      <a href="https://raw.githubusercontent.com/M4dM0nk3y/Kinetrix/main/install.sh" class="btn-secondary magnetic" download="install.sh">⬇ Download install.sh</a>
     </div>
   </div>
 </section>
@@ -1428,6 +1508,16 @@ document.querySelectorAll('.stat-num').forEach(el => {
     render.options.height = window.innerHeight;
   });
 })();
+/* ── COPY INSTALL COMMAND ── */
+function copyInstall() {
+  const text = document.getElementById('install-cmd-text').innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.install-copy-btn');
+    btn.textContent = '✅ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
 </script>
 </body>
 </html>
