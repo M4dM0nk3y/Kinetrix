@@ -1,0 +1,70 @@
+# Compiled binary
+kcc
+kcc_demo
+kcc_legacy
+*.o
+*.ino
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# VS Code
+.vscode/
+
+# Private cloud data
+cloud_data/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Source files (keep local only)
+*.c
+*.h
+compiler_v3.c
+compiler.c
+parser.c
+codegen.c
+codegen_*.c
+ast.c
+ast.h
+error.c
+error.h
+symbol_table.c
+symbol_table.h
+pin_tracker.c
+pin_tracker.h
+diagnostics.c
+
+# Internal docs (not for public)
+COMPLETE_FEATURE_LIST.md
+HOW_TO_USE_KINETRIX.md
+KINETRIX_LANGUAGE_REFERENCE.md
+LANGUAGE_REFERENCE.md
+PROJECT_INFO.md
+QUICK_START.md
+VSCODE_SETUP.md
+
+# Examples source
+examples/
+examples_working/
+
+# Stdlib source
+stdlib/
+
+# Libs source
+libs/
+
+# Package managers
+kpm.js
+kpm.py
+registry_server.py
+robot_agent.py
+deploy
+
+# Test files
+*.kx
+
+# Makefile (internal)
+Makefile
