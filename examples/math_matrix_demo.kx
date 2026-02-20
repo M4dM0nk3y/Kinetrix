@@ -1,0 +1,68 @@
+# Math Library Example - Matrix Operations
+# Demonstrates: Matrix creation, multiplication, inverse
+
+import "math/matrix.kx"
+
+program {
+    print "=== Kinetrix Math Library Demo: Matrices ==="
+    print ""
+    
+    # Create 2x2 matrices
+    print "Creating 2x2 matrices..."
+    make array A size 4
+    A[0] = 1
+    A[1] = 2
+    A[2] = 3
+    A[3] = 4
+    
+    make array B size 4
+    B[0] = 5
+    B[1] = 6
+    B[2] = 7
+    B[3] = 8
+    
+    print "Matrix A:"
+    print "  " + A[0] + " " + A[1]
+    print "  " + A[2] + " " + A[3]
+    print ""
+    
+    print "Matrix B:"
+    print "  " + B[0] + " " + B[1]
+    print "  " + B[2] + " " + B[3]
+    print ""
+    
+    # Matrix multiplication
+    print "Matrix multiplication (A * B):"
+    make array C = matrix_multiply(A, B, 2, 2, 2)
+    print "  " + C[0] + " " + C[1]
+    print "  " + C[2] + " " + C[3]
+    print ""
+    
+    # Transpose
+    print "Transpose of A:"
+    make array A_T = matrix_transpose(A, 2, 2)
+    print "  " + A_T[0] + " " + A_T[1]
+    print "  " + A_T[2] + " " + A_T[3]
+    print ""
+    
+    # Determinant
+    make var det = matrix_det_2x2(A)
+    print "Determinant of A: " + det
+    print ""
+    
+    # Inverse
+    print "Inverse of A:"
+    make array A_inv = matrix_inverse_2x2(A)
+    print "  " + A_inv[0] + " " + A_inv[1]
+    print "  " + A_inv[2] + " " + A_inv[3]
+    print ""
+    
+    # Verify: A * A_inv = I
+    print "Verification (A * A_inv should be identity):"
+    make array I = matrix_multiply(A, A_inv, 2, 2, 2)
+    print "  " + I[0] + " " + I[1]
+    print "  " + I[2] + " " + I[3]
+    print ""
+    
+    print "=== Demo Complete! ==="
+}

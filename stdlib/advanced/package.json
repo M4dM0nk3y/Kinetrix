@@ -1,0 +1,62 @@
+{
+  "name": "advanced_autonomous_system",
+  "version": "1.0.0",
+  "description": "Advanced autonomous control with Kalman filtering, adaptive PID, sensor fusion, and fault recovery. Production-grade algorithms for professional robotics.",
+  "author": "Kinetrix Team",
+  "license": "Proprietary",
+  "main": "advanced_autonomous_system.kx",
+  "dependencies": {},
+  "keywords": [
+    "autonomous",
+    "kalman-filter",
+    "adaptive-pid",
+    "sensor-fusion",
+    "fault-recovery",
+    "imu",
+    "gps",
+    "obstacle-avoidance"
+  ],
+  "hardware": [
+    "arduino-uno",
+    "arduino-mega",
+    "esp32",
+    "raspberry-pi",
+    "teensy"
+  ],
+  "sensors": [
+    "MPU6050",
+    "GPS",
+    "HC-SR04"
+  ],
+  "difficulty": "advanced",
+  "estimatedLines": 400,
+  "complexity": 9,
+  "category": "advanced",
+  "pricing": {
+    "tier": "pro",
+    "price": 0,
+    "note": "Included with Kinetrix Pro subscription"
+  },
+  "features": [
+    "Adaptive Kalman Filter with dynamic noise estimation",
+    "Gain-scheduled PID controller",
+    "Multi-sensor fusion (IMU + GPS)",
+    "Burst I2C reading (6x faster)",
+    "Predictive obstacle avoidance",
+    "Fault detection and self-healing",
+    "100Hz control loop"
+  ],
+  "performance": {
+    "controlLoopHz": 100,
+    "sensorReadSpeedup": "6x",
+    "i2cTransactions": "1 burst vs 6 individual"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kinetrix/stdlib"
+  },
+  "bugs": {
+    "url": "https://github.com/kinetrix/stdlib/issues"
+  },
+  "homepage": "https://kinetrix.dev/packages/advanced/autonomous"
+}

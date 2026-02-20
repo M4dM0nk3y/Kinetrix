@@ -1,0 +1,162 @@
+# Swarm Coordination Library
+# Multi-robot task distribution and coordination
+
+# Robot configuration
+make var robot_id = 0
+make var robot_role = 0
+make var swarm_size = 0
+
+# Task queue
+make array task_queue size 10
+make var task_count = 0
+
+# Robot states
+make var STATE_IDLE = 0
+make var STATE_BUSY = 1
+make var STATE_WAITING = 2
+make var robot_state = 0
+
+# Initialize swarm
+function swarm_init(id, role) {
+    robot_id = id
+    robot_role = role
+    robot_state = STATE_IDLE
+    task_count = 0
+}
+
+# Join swarm
+function swarm_join(swarm_name) {
+    # Broadcast join message
+    make array join_msg size 10
+    join_msg[0] = 1  # JOIN message type
+    join_msg[1] = robot_id
+    join_msg[2] = robot_role
+    
+    radio_broadcast(join_msg, 3)
+    
+    print "Joined swarm: "
+    print swarm_name
+}
+
+# Send task to robot
+function swarm_send_task(target_id, task_type, task_data) {
+    make array task_msg size 10
+    task_msg[0] = 2  # TASK message type
+    task_msg[1] = target_id
+    task_msg[2] = task_type
+    task_msg[3] = task_data
+    
+    radio_send(task_msg, 4)
+}
+
+# Broadcast task (any robot can take it)
+function swarm_broadcast_task(task_type, task_data) {
+    make array task_msg size 10
+    task_msg[0] = 3  # BROADCAST_TASK message type
+    task_msg[1] = task_type
+    task_msg[2] = task_data
+    
+    radio_broadcast(task_msg, 3)
+}
+
+# Check for tasks
+function swarm_check_tasks() {
+    if radio_available() {
+        make array msg size 32
+        radio_read(msg, 32)
+        
+        make var msg_type = msg[0]
+        
+        # Handle JOIN message
+        if msg_type is 1 {
+            make var new_id = msg[1]
+            swarm_size = swarm_size + 1
+            print "Robot "
+            print new_id
+            print " joined swarm"
+        }
+        
+        # Handle TASK message
+        if msg_type is 2 {
+            make var target = msg[1]
+            if target is robot_id {
+                make var task_type = msg[2]
+                make var task_data = msg[3]
+                
+                # Add to queue
+                task_queue[task_count] = task_type
+                task_count = task_count + 1
+                
+                robot_state = STATE_BUSY
+            }
+        }
+        
+        # Handle BROADCAST_TASK
+        if msg_type is 3 and robot_state is STATE_IDLE {
+            make var task_type = msg[1]
+            make var task_data = msg[2]
+            
+            # Take task
+            task_queue[task_count] = task_type
+            task_count = task_count + 1
+            
+            robot_state = STATE_BUSY
+            
+            # Acknowledge
+            swarm_send_ack(task_type)
+        }
+    }
+    
+    return task_count
+}
+
+# Send acknowledgment
+function swarm_send_ack(task_id) {
+    make array ack_msg size 10
+    ack_msg[0] = 4  # ACK message type
+    ack_msg[1] = robot_id
+    ack_msg[2] = task_id
+    
+    radio_broadcast(ack_msg, 3)
+}
+
+# Get next task
+function swarm_get_task() {
+    if task_count > 0 {
+        make var task = task_queue[0]
+        
+        # Shift queue
+        make var i = 0
+        loop 9 times {
+            task_queue[i] = task_queue[i + 1]
+            i = i + 1
+        }
+        
+        task_count = task_count - 1
+        return task
+    }
+    
+    return -1
+}
+
+# Mark task complete
+function swarm_task_complete() {
+    robot_state = STATE_IDLE
+    
+    # Broadcast completion
+    make array done_msg size 10
+    done_msg[0] = 5  # DONE message type
+    done_msg[1] = robot_id
+    
+    radio_broadcast(done_msg, 2)
+}
+
+# Get swarm size
+function swarm_get_size() {
+    return swarm_size
+}
+
+# Get robot state
+function swarm_get_state() {
+    return robot_state
+}

@@ -1,0 +1,87 @@
+# Safety-Critical Robot Example
+# Industrial robot with safety constraints
+
+import "safety/safety_checks.kx"
+
+program {
+    print "=== Safety-Critical Robot Demo ==="
+    
+    # Initialize safety system
+    safety_init()
+    
+    # Set safety limits
+    safety_set_motor_limit(200)
+    safety_set_battery_limit(7.0)
+    safety_set_temperature_limit(70)
+    
+    print "Safety system active"
+    print "Limits: Motor=200, Battery=7.0V, Temp=70°C"
+    
+    # Main control loop
+    loop forever {
+        # Read battery voltage
+        make var battery = read analog pin A0
+        battery = battery * 0.01  # Convert to voltage
+        
+        # Read temperature sensor
+        make var temp_raw = read analog pin A1
+        make var temperature = temp_raw / 10
+        
+        # Check safety constraints
+        make var battery_ok = safety_check_battery(battery)
+        make var temp_ok = safety_check_temperature(temperature)
+        
+        # Get safety status
+        make var status = safety_get_status()
+        
+        # If in safe mode, try to exit
+        if status is 2 {
+            print "In safe mode, checking conditions..."
+            
+            make var can_exit = safety_exit_safe_mode()
+            
+            if can_exit is 1 {
+                print "Resuming normal operation"
+            } else {
+                print "Still unsafe, waiting..."
+                wait 5 seconds
+                continue
+            }
+        }
+        
+        # Normal operation (if safe)
+        if status is 0 {
+            safety_zone_begin()
+            
+            # Read desired motor speed
+            make var desired_speed = 150
+            
+            # Apply safety check
+            make var safe_speed = safety_check_motor_speed(desired_speed)
+            
+            # Set motor
+            analogWrite pin 9 value safe_speed
+            analogWrite pin 10 value safe_speed
+            
+            print "Motor speed: "
+            print safe_speed
+            print " Battery: "
+            print battery
+            print "V Temp: "
+            print temperature
+            print "°C"
+            
+            safety_zone_end()
+        }
+        
+        # Warning mode
+        if status is 1 {
+            print "WARNING: Safety violation detected"
+            make var violations = safety_get_violations()
+            print "Violations: "
+            print violations
+        }
+        
+        wait 1 seconds
+    }
+}

@@ -1,0 +1,54 @@
+# Real-Time Control Example
+# Precise timing for motor control
+
+import "realtime/timer.kx"
+
+program {
+    print "=== Real-Time Control Demo ==="
+    
+    # Initialize timer for 10ms intervals
+    timer_init(10)
+    timer_start()
+    
+    make var motor_speed = 0
+    make var target_speed = 200
+    make var step = 5
+    
+    print "Starting motor ramp-up..."
+    
+    # Real-time control loop
+    loop 100 times {
+        # Wait for timer
+        while timer_check() is 0 {
+            # Busy wait
+        }
+        
+        # Update motor speed
+        if motor_speed < target_speed {
+            motor_speed = motor_speed + step
+        }
+        
+        # Set motor (PWM)
+        analogWrite pin 9 value motor_speed
+        
+        # Measure execution time
+        time_measure_start()
+        
+        # Do some work
+        make var sensor = read sensor pin 7
+        
+        make var elapsed = time_measure_end()
+        
+        # Print status every 10 iterations
+        make var count = timer_get_count()
+        if count % 10 is 0 {
+            print "Speed: "
+            print motor_speed
+            print " Exec time: "
+            print elapsed
+            print "us"
+        }
+    }
+    
+    print "Demo complete!"
+}

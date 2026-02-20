@@ -1,0 +1,112 @@
+# Kinetrix IMU Driver - MPU6050
+# I2C-based inertial measurement unit
+
+# MPU6050 I2C address
+make var MPU6050_ADDR = 0x68
+
+# Register addresses
+make var PWR_MGMT_1 = 0x6B
+make var ACCEL_XOUT_H = 0x3B
+make var GYRO_XOUT_H = 0x43
+
+# Sensor data
+make var accel_x = 0
+make var accel_y = 0
+make var accel_z = 0
+make var gyro_x = 0
+make var gyro_y = 0
+make var gyro_z = 0
+make var temperature = 0
+
+def imu_init {
+    # Initialize I2C
+    i2c begin
+    
+    # Wake up MPU6050
+    i2c start MPU6050_ADDR
+    i2c send PWR_MGMT_1
+    i2c send 0x00
+    i2c stop
+    
+    wait 100
+    
+    print "MPU6050 initialized"
+}
+
+def imu_read_accel {
+    # Read accelerometer data
+    i2c start MPU6050_ADDR
+    i2c send ACCEL_XOUT_H
+    i2c stop
+    
+    # Read 6 bytes (X, Y, Z - 2 bytes each)
+    make var raw_x = read i2c MPU6050_ADDR
+    make var raw_y = read i2c MPU6050_ADDR
+    make var raw_z = read i2c MPU6050_ADDR
+    
+    # Convert to g (±2g range, 16384 LSB/g)
+    set accel_x to (raw_x - 32768) / 16384.0
+    set accel_y to (raw_y - 32768) / 16384.0
+    set accel_z to (raw_z - 32768) / 16384.0
+    
+    return accel_x
+}
+
+def imu_read_gyro {
+    # Read gyroscope data
+    i2c start MPU6050_ADDR
+    i2c send GYRO_XOUT_H
+    i2c stop
+    
+    # Read 6 bytes (X, Y, Z - 2 bytes each)
+    make var raw_x = read i2c MPU6050_ADDR
+    make var raw_y = read i2c MPU6050_ADDR
+    make var raw_z = read i2c MPU6050_ADDR
+    
+    # Convert to deg/s (±250 deg/s range, 131 LSB/deg/s)
+    set gyro_x to (raw_x - 32768) / 131.0
+    set gyro_y to (raw_y - 32768) / 131.0
+    set gyro_z to (raw_z - 32768) / 131.0
+    
+    return gyro_x
+}
+
+def imu_read_all {
+    # Optimized: read all data in one burst
+    i2c start MPU6050_ADDR
+    i2c send ACCEL_XOUT_H
+    i2c stop
+    
+    # Read 14 bytes total
+    make var ax = read i2c MPU6050_ADDR
+    make var ay = read i2c MPU6050_ADDR
+    make var az = read i2c MPU6050_ADDR
+    make var temp = read i2c MPU6050_ADDR
+    make var gx = read i2c MPU6050_ADDR
+    make var gy = read i2c MPU6050_ADDR
+    make var gz = read i2c MPU6050_ADDR
+    
+    # Convert accelerometer
+    set accel_x to (ax - 32768) / 16384.0
+    set accel_y to (ay - 32768) / 16384.0
+    set accel_z to (az - 32768) / 16384.0
+    
+    # Convert gyroscope
+    set gyro_x to (gx - 32768) / 131.0
+    set gyro_y to (gy - 32768) / 131.0
+    set gyro_z to (gz - 32768) / 131.0
+    
+    # Convert temperature (°C)
+    set temperature to temp / 340.0 + 36.53
+}
+
+def imu_get_accel_magnitude {
+    make var mag = sqrt(accel_x * accel_x + accel_y * accel_y + accel_z * accel_z)
+    return mag
+}
+
+def imu_get_tilt_angle {
+    # Calculate tilt angle from accelerometer
+    make var angle = atan2(accel_y, accel_z) * 57.2958
+    return angle
+}

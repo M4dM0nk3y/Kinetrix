@@ -1,0 +1,86 @@
+# Complete Sensor Fusion Example with Calibration
+# Full navigation system with auto-calibration
+
+import "fusion/kalman_2d.kx"
+import "fusion/calibration.kx"
+import "sensors/mpu6050.kx"
+import "sensors/neo6m_gps.kx"
+import "sensors/hmc5883l_compass.kx"
+
+program {
+    print "=== Sensor Fusion Navigation System ==="
+    
+    # Initialize sensors
+    print "Initializing sensors..."
+    mpu6050_init()
+    gps_init()
+    hmc5883l_init()
+    
+    # Calibrate sensors
+    print "Starting calibration..."
+    calibrate_imu_accel(100)
+    calibrate_imu_gyro(100)
+    calibrate_compass(200)
+    
+    # Set magnetic declination (example: 5 degrees for your location)
+    set_magnetic_declination(5)
+    
+    # Initialize 2D Kalman filter
+    kalman_2d_init(0, 0, 0, 0)
+    
+    print "System ready!"
+    print "Starting navigation..."
+    
+    # Main navigation loop
+    loop forever {
+        # Read all sensors
+        mpu6050_read_accel()
+        mpu6050_read_gyro()
+        gps_read()
+        hmc5883l_read()
+        
+        # Get calibrated sensor data
+        make var ax = get_accel_x() - imu_accel_offset_x
+        make var ay = get_accel_y() - imu_accel_offset_y
+        make var heading = apply_compass_calibration()
+        
+        # Predict step (integrate acceleration)
+        kalman_2d_predict(0.1)
+        kalman_2d_update_accel(ax, ay, 0.1)
+        
+        # Update with GPS if available
+        if has_gps_fix() {
+            make var gps_lat = get_latitude()
+            make var gps_lon = get_longitude()
+            kalman_2d_update(gps_lat, gps_lon)
+        }
+        
+        # Get fused position
+        make var pos_x = kalman_2d_get_x()
+        make var pos_y = kalman_2d_get_y()
+        make var vel_x = kalman_2d_get_vx()
+        make var vel_y = kalman_2d_get_vy()
+        make var uncertainty = kalman_2d_get_uncertainty()
+        
+        # Calculate speed
+        make var speed = sqrt(vel_x * vel_x + vel_y * vel_y)
+        
+        # Print navigation data
+        print "Pos: ("
+        print pos_x
+        print ", "
+        print pos_y
+        print ") Heading: "
+        print heading
+        print "° Speed: "
+        print speed
+        print " m/s Uncertainty: "
+        print uncertainty
+        print " GPS: "
+        print get_satellites()
+        print " sats"
+        
+        # Wait
+        wait 100 milliseconds
+    }
+}

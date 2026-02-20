@@ -1,0 +1,89 @@
+# Multi-Robot Swarm Example
+# Coordinated task distribution
+
+import "swarm/nrf24.kx"
+import "swarm/coordination.kx"
+
+program {
+    print "=== Swarm Robot Demo ==="
+    
+    # Robot configuration (set via DIP switches or hardcode)
+    make var my_id = 1
+    make var my_role = 1  # 1=worker, 2=coordinator
+    
+    # Initialize radio
+    radio_init()
+    radio_set_channel(76)
+    radio_set_address(0xF0F0F0F0E1)
+    
+    # Initialize swarm
+    swarm_init(my_id, my_role)
+    swarm_join("warehouse_bots")
+    
+    print "Robot "
+    print my_id
+    print " ready!"
+    
+    # Main loop
+    loop forever {
+        # Check for tasks
+        make var task_available = swarm_check_tasks()
+        
+        if task_available > 0 {
+            make var task = swarm_get_task()
+            
+            print "Executing task: "
+            print task
+            
+            # Execute task based on type
+            if task is 1 {
+                # Task 1: Move forward
+                print "Moving forward..."
+                turn on pin 5
+                turn on pin 6
+                wait 2 seconds
+                turn off pin 5
+                turn off pin 6
+            }
+            
+            if task is 2 {
+                # Task 2: Turn
+                print "Turning..."
+                turn on pin 5
+                turn off pin 6
+                wait 1 seconds
+                turn off pin 5
+            }
+            
+            if task is 3 {
+                # Task 3: Blink LED
+                print "Signaling..."
+                loop 5 times {
+                    turn on pin 13
+                    wait 200 milliseconds
+                    turn off pin 13
+                    wait 200 milliseconds
+                }
+            }
+            
+            # Mark complete
+            swarm_task_complete()
+            print "Task complete!"
+        }
+        
+        # If coordinator, assign tasks
+        if my_role is 2 {
+            make var swarm_count = swarm_get_size()
+            
+            if swarm_count > 1 {
+                # Broadcast task every 5 seconds
+                wait 5 seconds
+                
+                print "Broadcasting task..."
+                swarm_broadcast_task(1, 0)
+            }
+        }
+        
+        wait 100 milliseconds
+    }
+}

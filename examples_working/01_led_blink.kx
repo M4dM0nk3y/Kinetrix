@@ -1,0 +1,11 @@
+# LED Blink - Simple
+# Blinks LED on pin 13 forever
+
+program {
+    loop forever {
+        turn on pin 13
+        wait 1000
+        turn off pin 13
+        wait 1000
+    }
+}

@@ -1,0 +1,142 @@
+# Sensor Calibration Utilities
+# Auto-calibration for IMU, compass, and other sensors
+
+# Calibration data
+make var imu_accel_offset_x = 0
+make var imu_accel_offset_y = 0
+make var imu_accel_offset_z = 0
+make var imu_gyro_offset_x = 0
+make var imu_gyro_offset_y = 0
+make var imu_gyro_offset_z = 0
+make var compass_offset_x = 0
+make var compass_offset_y = 0
+make var compass_declination = 0
+
+# Calibrate IMU accelerometer
+function calibrate_imu_accel(samples) {
+    print "Calibrating accelerometer..."
+    print "Keep sensor still!"
+    
+    make var sum_x = 0
+    make var sum_y = 0
+    make var sum_z = 0
+    
+    loop samples times {
+        mpu6050_read_accel()
+        sum_x = sum_x + get_accel_x()
+        sum_y = sum_y + get_accel_y()
+        sum_z = sum_z + get_accel_z()
+        wait 10 milliseconds
+    }
+    
+    # Calculate offsets (assuming sensor is level)
+    imu_accel_offset_x = sum_x / samples
+    imu_accel_offset_y = sum_y / samples
+    imu_accel_offset_z = (sum_z / samples) - 1  # Should be 1g when level
+    
+    print "Calibration complete!"
+}
+
+# Calibrate IMU gyroscope
+function calibrate_imu_gyro(samples) {
+    print "Calibrating gyroscope..."
+    print "Keep sensor still!"
+    
+    make var sum_x = 0
+    make var sum_y = 0
+    make var sum_z = 0
+    
+    loop samples times {
+        mpu6050_read_gyro()
+        sum_x = sum_x + get_gyro_x()
+        sum_y = sum_y + get_gyro_y()
+        sum_z = sum_z + get_gyro_z()
+        wait 10 milliseconds
+    }
+    
+    # Calculate offsets (should be 0 when still)
+    imu_gyro_offset_x = sum_x / samples
+    imu_gyro_offset_y = sum_y / samples
+    imu_gyro_offset_z = sum_z / samples
+    
+    print "Calibration complete!"
+}
+
+# Calibrate compass
+function calibrate_compass(samples) {
+    print "Calibrating compass..."
+    print "Rotate sensor 360 degrees slowly!"
+    
+    make var min_x = 10000
+    make var max_x = -10000
+    make var min_y = 10000
+    make var max_y = -10000
+    
+    loop samples times {
+        hmc5883l_read()
+        make var mx = get_mag_x()
+        make var my = get_mag_y()
+        
+        if mx < min_x {
+            min_x = mx
+        }
+        if mx > max_x {
+            max_x = mx
+        }
+        if my < min_y {
+            min_y = my
+        }
+        if my > max_y {
+            max_y = my
+        }
+        
+        wait 50 milliseconds
+    }
+    
+    # Calculate offsets (hard iron correction)
+    compass_offset_x = (max_x + min_x) / 2
+    compass_offset_y = (max_y + min_y) / 2
+    
+    print "Calibration complete!"
+}
+
+# Apply IMU calibration
+function apply_imu_calibration() {
+    make var ax = get_accel_x() - imu_accel_offset_x
+    make var ay = get_accel_y() - imu_accel_offset_y
+    make var az = get_accel_z() - imu_accel_offset_z
+    make var gx = get_gyro_x() - imu_gyro_offset_x
+    make var gy = get_gyro_y() - imu_gyro_offset_y
+    make var gz = get_gyro_z() - imu_gyro_offset_z
+    
+    # Return calibrated values (would need to store somewhere)
+    # For now, just return first value
+    return ax
+}
+
+# Apply compass calibration
+function apply_compass_calibration() {
+    make var mx = get_mag_x() - compass_offset_x
+    make var my = get_mag_y() - compass_offset_y
+    
+    # Recalculate heading with calibrated values
+    make var heading = atan2(my, mx) * 180 / 3.14159
+    
+    # Apply magnetic declination
+    heading = heading + compass_declination
+    
+    # Normalize
+    if heading < 0 {
+        heading = heading + 360
+    }
+    if heading >= 360 {
+        heading = heading - 360
+    }
+    
+    return heading
+}
+
+# Set magnetic declination for location
+function set_magnetic_declination(declination) {
+    compass_declination = declination
+}

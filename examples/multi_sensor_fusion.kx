@@ -1,0 +1,84 @@
+# Multi-Sensor Fusion Example
+# Combines IMU, GPS, and Compass for complete navigation
+
+import "fusion/kalman.kx"
+import "fusion/sensor_fusion.kx"
+import "sensors/mpu6050.kx"
+import "sensors/neo6m_gps.kx"
+import "sensors/hmc5883l_compass.kx"
+
+program {
+    # Initialize all sensors
+    mpu6050_init()
+    gps_init()
+    hmc5883l_init()
+    
+    # Initialize Kalman filters
+    kalman_init(0, 1)
+    kalman_set_process_noise(0.01)
+    kalman_set_measurement_noise(0.1)
+    
+    # Position tracking
+    make var position_x = 0
+    make var position_y = 0
+    make var velocity_x = 0
+    make var velocity_y = 0
+    
+    # Main navigation loop
+    loop forever {
+        # Read all sensors
+        mpu6050_read_accel()
+        mpu6050_read_gyro()
+        gps_read()
+        hmc5883l_read()
+        
+        # Get sensor data
+        make var accel_x = get_accel_x()
+        make var accel_y = get_accel_y()
+        make var gps_lat = get_latitude()
+        make var gps_lon = get_longitude()
+        make var compass_heading = get_heading()
+        make var gyro_z = get_gyro_z()
+        
+        # Fuse heading (compass + gyro)
+        make var fused_heading = fuse_heading(gyro_z, compass_heading)
+        
+        # Integrate acceleration for velocity
+        velocity_x = velocity_x + accel_x * 0.1
+        velocity_y = velocity_y + accel_y * 0.1
+        
+        # Integrate velocity for position
+        position_x = position_x + velocity_x * 0.1
+        position_y = position_y + velocity_y * 0.1
+        
+        # Fuse with GPS (when available)
+        if has_gps_fix() {
+            # Use GPS to correct position
+            position_x = fuse_sensors(position_x, gps_lat, 0.3, 0.7)
+            position_y = fuse_sensors(position_y, gps_lon, 0.3, 0.7)
+            
+            # Reset velocity drift
+            velocity_x = velocity_x * 0.9
+            velocity_y = velocity_y * 0.9
+        }
+        
+        # Get confidence
+        make var confidence = get_confidence()
+        
+        # Print navigation data
+        print "Position: ("
+        print position_x
+        print ", "
+        print position_y
+        print ") Heading: "
+        print fused_heading
+        print "° ("
+        print get_direction()
+        print ") Confidence: "
+        print confidence
+        print "%"
+        
+        # Wait
+        wait 100 milliseconds
+    }
+}

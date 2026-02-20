@@ -1,0 +1,67 @@
+# Math Library Example - FFT Signal Processing
+# Demonstrates: FFT, frequency analysis, filtering
+
+import "math/fft.kx"
+import "math/random.kx"
+
+program {
+    print "=== Kinetrix Math Library Demo: FFT ==="
+    print ""
+    
+    # Create a signal: sum of two sine waves
+    print "Creating test signal (8 samples)..."
+    print "Signal = sin(2*pi*1*t) + 0.5*sin(2*pi*2*t)"
+    print ""
+    
+    make array signal size 8
+    make var PI = 3.14159265359
+    make var i = 0
+    
+    loop 8 times {
+        make var t = i / 8.0
+        # 1 Hz component
+        make var component1 = sin(2.0 * PI * 1.0 * t)
+        # 2 Hz component
+        make var component2 = 0.5 * sin(2.0 * PI * 2.0 * t)
+        signal[i] = component1 + component2
+        
+        print "signal[" + i + "] = " + signal[i]
+        change i by 1
+    }
+    
+    print ""
+    
+    # Apply FFT
+    print "Applying FFT..."
+    make var fft_result = fft(signal, 8)
+    
+    # Get magnitude spectrum
+    make var magnitudes = fft_magnitude(fft_result, 8)
+    
+    print "Magnitude spectrum:"
+    i = 0
+    loop 8 times {
+        print "freq[" + i + "] magnitude = " + magnitudes[i]
+        change i by 1
+    }
+    
+    print ""
+    
+    # Find dominant frequency
+    make var max_mag = magnitudes[1]  # Skip DC component
+    make var max_freq = 1
+    i = 2
+    loop 3 times {  # Check frequencies 2-4
+        if magnitudes[i] > max_mag {
+            max_mag = magnitudes[i]
+            max_freq = i
+        }
+        change i by 1
+    }
+    
+    print "Dominant frequency bin: " + max_freq
+    print "Dominant magnitude: " + max_mag
+    
+    print ""
+    print "=== Demo Complete! ==="
+}

@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "*.kx": "c"
+    },
+    "editor.formatOnSave": false,
+    "editor.quickSuggestions": {
+        "other": true,
+        "comments": false,
+        "strings": false
+    }
+}

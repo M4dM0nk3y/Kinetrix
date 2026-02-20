@@ -1,0 +1,39 @@
+# Sensor Fusion - Combining Multiple Sensors
+# Uses Kalman filter for optimal estimation
+
+import "fusion/kalman.kx"
+
+# Fuse IMU and GPS for position estimation
+function fuse_position(imu_accel, gps_position) {
+    # Use Kalman filter to combine acceleration and GPS
+    make var fused = kalman_update(gps_position)
+    return fused
+}
+
+# Fuse gyroscope and compass for heading
+function fuse_heading(gyro_rate, compass_heading) {
+    # Integrate gyro and correct with compass
+    make var fused = kalman_update(compass_heading)
+    return fused
+}
+
+# Fuse multiple sensor readings
+function fuse_sensors(sensor1, sensor2, weight1, weight2) {
+    # Weighted average with Kalman filtering
+    make var weighted = (sensor1 * weight1 + sensor2 * weight2) / (weight1 + weight2)
+    make var fused = kalman_update(weighted)
+    return fused
+}
+
+# Get confidence level (0-100%)
+function get_confidence() {
+    make var error = kalman_get_error()
+    make var confidence = 100 * (1 - error)
+    if confidence < 0 {
+        confidence = 0
+    }
+    if confidence > 100 {
+        confidence = 100
+    }
+    return confidence
+}

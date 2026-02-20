@@ -1,0 +1,98 @@
+# MPU6050 IMU Sensor Library
+# 6-axis accelerometer + gyroscope
+
+# I2C address
+make var MPU6050_ADDR = 0x68
+
+# Register addresses
+make var MPU6050_PWR_MGMT_1 = 0x6B
+make var MPU6050_ACCEL_XOUT_H = 0x3B
+make var MPU6050_GYRO_XOUT_H = 0x43
+
+# Sensor data
+make var accel_x = 0
+make var accel_y = 0
+make var accel_z = 0
+make var gyro_x = 0
+make var gyro_y = 0
+make var gyro_z = 0
+
+# Initialize MPU6050
+function mpu6050_init() {
+    # Wake up MPU6050
+    i2c begin
+    i2c start MPU6050_ADDR
+    i2c send MPU6050_PWR_MGMT_1
+    i2c send 0
+    i2c stop
+}
+
+# Read accelerometer
+function mpu6050_read_accel() {
+    i2c start MPU6050_ADDR
+    i2c send MPU6050_ACCEL_XOUT_H
+    i2c stop
+    
+    # Read 6 bytes (X, Y, Z - 2 bytes each)
+    make var data = i2c read MPU6050_ADDR 6
+    
+    # Convert to acceleration (simplified)
+    accel_x = data[0] * 256 + data[1]
+    accel_y = data[2] * 256 + data[3]
+    accel_z = data[4] * 256 + data[5]
+    
+    # Convert to g (gravity units)
+    accel_x = accel_x / 16384
+    accel_y = accel_y / 16384
+    accel_z = accel_z / 16384
+}
+
+# Read gyroscope
+function mpu6050_read_gyro() {
+    i2c start MPU6050_ADDR
+    i2c send MPU6050_GYRO_XOUT_H
+    i2c stop
+    
+    # Read 6 bytes
+    make var data = i2c read MPU6050_ADDR 6
+    
+    # Convert to rotation rate
+    gyro_x = data[0] * 256 + data[1]
+    gyro_y = data[2] * 256 + data[3]
+    gyro_z = data[4] * 256 + data[5]
+    
+    # Convert to degrees/second
+    gyro_x = gyro_x / 131
+    gyro_y = gyro_y / 131
+    gyro_z = gyro_z / 131
+}
+
+# Get accelerometer X
+function get_accel_x() {
+    return accel_x
+}
+
+# Get accelerometer Y
+function get_accel_y() {
+    return accel_y
+}
+
+# Get accelerometer Z
+function get_accel_z() {
+    return accel_z
+}
+
+# Get gyroscope X
+function get_gyro_x() {
+    return gyro_x
+}
+
+# Get gyroscope Y
+function get_gyro_y() {
+    return gyro_y
+}
+
+# Get gyroscope Z
+function get_gyro_z() {
+    return gyro_z
+}

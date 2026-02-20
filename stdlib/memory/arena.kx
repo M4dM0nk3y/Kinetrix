@@ -1,0 +1,107 @@
+# Simple Arena Memory Allocator
+# Basic dynamic memory management
+
+# Arena configuration
+make var arena_size = 1024
+make var arena_offset = 0
+make var arena_enabled = 0
+
+# Memory pool (simplified - would use malloc in C)
+make array arena_pool size 1024
+
+# Initialize arena
+function arena_init(size) {
+    arena_size = size
+    arena_offset = 0
+    arena_enabled = 1
+    
+    print "Arena initialized: "
+    print size
+    print " bytes"
+}
+
+# Allocate memory
+function arena_alloc(size) {
+    if arena_enabled is 0 {
+        print "ERROR: Arena not initialized"
+        return -1
+    }
+    
+    if arena_offset + size > arena_size {
+        print "ERROR: Arena out of memory"
+        return -1
+    }
+    
+    make var ptr = arena_offset
+    arena_offset = arena_offset + size
+    
+    return ptr
+}
+
+# Reset arena (free all)
+function arena_reset() {
+    arena_offset = 0
+    print "Arena reset"
+}
+
+# Get arena usage
+function arena_get_usage() {
+    return arena_offset
+}
+
+# Get arena free space
+function arena_get_free() {
+    return arena_size - arena_offset
+}
+
+# Dynamic array (using arena)
+make var dyn_array_capacity = 0
+make var dyn_array_size = 0
+make var dyn_array_ptr = 0
+
+# Create dynamic array
+function dyn_array_create(initial_capacity) {
+    dyn_array_capacity = initial_capacity
+    dyn_array_size = 0
+    dyn_array_ptr = arena_alloc(initial_capacity)
+    
+    if dyn_array_ptr < 0 {
+        print "ERROR: Failed to create dynamic array"
+        return 0
+    }
+    
+    return 1
+}
+
+# Append to dynamic array
+function dyn_array_append(value) {
+    if dyn_array_size >= dyn_array_capacity {
+        print "ERROR: Dynamic array full"
+        return 0
+    }
+    
+    arena_pool[dyn_array_ptr + dyn_array_size] = value
+    dyn_array_size = dyn_array_size + 1
+    
+    return 1
+}
+
+# Get from dynamic array
+function dyn_array_get(index) {
+    if index >= dyn_array_size {
+        print "ERROR: Index out of bounds"
+        return 0
+    }
+    
+    return arena_pool[dyn_array_ptr + index]
+}
+
+# Get dynamic array size
+function dyn_array_length() {
+    return dyn_array_size
+}
+
+# Clear dynamic array
+function dyn_array_clear() {
+    dyn_array_size = 0
+}

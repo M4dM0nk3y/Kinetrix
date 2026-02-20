@@ -1,0 +1,39 @@
+# Line Follower Robot - uses ALL new features!
+# Sensors: A0 = left, A1 = right
+# Motors: pin 5 = left, pin 6 = right
+
+program {
+    loop forever {
+        make var left = read analog pin 0
+        make var right = read analog pin 1
+
+        print left
+        print right
+
+        # Both on line - go straight
+        if left > 500 and right > 500 {
+            set pin 5 to 200
+            set pin 6 to 200
+        }
+
+        # Left off line - turn right
+        if left < 500 and right > 500 {
+            set pin 5 to 80
+            set pin 6 to 200
+        }
+
+        # Right off line - turn left
+        if left > 500 and right < 500 {
+            set pin 5 to 200
+            set pin 6 to 80
+        }
+
+        # Both off line - stop
+        if left < 500 and right < 500 {
+            set pin 5 to 0
+            set pin 6 to 0
+        }
+
+        wait 50
+    }
+}

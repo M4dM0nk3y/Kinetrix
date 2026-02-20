@@ -1,0 +1,78 @@
+# AI/ML Inference Example
+# Object detection with neural network
+
+import "ml/neural_network.kx"
+
+program {
+    print "=== AI Object Detection Demo ==="
+    
+    # Initialize network (3 inputs, 5 hidden, 3 outputs)
+    # Inputs: sensor readings
+    # Outputs: object classes (0=nothing, 1=obstacle, 2=target)
+    nn_init(3, 5, 3)
+    
+    print "Loading pre-trained model..."
+    
+    # Load weights (simplified - would load from file)
+    make array weights size 100
+    # ... weights would be loaded here ...
+    nn_load_weights(weights, 100)
+    
+    print "Model loaded!"
+    print "Starting detection..."
+    
+    # Main detection loop
+    loop forever {
+        # Read sensors
+        make var sensor1 = read sensor pin 7
+        make var sensor2 = read sensor pin 8
+        make var sensor3 = read sensor pin 9
+        
+        # Normalize inputs (0-1 range)
+        make array inputs size 3
+        inputs[0] = sensor1 / 1024
+        inputs[1] = sensor2 / 1024
+        inputs[2] = sensor3 / 1024
+        
+        # Run inference
+        nn_forward(inputs, 3)
+        
+        # Get prediction
+        make var predicted_class = nn_predict()
+        make var confidence = nn_confidence()
+        
+        # Print results
+        if predicted_class is 0 {
+            print "Detected: Nothing"
+        }
+        if predicted_class is 1 {
+            print "Detected: Obstacle!"
+            # Take action
+            turn on pin 13  # Warning LED
+        }
+        if predicted_class is 2 {
+            print "Detected: Target!"
+            # Take action
+            turn on pin 12  # Target LED
+        }
+        
+        print " (Confidence: "
+        print confidence
+        print "%)"
+        
+        # Get individual outputs
+        make var out0 = nn_get_output(0)
+        make var out1 = nn_get_output(1)
+        make var out2 = nn_get_output(2)
+        
+        print "Outputs: ["
+        print out0
+        print ", "
+        print out1
+        print ", "
+        print out2
+        print "]"
+        
+        wait 500 milliseconds
+    }
+}
