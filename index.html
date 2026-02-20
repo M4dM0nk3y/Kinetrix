@@ -632,21 +632,160 @@ section { position: relative; z-index: 1; }
 .reveal.visible { opacity: 1; transform: translateY(0); }
 
 /* ====== RESPONSIVE ====== */
+
+/* ── Hamburger ──────────────────────────────────────────── */
+.nav-hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: .4rem;
+  margin-left: auto;
+  z-index: 1100;
+}
+.nav-hamburger span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: transform .3s, opacity .3s;
+}
+.nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-hamburger.open span:nth-child(2) { opacity: 0; }
+.nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+.nav-mobile-menu {
+  display: none;
+  position: fixed;
+  top: 64px;
+  left: 0; right: 0;
+  background: rgba(5,8,16,0.97);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  z-index: 999;
+  padding: 1.5rem 2rem 2rem;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.nav-mobile-menu.open { display: flex; }
+.nav-mobile-menu a {
+  color: var(--text);
+  text-decoration: none;
+  font-size: 1rem;
+  padding: .5rem 0;
+  border-bottom: 1px solid var(--border);
+  transition: color .2s;
+}
+.nav-mobile-menu a:hover { color: var(--accent); }
+.nav-mobile-menu .nav-btn {
+  display: inline-block;
+  margin-top: .5rem;
+  border-bottom: none;
+  text-align: center;
+}
+
+/* ── Tablet (≤1024px) ───────────────────────────────────── */
+@media(max-width:1024px) {
+  .hero-code-preview { gap: 1rem; }
+  .hero-code-preview .code-window { min-width: 220px; max-width: 340px; }
+  .syntax-grid { grid-template-columns: 1fr 1.2fr; }
+  .features-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+  .example-split { grid-template-columns: 1fr 1.4fr; }
+  .steps-grid { grid-template-columns: repeat(2, 1fr); }
+  .section-inner { padding: 4.5rem 2rem; }
+}
+
+/* ── Phone / Tablet (≤768px) ────────────────────────────── */
 @media(max-width:768px) {
+  /* Cursor: hide on touch */
+  body { cursor: auto; }
+  #cursor-glow { display: none; }
+
+  /* Navbar */
   .nav-links { display: none; }
-  #hero { padding: 5rem 1.5rem 7rem; }
+  .nav-btn.nav-btn-guide { display: none; }
+  .nav-btn:last-child { display: none; }
+  .nav-hamburger { display: flex; }
+
+  /* Hero */
+  #hero { padding: 5rem 1.25rem 7rem; }
   .hero-content { padding-bottom: 3rem; }
-  .hero-code-preview { flex-direction: column; align-items: center; }
-  .hero-code-preview .code-window { max-width: 100%; min-width: unset; }
-  .hero-arrow { transform: rotate(90deg); align-self: center; margin: .5rem 0; }
+  .hero-title { font-size: clamp(2rem, 10vw, 3.2rem); }
+  .hero-sub { font-size: 1rem; }
+  .hero-code-preview {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .hero-code-preview .code-window {
+    max-width: 100%;
+    min-width: unset;
+    flex: unset;
+  }
+  .hero-arrow { transform: rotate(90deg); align-self: center; margin: .25rem 0; }
+  .hero-btns { flex-direction: column; align-items: center; }
+  .hero-btns a { width: 100%; max-width: 320px; text-align: center; }
   .hero-stats { gap: 1.5rem 2rem; }
   .hero-scroll-indicator { bottom: 1.5rem; }
-  .section-inner { padding: 4rem 1.5rem; }
+
+  /* Sections */
+  .section-inner { padding: 3.5rem 1.25rem; }
+  .section-title { margin-bottom: 2rem; }
+
+  /* Features */
+  .features-grid { grid-template-columns: 1fr; }
+
+  /* Syntax */
   .syntax-grid { grid-template-columns: 1fr; }
-  .compare-table { font-size: .78rem; }
-  .compare-table th, .compare-table td { padding: .6rem .8rem; }
-  .footer-links { gap: .75rem 1.5rem; }
+
+  /* Examples */
+  .example-split { grid-template-columns: 1fr; }
+
+  /* Compare */
+  .compare-table-wrap { border-radius: var(--r); }
+  .compare-table { font-size: .75rem; }
+  .compare-table th, .compare-table td { padding: .5rem .6rem; }
+
+  /* Steps */
   .steps-grid { grid-template-columns: 1fr; }
+
+  /* Install box */
+  .install-box { padding: 1.25rem; }
+  .install-cmd { font-size: .72rem; }
+  .install-cmd-row { flex-direction: column; align-items: stretch; }
+  .install-copy-btn { width: 100%; }
+
+  /* CTA */
+  .cta-center { flex-direction: column; align-items: center; }
+  .cta-center a { width: 100%; max-width: 320px; text-align: center; }
+
+  /* Footer */
+  .footer-links { gap: .75rem 1.5rem; font-size: .85rem; }
+  .footer-tagline { padding-top: 2rem; margin-bottom: 2rem; }
+
+  /* Disable 3D tilt on touch */
+  .tilt-card { transform: none !important; }
+}
+
+/* ── Small phones (≤480px) ──────────────────────────────── */
+@media(max-width:480px) {
+  .nav-inner { padding: 0 1rem; }
+  #navbar { padding: 0 1rem; }
+  .hero-badge { font-size: .72rem; }
+  .hero-stats .stat-num { font-size: 1.6rem; }
+  .code-body { font-size: .72rem; padding: .9rem; }
+  .feat-code { font-size: .68rem; }
+  .cheatsheet-pre { font-size: .7rem; }
+  .section-inner { padding: 3rem 1rem; }
+  .install-cmd { font-size: .65rem; }
+  .step-card { padding: 1.25rem 1rem; }
+  .feature-card { padding: 1.25rem 1rem; }
+  .compare-table { font-size: .68rem; }
+  .compare-table th, .compare-table td { padding: .4rem .5rem; }
+  .footer-inner { padding: 0 .5rem; }
+  .tagline-quote { font-size: .95rem; }
 }
   </style>
 </head>
@@ -674,8 +813,22 @@ section { position: relative; z-index: 1; }
     </ul>
     <a href="KINETRIX_COMPREHENSIVE_GUIDE.pdf" class="nav-btn nav-btn-guide" target="_blank">📄 Language Guide</a>
     <a href="https://github.com/M4dM0nk3y/Kinetrix" class="nav-btn" target="_blank">GitHub ↗</a>
+    <button class="nav-hamburger" id="hamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </nav>
+
+<!-- Mobile Menu -->
+<div class="nav-mobile-menu" id="mobile-menu">
+  <a href="#features" class="mobile-link">Features</a>
+  <a href="#syntax" class="mobile-link">Syntax</a>
+  <a href="#examples" class="mobile-link">Examples</a>
+  <a href="#compare" class="mobile-link">Compare</a>
+  <a href="#get-started" class="mobile-link">Get Started</a>
+  <a href="KINETRIX_COMPREHENSIVE_GUIDE.pdf" class="nav-btn nav-btn-guide" target="_blank" style="margin-top:.5rem">📄 Language Guide</a>
+  <a href="https://github.com/M4dM0nk3y/Kinetrix" class="nav-btn" target="_blank">GitHub ↗</a>
+</div>
 
 <!-- HERO -->
 <section id="hero">
@@ -1508,6 +1661,24 @@ document.querySelectorAll('.stat-num').forEach(el => {
     render.options.height = window.innerHeight;
   });
 })();
+/* ── HAMBURGER MENU ── */
+(function() {
+  const btn  = document.getElementById('hamburger');
+  const menu = document.getElementById('mobile-menu');
+  if (!btn || !menu) return;
+  btn.addEventListener('click', () => {
+    btn.classList.toggle('open');
+    menu.classList.toggle('open');
+  });
+  // close on link click
+  menu.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+      btn.classList.remove('open');
+      menu.classList.remove('open');
+    });
+  });
+})();
+
 /* ── COPY INSTALL COMMAND ── */
 function copyInstall() {
   const text = document.getElementById('install-cmd-text').innerText;
