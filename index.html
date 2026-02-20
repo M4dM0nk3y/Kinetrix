@@ -618,6 +618,240 @@ nano my_robot.kx
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
-<script src="app.js"></script>
+<script>
+/* ── CURSOR GLOW ── */
+const cursorGlow = document.getElementById('cursor-glow');
+let mx = -100, my = -100, cx = -100, cy = -100;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+(function animCursor() {
+  cx += (mx - cx) * 0.12;
+  cy += (my - cy) * 0.12;
+  cursorGlow.style.left = cx + 'px';
+  cursorGlow.style.top  = cy + 'px';
+  requestAnimationFrame(animCursor);
+})();
+document.querySelectorAll('a,button,.tab,.tilt-card').forEach(el => {
+  el.addEventListener('mouseenter', () => { cursorGlow.style.width = '40px'; cursorGlow.style.height = '40px'; });
+  el.addEventListener('mouseleave', () => { cursorGlow.style.width = '20px'; cursorGlow.style.height = '20px'; });
+});
+
+/* ── NAVBAR SCROLL ── */
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+  navbar.classList.toggle('scrolled', window.scrollY > 40);
+});
+
+/* ── TABS ── */
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    const id = 'tab-' + tab.dataset.tab;
+    const panel = document.getElementById(id);
+    if (panel) panel.classList.add('active');
+  });
+});
+
+/* ── SCROLL REVEAL ── */
+document.querySelectorAll('.feature-card,.step-card,.syntax-table-wrap,.compare-table-wrap,.cheatsheet-card').forEach(el => {
+  el.classList.add('reveal');
+});
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+/* ── 3D TILT ── */
+document.querySelectorAll('.tilt-card').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const rect = card.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top)  / rect.height - 0.5;
+    card.style.transform = `perspective(800px) rotateY(${x * 10}deg) rotateX(${-y * 10}deg) scale(1.02)`;
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = 'perspective(800px) rotateY(0) rotateX(0) scale(1)';
+    card.style.transition = 'transform 0.4s ease';
+  });
+  card.addEventListener('mouseenter', () => { card.style.transition = 'transform 0.05s'; });
+});
+
+/* ── MAGNETIC BUTTONS ── */
+document.querySelectorAll('.magnetic').forEach(btn => {
+  btn.addEventListener('mousemove', e => {
+    const rect = btn.getBoundingClientRect();
+    const dx = e.clientX - (rect.left + rect.width / 2);
+    const dy = e.clientY - (rect.top + rect.height / 2);
+    btn.style.transform = `translate(${dx * 0.25}px, ${dy * 0.25}px)`;
+  });
+  btn.addEventListener('mouseleave', () => {
+    btn.style.transform = '';
+    btn.style.transition = 'transform 0.4s ease';
+  });
+});
+
+/* ── TEXT SCRAMBLE ── */
+class Scramble {
+  constructor(el) {
+    this.el = el;
+    this.chars = '!<>-_\\/[]{}—=+*^?#ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    this.update = this.update.bind(this);
+  }
+  setText(newText) {
+    const old = this.el.innerText;
+    const len = Math.max(old.length, newText.length);
+    const promise = new Promise(res => this.resolve = res);
+    this.queue = [];
+    for (let i = 0; i < len; i++) {
+      const from = old[i] || '', to = newText[i] || '';
+      const start = Math.floor(Math.random() * 20);
+      const end = start + Math.floor(Math.random() * 20);
+      this.queue.push({ from, to, start, end });
+    }
+    cancelAnimationFrame(this.frameReq);
+    this.frame = 0;
+    this.update();
+    return promise;
+  }
+  update() {
+    let output = '', complete = 0;
+    for (let i = 0; i < this.queue.length; i++) {
+      const { from, to, start, end } = this.queue[i];
+      let char = this.queue[i].char;
+      if (this.frame >= end) { complete++; output += to; }
+      else if (this.frame >= start) {
+        if (!char || Math.random() < 0.28) {
+          char = this.chars[Math.floor(Math.random() * this.chars.length)];
+          this.queue[i].char = char;
+        }
+        output += `<span style="color:#00d4ff66">${char}</span>`;
+      } else { output += from; }
+    }
+    this.el.innerHTML = output;
+    if (complete === this.queue.length) { this.resolve(); }
+    else { this.frameReq = requestAnimationFrame(this.update); this.frame++; }
+  }
+}
+document.querySelectorAll('.scramble').forEach(el => {
+  const sc = new Scramble(el);
+  const io = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) { sc.setText(el.dataset.text || el.innerText); io.disconnect(); }
+  }, { threshold: 0.5 });
+  io.observe(el);
+});
+
+/* ── COUNTER ANIMATION ── */
+document.querySelectorAll('.stat-num').forEach(el => {
+  const io2 = new IntersectionObserver(entries => {
+    if (!entries[0].isIntersecting) return;
+    const text = el.innerText;
+    const num = parseFloat(text);
+    if (isNaN(num)) return;
+    const suffix = text.replace(/[\d.]/g, '');
+    let start = 0; const dur = 1500;
+    const step = ts => {
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / dur, 1);
+      el.innerText = (num * p % 1 === 0 ? Math.floor(num * p) : (num * p).toFixed(1)) + suffix;
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+    io2.disconnect();
+  }, { threshold: 0.5 });
+  io2.observe(el);
+});
+
+/* ── MATTER.JS PHYSICS BACKGROUND ── */
+(function initPhysics() {
+  if (typeof Matter === 'undefined') return;
+  const { Engine, Render, Runner, Bodies, Body, Composite, Events } = Matter;
+  const canvas = document.getElementById('physics-canvas');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const engine = Engine.create({ gravity: { y: 0.3 } });
+  const world = engine.world;
+  const render = Render.create({
+    canvas, engine,
+    options: { width: window.innerWidth, height: window.innerHeight, wireframes: false, background: 'transparent' }
+  });
+  const colors = ['#00d4ff22','#7c3aed22','#10b98122','#f472b622','#f78c6c22'];
+  function makeParticle() {
+    const size = 8 + Math.random() * 24;
+    const x = Math.random() * window.innerWidth;
+    const y = Math.random() * window.innerHeight;
+    const sides = Math.random() > 0.4 ? 4 : 6;
+    const body = sides === 4
+      ? Bodies.rectangle(x, y, size, size, { angle: Math.random() * Math.PI })
+      : Bodies.polygon(x, y, sides, size / 2);
+    Body.setVelocity(body, { x: (Math.random() - 0.5) * 1.5, y: (Math.random() - 0.5) * 1.5 });
+    body.frictionAir = 0.005;
+    body.restitution = 0.9;
+    body.render.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+    body.render.strokeStyle = '#00d4ff44';
+    body.render.lineWidth = 1;
+    return body;
+  }
+  const walls = [
+    Bodies.rectangle(window.innerWidth/2, -25, window.innerWidth, 50, { isStatic: true, render: { visible: false } }),
+    Bodies.rectangle(window.innerWidth/2, window.innerHeight+25, window.innerWidth, 50, { isStatic: true, render: { visible: false } }),
+    Bodies.rectangle(-25, window.innerHeight/2, 50, window.innerHeight, { isStatic: true, render: { visible: false } }),
+    Bodies.rectangle(window.innerWidth+25, window.innerHeight/2, 50, window.innerHeight, { isStatic: true, render: { visible: false } }),
+  ];
+  Composite.add(world, walls);
+  const particles = [];
+  for (let i = 0; i < 55; i++) {
+    const p = makeParticle();
+    particles.push(p);
+    Composite.add(world, p);
+  }
+  let mPhysX = window.innerWidth / 2, mPhysY = window.innerHeight / 2;
+  document.addEventListener('mousemove', e => { mPhysX = e.clientX; mPhysY = e.clientY; });
+  Events.on(engine, 'beforeUpdate', () => {
+    particles.forEach(p => {
+      const dx = mPhysX - p.position.x;
+      const dy = mPhysY - p.position.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 180 && dist > 1) {
+        const force = 0.000018 * p.mass;
+        Body.applyForce(p, p.position, { x: dx * force, y: dy * force });
+      }
+      if (p.position.x < -50) Body.setPosition(p, { x: window.innerWidth + 50, y: p.position.y });
+      if (p.position.x > window.innerWidth + 50) Body.setPosition(p, { x: -50, y: p.position.y });
+      if (p.position.y < -50) Body.setPosition(p, { x: p.position.x, y: window.innerHeight + 50 });
+      if (p.position.y > window.innerHeight + 50) Body.setPosition(p, { x: p.position.x, y: -50 });
+    });
+  });
+  Render.run(render);
+  Runner.run(Runner.create(), engine);
+  Events.on(render, 'afterRender', () => {
+    const ctx = canvas.getContext('2d');
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const a = particles[i].position, b = particles[j].position;
+        const dx = a.x - b.x, dy = a.y - b.y;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d < 120) {
+          ctx.save();
+          ctx.globalAlpha = (1 - d / 120) * 0.25;
+          ctx.strokeStyle = '#00d4ff';
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+    }
+  });
+  window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    render.options.width = window.innerWidth;
+    render.options.height = window.innerHeight;
+  });
+})();
+</script>
 </body>
 </html>
