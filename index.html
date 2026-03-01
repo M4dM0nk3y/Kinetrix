@@ -1,877 +1,308 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Kinetrix — The Robotics Programming Language</title>
-  <meta name="description" content="Kinetrix is a beginner-friendly programming language built for robotics and embedded systems. Write robots in minutes, not days. Compiles to Arduino C++." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
-  <style>
-/* ============================
-   KINETRIX WEBSITE — styles
-   ============================ */
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Kinetrix v3.1 — The Robotics Programming Language</title>
+<meta name="description" content="Kinetrix is a compiled, statically-typed robotics language. Write hardware in plain English. Compiles to C++ for ESP32, Arduino, Raspberry Pi, ROS2."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --bg: #050810;
-  --bg2: #090d1a;
-  --surface: rgba(255,255,255,0.04);
-  --border: rgba(255,255,255,0.08);
-  --accent: #00d4ff;
-  --accent2: #7c3aed;
-  --accent3: #10b981;
-  --text: #e2e8f0;
-  --muted: #64748b;
-  --kw: #c792ea;
-  --hw: #82aaff;
-  --fn: #80cbc4;
-  --num: #f78c6c;
-  --str: #c3e88d;
-  --cmt: #546e7a;
-  --cpp-kw: #c792ea;
-  --cpp-fn: #82aaff;
-  --r: 8px;
-  --r2: 16px;
-  --shadow: 0 0 40px rgba(0,212,255,0.08);
-}
-
-html { scroll-behavior: smooth; }
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Inter', sans-serif;
-  overflow-x: hidden;
-  cursor: none;
+:root{
+  --bg:#02040a;
+  --bg2:#060a14;
+  --bg3:#0a1020;
+  --surface:rgba(255,255,255,0.03);
+  --surface2:rgba(255,255,255,0.06);
+  --border:rgba(255,255,255,0.07);
+  --border2:rgba(255,255,255,0.12);
+  --accent:#00e5ff;
+  --accent2:#7c3aed;
+  --accent3:#00ff88;
+  --accent4:#ff6b35;
+  --warn:#ffbe00;
+  --text:#dde6f0;
+  --muted:#4a5a70;
+  --muted2:#7a8fa6;
+  --kw:#c792ea;
+  --hw:#82aaff;
+  --fn:#80cbc4;
+  --num:#f78c6c;
+  --str:#c3e88d;
+  --cmt:#3d5a6a;
+  --r:6px;
+  --r2:14px;
+  --r3:22px;
 }
 
-/* ====== PHYSICS CANVAS ====== */
-#physics-canvas {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.55;
-}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;overflow-x:hidden;cursor:none}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--accent2);border-radius:4px}
 
-/* ====== CURSOR GLOW ====== */
-#cursor-glow {
-  width: 20px; height: 20px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(0,212,255,0.9) 0%, transparent 70%);
-  position: fixed;
-  pointer-events: none;
-  z-index: 9999;
-  transform: translate(-50%,-50%);
-  transition: width .15s, height .15s;
-  mix-blend-mode: screen;
-}
+/* CANVAS */
+#physics-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.45}
 
-/* ====== NAVBAR ====== */
-#navbar {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 1000;
-  padding: 0 2rem;
-  backdrop-filter: blur(20px);
-  background: rgba(5,8,16,0.7);
-  border-bottom: 1px solid var(--border);
-  transition: box-shadow .3s;
-}
-#navbar.scrolled { box-shadow: 0 4px 30px rgba(0,212,255,0.1); }
-.nav-inner {
-  max-width: 1200px; margin: auto;
-  display: flex; align-items: center; gap: 2rem;
-  height: 64px;
-}
-.nav-logo { display: flex; align-items: center; gap: .5rem; font-weight: 700; font-size: 1.2rem; }
-.logo-icon { font-size: 1.4rem; }
-.logo-text { background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-.nav-links { display: flex; gap: 2rem; list-style: none; margin-left: auto; }
-.nav-links a { color: var(--muted); text-decoration: none; font-size: .9rem; transition: color .2s; }
-.nav-links a:hover { color: var(--accent); }
-.nav-btn {
-  padding: .45rem 1.2rem;
-  border: 1px solid var(--accent);
-  color: var(--accent);
-  border-radius: 6px;
-  text-decoration: none;
-  font-size: .85rem;
-  transition: background .2s, color .2s;
-}
-.nav-btn:hover { background: var(--accent); color: var(--bg); }
-.nav-btn-guide {
-  border-color: var(--accent2);
-  color: var(--accent2);
-}
-.nav-btn-guide:hover { background: var(--accent2); color: #fff; }
+/* CURSOR */
+#cursor{width:12px;height:12px;border-radius:50%;background:var(--accent);position:fixed;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width .2s,height .2s,background .2s;mix-blend-mode:screen;box-shadow:0 0 12px var(--accent)}
+#cursor-ring{width:36px;height:36px;border-radius:50%;border:1px solid rgba(0,229,255,0.4);position:fixed;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:width .35s,height .35s,border-color .2s}
+body:hover #cursor{opacity:1}
 
+/* NAVBAR */
+#navbar{position:fixed;top:0;left:0;right:0;z-index:1000;padding:0 2.5rem;backdrop-filter:blur(24px) saturate(1.8);background:rgba(2,4,10,0.75);border-bottom:1px solid transparent;transition:border-color .4s,box-shadow .4s}
+#navbar.scrolled{border-bottom-color:var(--border);box-shadow:0 4px 40px rgba(0,229,255,0.07)}
+.nav-inner{max-width:1280px;margin:auto;display:flex;align-items:center;gap:2rem;height:68px}
+.nav-logo{display:flex;align-items:center;gap:.6rem;text-decoration:none}
+.logo-mark{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:700;color:#fff;flex-shrink:0;box-shadow:0 0 20px rgba(0,229,255,0.3)}
+.logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.logo-version{font-size:.65rem;color:var(--muted2);background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.2);padding:.1rem .4rem;border-radius:4px;margin-left:.25rem;font-family:'JetBrains Mono',monospace;-webkit-text-fill-color:var(--muted2)}
+.nav-links{display:flex;gap:2rem;list-style:none;margin-left:auto}
+.nav-links a{color:var(--muted2);text-decoration:none;font-size:.85rem;font-weight:500;transition:color .2s;letter-spacing:.02em}
+.nav-links a:hover{color:var(--accent)}
+.nav-actions{display:flex;gap:.75rem;align-items:center}
+.nav-btn{padding:.42rem 1.1rem;border:1px solid var(--border2);color:var(--text);border-radius:var(--r);text-decoration:none;font-size:.8rem;font-weight:500;transition:all .2s;white-space:nowrap}
+.nav-btn:hover{border-color:var(--accent);color:var(--accent);box-shadow:0 0 16px rgba(0,229,255,0.15)}
+.nav-btn-primary{background:linear-gradient(135deg,var(--accent2),#a855f7);border-color:transparent;color:#fff}
+.nav-btn-primary:hover{opacity:.85;box-shadow:0 0 24px rgba(124,58,237,0.4);color:#fff}
+.hamburger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:.4rem;margin-left:auto}
+.hamburger span{display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:transform .3s,opacity .3s}
+.hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.hamburger.open span:nth-child(2){opacity:0}
+.hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+.mobile-menu{display:none;position:fixed;top:68px;left:0;right:0;background:rgba(2,4,10,.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);z-index:999;padding:1.5rem 2rem 2rem;flex-direction:column;gap:1rem}
+.mobile-menu.open{display:flex}
+.mobile-menu a{color:var(--text);text-decoration:none;font-size:.95rem;padding:.5rem 0;border-bottom:1px solid var(--border);transition:color .2s}
+.mobile-menu a:hover{color:var(--accent)}
+.mobile-menu .nav-btn{border-bottom:none;text-align:center;margin-top:.5rem}
 
-/* ====== SECTIONS ====== */
-section { position: relative; z-index: 1; }
-.section-inner { max-width: 1200px; margin: auto; padding: 5rem 2rem; }
-.section-tag {
-  display: inline-block;
-  background: rgba(0,212,255,0.1);
-  border: 1px solid rgba(0,212,255,0.3);
-  color: var(--accent);
-  font-size: .75rem;
-  font-weight: 600;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  padding: .3rem .8rem;
-  border-radius: 99px;
-  margin-bottom: 1rem;
-}
-.section-title {
-  font-size: clamp(1.8rem, 4vw, 2.8rem);
-  font-weight: 900;
-  margin-bottom: 3rem;
-  line-height: 1.2;
-}
+/* SECTIONS */
+section{position:relative;z-index:1}
+.section-inner{max-width:1280px;margin:auto;padding:6rem 2.5rem}
+.section-tag{display:inline-flex;align-items:center;gap:.5rem;background:rgba(0,229,255,0.06);border:1px solid rgba(0,229,255,0.2);color:var(--accent);font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:.3rem .85rem;border-radius:99px;margin-bottom:1rem;font-family:'JetBrains Mono',monospace}
+.section-tag::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--accent);animation:pulse-dot 2s ease infinite}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
+.section-title{font-family:'Syne',sans-serif;font-size:clamp(2rem,4.5vw,3rem);font-weight:800;margin-bottom:3rem;line-height:1.1;letter-spacing:-.02em}
+.gradient-text{background:linear-gradient(135deg,var(--accent),var(--accent2),#f472b6);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;background-size:200%;animation:grad-shift 5s ease infinite}
+@keyframes grad-shift{0%,100%{background-position:0%}50%{background-position:100%}}
 
-/* ====== HERO ====== */
-#hero {
-  min-height: 100vh;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 6rem 2rem 8rem;
-}
-.hero-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  max-width: 1100px;
-  padding-bottom: 4rem;
-}
-.hero-badge {
-  display: inline-block;
-  background: rgba(124,58,237,0.15);
-  border: 1px solid rgba(124,58,237,0.4);
-  color: #a78bfa;
-  padding: .4rem 1rem;
-  border-radius: 99px;
-  font-size: .8rem;
-  margin-bottom: 1.5rem;
-  animation: fadeInDown .6s ease both;
-}
-.hero-title {
-  font-size: clamp(2.5rem, 7vw, 5rem);
-  font-weight: 900;
-  line-height: 1.1;
-  margin-bottom: 1.5rem;
-  animation: fadeInDown .7s .1s ease both;
-}
-.gradient-text {
-  background: linear-gradient(135deg, var(--accent), var(--accent2), #f472b6);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-size: 200%;
-  animation: gradShift 4s ease infinite;
-}
-@keyframes gradShift { 0%,100%{background-position:0%} 50%{background-position:100%} }
-.hero-sub {
-  color: var(--muted);
-  font-size: 1.1rem;
-  line-height: 1.7;
-  margin-bottom: 2.5rem;
-  animation: fadeInDown .8s .2s ease both;
-}
-.hero-code-preview {
-  display: flex;
-  align-items: flex-start;
-  gap: 1.5rem;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-bottom: 2.5rem;
-  animation: fadeInDown .9s .3s ease both;
-  width: 100%;
-}
-.hero-code-preview .code-window {
-  min-width: 260px;
-  max-width: 380px;
-  flex: 1;
-}
-.hero-arrow { font-size: 2rem; color: var(--accent); align-self: center; }
-.hero-btns {
-  display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
-  margin-bottom: 3rem;
-  animation: fadeInDown 1s .4s ease both;
-}
-.hero-stats {
-  display: flex;
-  gap: 2rem 4rem;
-  justify-content: center;
-  flex-wrap: wrap;
-  padding: .5rem 0;
-  animation: fadeInDown 1s .5s ease both;
-}
-.stat {
-  text-align: center;
-  min-width: 90px;
-}
+/* HERO */
+#hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:7rem 2rem 9rem;overflow:hidden}
+.hero-badge{display:inline-flex;align-items:center;gap:.5rem;background:rgba(124,58,237,0.12);border:1px solid rgba(124,58,237,0.35);color:#c4b5fd;padding:.35rem 1rem;border-radius:99px;font-size:.78rem;font-weight:500;margin-bottom:1.8rem;animation:fade-up .6s ease both;font-family:'JetBrains Mono',monospace}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:#a855f7;animation:pulse-dot 2s ease infinite}
+.hero-title{font-family:'Syne',sans-serif;font-size:clamp(3rem,8vw,5.5rem);font-weight:800;line-height:1.05;letter-spacing:-.03em;margin-bottom:1.5rem;animation:fade-up .7s .1s ease both}
+.hero-sub{color:var(--muted2);font-size:1.05rem;line-height:1.75;margin-bottom:3rem;max-width:600px;animation:fade-up .8s .2s ease both}
+.hero-code{display:grid;grid-template-columns:1fr auto 1fr;gap:1.5rem;align-items:center;width:100%;max-width:940px;margin-bottom:3rem;animation:fade-up .9s .3s ease both}
+.hero-arrow{color:var(--accent);font-size:1.5rem;display:flex;align-items:center;gap:.3rem;flex-direction:column;font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted2)}
+.hero-arrow svg{width:20px;height:20px;stroke:var(--accent)}
+.hero-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-bottom:3.5rem;animation:fade-up 1s .4s ease both}
+.hero-stats{display:flex;gap:3rem;justify-content:center;flex-wrap:wrap;animation:fade-up 1s .5s ease both}
+.stat{text-align:center}
+.stat-num{display:block;font-family:'Syne',sans-serif;font-size:2.2rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent3));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.stat-lbl{font-size:.75rem;color:var(--muted);letter-spacing:.05em;margin-top:.2rem}
+.scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.6rem;color:var(--muted);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;animation:fade-up 1s .8s ease both}
+.scroll-chevron{width:14px;height:14px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(45deg);animation:bounce 2s ease infinite}
+@keyframes bounce{0%,100%{transform:rotate(45deg) translateY(0)}50%{transform:rotate(45deg) translateY(5px)}}
+@keyframes fade-up{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
 
-.stat-num {
-  display: block;
-  font-size: 2rem;
-  font-weight: 900;
-  background: linear-gradient(135deg, var(--accent), var(--accent3));
-  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-}
-.stat-lbl { font-size: .8rem; color: var(--muted); }
-.hero-scroll-indicator {
-  position: absolute;
-  bottom: 2.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
-  color: var(--muted);
-  font-size: .78rem;
-  letter-spacing: .05em;
-  text-transform: uppercase;
-  animation: fadeIn 2s 1.2s ease both;
-  white-space: nowrap;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: .6rem;
-}
-.scroll-arrow {
-  width: 16px;
-  height: 16px;
-  border-right: 2px solid var(--muted);
-  border-bottom: 2px solid var(--muted);
-  transform: rotate(45deg);
-  animation: bounce 2s ease infinite;
-}
-@keyframes bounce { 0%,100%{transform:rotate(45deg) translateY(0)} 50%{transform:rotate(45deg) translateY(6px)} }
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;border-radius:var(--r2);text-decoration:none;font-weight:600;font-size:.88rem;transition:all .25s;letter-spacing:.01em;cursor:pointer;border:none;font-family:'Space Grotesk',sans-serif}
+.btn-primary{background:linear-gradient(135deg,var(--accent2),#a855f7);color:#fff;box-shadow:0 4px 24px rgba(124,58,237,0.35)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(124,58,237,0.5)}
+.btn-accent{background:linear-gradient(135deg,var(--accent),#0099cc);color:#000;box-shadow:0 4px 24px rgba(0,229,255,0.25)}
+.btn-accent:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,229,255,0.4)}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);box-shadow:0 0 20px rgba(0,229,255,0.1)}
 
-/* ====== BUTTONS ====== */
-.btn-primary {
-  display: inline-block;
-  padding: .8rem 2rem;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: #fff;
-  border-radius: 8px;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: .95rem;
-  transition: transform .2s, box-shadow .2s;
-  box-shadow: 0 0 20px rgba(0,212,255,0.3);
-}
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,212,255,0.4); }
-.btn-secondary {
-  display: inline-block;
-  padding: .8rem 2rem;
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 8px;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: .95rem;
-  backdrop-filter: blur(10px);
-  transition: border-color .2s, box-shadow .2s;
-}
-.btn-secondary:hover { border-color: var(--accent); box-shadow: 0 0 20px rgba(0,212,255,0.15); }
+/* CODE WINDOWS */
+.code-win{background:#0c1118;border:1px solid rgba(255,255,255,0.08);border-radius:var(--r2);overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.6),inset 0 0 0 1px rgba(255,255,255,0.02)}
+.code-bar{display:flex;align-items:center;gap:.4rem;padding:.65rem 1rem;background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.05)}
+.dot{width:11px;height:11px;border-radius:50%}
+.dot.r{background:#ff5f57}.dot.y{background:#febc2e}.dot.g{background:#28c840}
+.code-file{margin-left:.5rem;color:var(--muted);font-size:.72rem;font-family:'JetBrains Mono',monospace}
+.code-body{font-family:'JetBrains Mono',monospace;font-size:.78rem;line-height:1.85;color:#b8c9d9;padding:1.2rem;overflow-x:auto}
+.code-body.sm{font-size:.72rem}
+.kw{color:var(--kw);font-weight:500}
+.hw{color:var(--hw)}
+.fn{color:var(--fn)}
+.num{color:var(--num)}
+.str{color:var(--str)}
+.cmt{color:var(--cmt);font-style:italic}
+.op{color:#f8c554}
+.ty{color:#ffcb6b}
 
-/* ====== CODE WINDOWS ====== */
-.code-window {
-  background: #0d1117;
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: var(--r2);
-  overflow: hidden;
-  text-align: left;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-}
-.code-titlebar {
-  display: flex;
-  align-items: center;
-  gap: .4rem;
-  padding: .7rem 1rem;
-  background: rgba(255,255,255,0.04);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-.dot { width: 12px; height: 12px; border-radius: 50%; }
-.dot.r { background: #ff5f57; }
-.dot.y { background: #febc2e; }
-.dot.g { background: #28c840; }
-.code-filename { margin-left: .5rem; color: var(--muted); font-size: .8rem; font-family: 'JetBrains Mono', monospace; }
-.code-body {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: .82rem;
-  line-height: 1.8;
-  color: #cdd9e5;
-  padding: 1.2rem;
-  overflow-x: auto;
-}
-.code-body.small { font-size: .78rem; }
-.cpp-code { color: #cdd9e5; }
+/* FEATURES */
+#features{background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%)}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:1.25rem}
+.feat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:1.6rem;transition:border-color .3s,box-shadow .3s,transform .2s;position:relative;overflow:hidden}
+.feat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0;transition:opacity .3s}
+.feat-card:hover{border-color:rgba(0,229,255,0.25);box-shadow:0 0 40px rgba(0,229,255,0.06);transform:translateY(-2px)}
+.feat-card:hover::before{opacity:1}
+.feat-icon{font-size:1.8rem;margin-bottom:.9rem}
+.feat-card h3{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;margin-bottom:.45rem;color:var(--text)}
+.feat-card p{color:var(--muted2);font-size:.8rem;margin-bottom:1rem;line-height:1.65}
+.feat-code{font-family:'JetBrains Mono',monospace;font-size:.7rem;line-height:1.8;color:#b8c9d9;background:rgba(0,0,0,0.35);border-radius:var(--r);padding:.75rem;overflow-x:auto;border:1px solid rgba(255,255,255,0.04)}
+.feat-tag{display:inline-block;font-size:.62rem;font-family:'JetBrains Mono',monospace;padding:.15rem .5rem;border-radius:4px;margin-bottom:.75rem;font-weight:500}
+.feat-tag.new{background:rgba(0,255,136,0.1);color:var(--accent3);border:1px solid rgba(0,255,136,0.25)}
+.feat-tag.core{background:rgba(0,229,255,0.08);color:var(--accent);border:1px solid rgba(0,229,255,0.2)}
 
-/* Syntax colors */
-.kw  { color: var(--kw); font-weight: 600; }
-.hw  { color: var(--hw); }
-.fn  { color: var(--fn); }
-.num { color: var(--num); }
-.str { color: var(--str); }
-.cmt { color: var(--cmt); font-style: italic; }
-.cpp-kw { color: var(--cpp-kw); }
-.cpp-fn { color: var(--cpp-fn); }
+/* SYNTAX */
+#syntax{background:var(--bg)}
+.syntax-layout{display:grid;grid-template-columns:1fr 1.6fr;gap:2.5rem;align-items:start}
+.ref-section h3{font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;color:var(--accent);margin:1.8rem 0 .75rem;letter-spacing:.05em;text-transform:uppercase}
+.ref-section h3:first-child{margin-top:0}
+.ref-table{width:100%;border-collapse:collapse;font-size:.78rem}
+.ref-table th,.ref-table td{padding:.55rem .8rem;text-align:left;border-bottom:1px solid var(--border)}
+.ref-table th{color:var(--muted);font-weight:500;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em}
+.ref-table code{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--fn);background:rgba(255,255,255,0.05);padding:.1rem .35rem;border-radius:3px}
+.ref-table tr:hover td{background:rgba(255,255,255,0.02)}
 
-/* ====== FEATURES GRID ====== */
-#features { background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%); }
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
-}
-.feature-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r2);
-  padding: 1.5rem;
-  transition: border-color .3s, box-shadow .3s, transform .2s;
-}
-.feature-card:hover {
-  border-color: rgba(0,212,255,0.3);
-  box-shadow: 0 0 30px rgba(0,212,255,0.08);
-}
-.feat-icon { font-size: 2rem; margin-bottom: .75rem; }
-.feature-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: .5rem; }
-.feature-card p { color: var(--muted); font-size: .85rem; margin-bottom: 1rem; line-height: 1.6; }
-.feat-code {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: .75rem;
-  line-height: 1.8;
-  color: #cdd9e5;
-  background: rgba(0,0,0,0.3);
-  border-radius: var(--r);
-  padding: .75rem;
-  overflow-x: auto;
-}
+/* TABS / EXAMPLES */
+#examples{background:var(--bg2)}
+.tabs{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:2rem}
+.tab{padding:.42rem 1rem;border:1px solid var(--border);background:transparent;color:var(--muted2);border-radius:var(--r);font-size:.78rem;cursor:pointer;transition:all .2s;font-family:'Space Grotesk',sans-serif;font-weight:500}
+.tab:hover{color:var(--text);border-color:var(--border2)}
+.tab.active{background:rgba(0,229,255,0.08);border-color:var(--accent);color:var(--accent)}
+.tab-panel{display:none}
+.tab-panel.active{display:grid;grid-template-columns:1fr 1.7fr;gap:2rem;align-items:start;animation:fade-in .3s ease}
+@keyframes fade-in{from{opacity:0}to{opacity:1}}
+.ex-info h3{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:.75rem}
+.ex-info p{color:var(--muted2);font-size:.85rem;line-height:1.7;margin-bottom:1rem}
+.ex-badge{display:inline-block;background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.2);color:var(--accent3);font-size:.7rem;padding:.25rem .7rem;border-radius:99px;font-family:'JetBrains Mono',monospace}
 
-/* ====== SYNTAX SECTION ====== */
-#syntax { background: var(--bg); }
-.syntax-grid {
-  display: grid;
-  grid-template-columns: 1fr 1.5fr;
-  gap: 2rem;
-  align-items: start;
-}
-@media(max-width:900px) { .syntax-grid { grid-template-columns: 1fr; } }
+/* COMPARE */
+#compare{background:var(--bg)}
+.compare-wrap{overflow-x:auto;border-radius:var(--r2);border:1px solid var(--border)}
+.compare-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.compare-table th,.compare-table td{padding:.9rem 1.2rem;text-align:center;border-bottom:1px solid var(--border)}
+.compare-table th:first-child,.compare-table td:first-child{text-align:left}
+.compare-table th{color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;background:rgba(255,255,255,0.015);font-weight:500}
+.compare-table tr:hover td{background:rgba(255,255,255,0.015)}
+.compare-table tr:last-child td{border-bottom:none}
+.col-kx{color:var(--accent)!important;background:rgba(0,229,255,0.03)!important;font-weight:600}
+.yes{color:var(--accent3)}.no{color:var(--muted)}
 
-.syntax-table-wrap h3 {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--accent);
-  margin: 1.5rem 0 .75rem;
-}
-.syntax-table-wrap h3:first-child { margin-top: 0; }
+/* GET STARTED */
+#get-started{background:var(--bg2)}
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1.25rem;margin-bottom:3rem}
+.step-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:1.8rem 1.5rem;transition:border-color .3s}
+.step-card:hover{border-color:rgba(0,229,255,0.25)}
+.step-num{font-family:'Syne',sans-serif;font-size:2.8rem;font-weight:800;color:var(--accent2);opacity:.25;margin-bottom:.75rem;line-height:1}
+.step-card h3{font-family:'Syne',sans-serif;font-size:.9rem;font-weight:700;color:var(--accent);margin-bottom:1rem}
+.install-box{background:rgba(0,229,255,0.03);border:1px solid rgba(0,229,255,0.18);border-radius:var(--r2);padding:1.5rem 2rem;margin-bottom:1.5rem}
+.install-label{font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem}
+.install-row{display:flex;align-items:center;gap:.75rem}
+.install-cmd{font-family:'JetBrains Mono',monospace;font-size:.8rem;color:#cdd9e5;background:rgba(0,0,0,0.4);padding:.7rem 1rem;border-radius:var(--r);flex:1;word-break:break-all;user-select:all}
+.copy-btn{padding:.6rem 1.1rem;background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.25);color:var(--accent);border-radius:var(--r);font-size:.76rem;cursor:pointer;font-family:'Space Grotesk',sans-serif;white-space:nowrap;transition:all .2s}
+.copy-btn:hover{background:rgba(0,229,255,0.15)}
+.copy-btn.copied{color:var(--accent3);border-color:var(--accent3);background:rgba(0,255,136,0.08)}
+.or-div{text-align:center;position:relative;margin:2rem 0 1.5rem;color:var(--muted);font-size:.75rem}
+.or-div::before,.or-div::after{content:'';position:absolute;top:50%;width:44%;height:1px;background:var(--border)}
+.or-div::before{left:0}.or-div::after{right:0}
+.or-div span{background:var(--bg2);padding:0 1rem}
+.cta-row{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
 
-.ref-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
-.ref-table th, .ref-table td {
-  padding: .6rem .8rem;
-  text-align: left;
-  border-bottom: 1px solid var(--border);
-}
-.ref-table th { color: var(--muted); font-weight: 500; font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; }
-.ref-table code {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: .78rem;
-  color: var(--fn);
-  background: rgba(255,255,255,0.05);
-  padding: .1rem .4rem;
-  border-radius: 4px;
-}
-.cheatsheet-card {
-  background: #0d1117;
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: var(--r2);
-  overflow: hidden;
-}
-.cheatsheet-pre {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: .78rem;
-  line-height: 1.9;
-  color: #cdd9e5;
-  padding: 1.2rem;
-  overflow-x: auto;
-}
+/* CONTACT */
+#contact{background:var(--bg)}
+.contact-grid{display:grid;grid-template-columns:1fr 1.4fr;gap:3rem;align-items:start;max-width:960px;margin:0 auto}
+.contact-info h3{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:700;margin-bottom:1rem}
+.contact-info p{color:var(--muted2);font-size:.85rem;line-height:1.75;margin-bottom:1.5rem}
+.contact-links{display:flex;flex-direction:column;gap:.75rem}
+.contact-link{display:flex;align-items:center;gap:.75rem;color:var(--muted2);text-decoration:none;font-size:.85rem;transition:color .2s}
+.contact-link:hover{color:var(--accent)}
+.contact-link-icon{width:32px;height:32px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;transition:border-color .2s,background .2s}
+.contact-link:hover .contact-link-icon{border-color:rgba(0,229,255,0.3);background:rgba(0,229,255,0.06)}
+.contact-form-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r3);padding:2.5rem;transition:border-color .3s,box-shadow .3s}
+.contact-form-wrap:hover{border-color:rgba(0,229,255,0.2);box-shadow:0 0 40px rgba(0,229,255,0.05)}
+.contact-form{display:flex;flex-direction:column;gap:1.5rem}
+.form-group{display:flex;flex-direction:column;gap:.5rem}
+.form-group label{font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);font-family:'JetBrains Mono',monospace}
+.form-group input,.form-group textarea,.form-group select{background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.08);color:var(--text);padding:.85rem 1rem;border-radius:var(--r);font-family:'Space Grotesk',sans-serif;font-size:.85rem;transition:all .2s;width:100%;resize:vertical}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 20px rgba(0,229,255,0.12);background:rgba(0,0,0,0.6)}
+.form-group input::placeholder,.form-group textarea::placeholder{color:var(--muted)}
+.form-group select option{background:#0c1118;color:var(--text)}
+.form-status{font-size:.8rem;padding:.6rem 1rem;border-radius:var(--r);display:none}
+.form-status.success{background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.25);color:var(--accent3);display:block}
+.form-status.error{background:rgba(255,100,50,0.1);border:1px solid rgba(255,100,50,0.25);color:var(--accent4);display:block}
 
-/* ====== EXAMPLES TABS ====== */
-#examples { background: var(--bg2); }
-.tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .5rem;
-  margin-bottom: 2rem;
-}
-.tab {
-  padding: .5rem 1.2rem;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--muted);
-  border-radius: 6px;
-  font-size: .85rem;
-  cursor: pointer;
-  transition: all .2s;
-  font-family: inherit;
-}
-.tab:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
-.tab.active { background: rgba(0,212,255,0.1); border-color: var(--accent); color: var(--accent); }
+/* FOOTER */
+#footer{background:#010306;border-top:1px solid var(--border);padding:5rem 2.5rem 3rem;position:relative;z-index:1}
+.footer-inner{max-width:1280px;margin:auto}
+.footer-top{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:3rem;margin-bottom:4rem}
+.footer-brand p{color:var(--muted);font-size:.82rem;line-height:1.7;margin-top:.75rem;max-width:280px}
+.footer-brand .badges{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem}
+.footer-badge{font-family:'JetBrains Mono',monospace;font-size:.65rem;padding:.2rem .55rem;border-radius:4px;background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--muted2)}
+.footer-col h4{font-family:'Syne',sans-serif;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:1rem}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:.6rem}
+.footer-col ul a{color:var(--muted2);text-decoration:none;font-size:.82rem;transition:color .2s}
+.footer-col ul a:hover{color:var(--accent)}
+.footer-bottom{border-top:1px solid var(--border);padding-top:3rem}
+.footer-tagline-wrap{text-align:center;margin-bottom:2rem}
+.footer-tagline{font-family:'Syne',sans-serif;font-size:clamp(.95rem,2.2vw,1.25rem);font-weight:700;color:transparent;background:linear-gradient(135deg,var(--muted2),var(--accent),var(--accent2),var(--accent3));-webkit-background-clip:text;background-clip:text;background-size:300%;animation:grad-shift 6s ease infinite;line-height:1.6}
+.footer-tagline span{display:block;font-size:.75rem;color:var(--muted);font-family:'JetBrains Mono',monospace;font-weight:400;margin-top:.5rem;letter-spacing:.03em}
+.footer-copy{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.75rem}
+.footer-copy p{color:#2a3a4a;font-size:.73rem}
+.footer-copy-links{display:flex;gap:1.5rem}
+.footer-copy-links a{color:#2a3a4a;text-decoration:none;font-size:.73rem;transition:color .2s}
+.footer-copy-links a:hover{color:var(--muted2)}
 
-.tab-panel { display: none; }
-.tab-panel.active { display: block; animation: fadeIn .3s ease; }
-.example-split {
-  display: grid;
-  grid-template-columns: 1fr 1.6fr;
-  gap: 2rem;
-  align-items: start;
-}
-@media(max-width:800px) { .example-split { grid-template-columns: 1fr; } }
-.example-split > div:first-child h3 { font-size: 1.3rem; margin-bottom: .75rem; }
-.example-split > div:first-child p { color: var(--muted); line-height: 1.7; margin-bottom: 1rem; }
-.example-badge {
-  display: inline-block;
-  background: rgba(16,185,129,0.1);
-  border: 1px solid rgba(16,185,129,0.3);
-  color: var(--accent3);
-  font-size: .75rem;
-  padding: .25rem .75rem;
-  border-radius: 99px;
-}
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .6s ease,transform .6s ease}
+.reveal.in{opacity:1;transform:translateY(0)}
 
-/* ====== COMPARE ====== */
-#compare { background: var(--bg); }
-.compare-table-wrap {
-  overflow-x: auto;
-  border-radius: var(--r2);
-  border: 1px solid var(--border);
-}
-.compare-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: .9rem;
-}
-.compare-table th, .compare-table td {
-  padding: .9rem 1.2rem;
-  text-align: center;
-  border-bottom: 1px solid var(--border);
-}
-.compare-table th:first-child, .compare-table td:first-child { text-align: left; }
-.compare-table th { color: var(--muted); font-weight: 500; font-size: .8rem; text-transform: uppercase; background: rgba(255,255,255,0.02); }
-.highlight-col { color: var(--accent) !important; }
-.compare-table td.highlight-col { background: rgba(0,212,255,0.04); font-weight: 600; color: var(--accent); }
-.yes { color: var(--accent3); }
-.no  { color: var(--muted); }
-.compare-table tr:last-child td { border-bottom: none; }
-.compare-table tr:hover td { background: rgba(255,255,255,0.02); }
+/* TILT */
+.tilt{transform-style:preserve-3d}
 
-/* ====== GET STARTED ====== */
-#get-started { background: var(--bg2); }
-.steps-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 3.5rem;
-}
-.step-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r2);
-  padding: 2rem 1.5rem;
-  transition: border-color .3s;
-}
-.step-card:hover { border-color: rgba(0,212,255,0.3); }
-.step-num {
-  font-size: 2.5rem;
-  font-weight: 900;
-  color: var(--accent2);
-  opacity: .35;
-  margin-bottom: .75rem;
-  font-family: 'JetBrains Mono', monospace;
-}
-.step-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 1.2rem; color: var(--accent); }
-.cta-center { text-align: center; padding-top: .5rem; }
+/* GLOW BORDER */
+.glow-border{position:relative}
+.glow-border::after{content:'';position:absolute;inset:-1px;border-radius:inherit;background:linear-gradient(135deg,var(--accent),var(--accent2),var(--accent3));z-index:-1;opacity:0;transition:opacity .3s;filter:blur(6px)}
+.glow-border:hover::after{opacity:.4}
 
-/* ====== CONTACT ====== */
-#contact { background: var(--bg); }
-.contact-wrapper {
-  max-width: 650px;
-  margin: 0 auto;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r2);
-  padding: 3rem;
-  transition: border-color .3s, box-shadow .3s;
+/* RESPONSIVE */
+@media(max-width:1024px){
+  .syntax-layout{grid-template-columns:1fr}
+  .tab-panel.active{grid-template-columns:1fr}
+  .contact-grid{grid-template-columns:1fr}
+  .footer-top{grid-template-columns:1fr 1fr}
+  .hero-code{grid-template-columns:1fr;gap:1rem}
+  .hero-arrow{flex-direction:row;transform:rotate(90deg);margin:.5rem 0;align-self:center}
 }
-.contact-wrapper:hover {
-  border-color: rgba(0,212,255,0.3);
-  box-shadow: 0 0 40px rgba(0,212,255,0.08);
+@media(max-width:768px){
+  body{cursor:auto}
+  #cursor,#cursor-ring{display:none}
+  .nav-links,.nav-actions{display:none}
+  .hamburger{display:flex}
+  .section-inner{padding:4rem 1.5rem}
+  .hero-code{display:none}
+  .footer-top{grid-template-columns:1fr}
+  .feat-grid{grid-template-columns:1fr}
+  .steps-grid{grid-template-columns:1fr}
+  .install-row{flex-direction:column;align-items:stretch}
+  .install-cmd,.copy-btn{width:100%}
+  .tab-panel.active{grid-template-columns:1fr}
 }
-.contact-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.8rem;
+@media(max-width:480px){
+  .section-inner{padding:3rem 1rem}
+  .hero-title{font-size:clamp(2.2rem,12vw,3rem)}
 }
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-.form-group label {
-  font-size: .75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--accent);
-  font-family: 'JetBrains Mono', monospace;
-}
-.contact-form input, 
-.contact-form textarea {
-  width: 100%;
-  background: rgba(0,0,0,0.4);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: var(--text);
-  padding: 1rem 1.2rem;
-  border-radius: var(--r);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: .85rem;
-  transition: all .2s ease;
-  resize: vertical;
-}
-.contact-form input:focus, 
-.contact-form textarea:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 20px rgba(0,212,255,0.15);
-  background: rgba(0,0,0,0.6);
-}
-.contact-form input::placeholder, 
-.contact-form textarea::placeholder {
-  color: var(--muted);
-}
-.submit-btn {
-  align-self: flex-start;
-  cursor: pointer;
-  border: none;
-  font-family: inherit;
-  margin-top: .5rem;
-}
-
-/* ====== FOOTER ====== */
-#footer {
-  background: #020408;
-  border-top: 1px solid var(--border);
-  text-align: center;
-  padding: 5rem 2rem 3rem;
-  position: relative;
-  z-index: 1;
-}
-.footer-inner { max-width: 860px; margin: auto; }
-.footer-logo { font-size: 1.4rem; font-weight: 700; margin-bottom: 1.2rem; }
-.footer-sub { color: var(--muted); font-size: .9rem; margin-bottom: .5rem; }
-.footer-desc { color: var(--muted); font-size: .8rem; margin-bottom: 2rem; }
-.footer-links {
-  display: flex;
-  gap: 1rem 2.5rem;
-  justify-content: center;
-  margin-bottom: 4rem;
-  flex-wrap: wrap;
-}
-.footer-links a { color: var(--muted); text-decoration: none; font-size: .9rem; transition: color .2s; }
-.footer-links a:hover { color: var(--accent); }
-.footer-tagline {
-  border-top: 1px solid var(--border);
-  padding-top: 3rem;
-  margin-bottom: 3rem;
-}
-.tagline-quote {
-  font-size: clamp(1.05rem, 2.5vw, 1.4rem);
-  font-weight: 300;
-  line-height: 2;
-  color: #94a3b8;
-  font-style: italic;
-  position: relative;
-  padding-top: 1.5rem;
-}
-.tagline-quote em { color: var(--accent); font-style: normal; font-weight: 600; }
-.tagline-quote::before {
-  content: '"';
-  font-size: 7rem;
-  color: rgba(0,212,255,0.07);
-  position: absolute;
-  top: -3rem;
-  left: 50%;
-  transform: translateX(-50%);
-  font-family: Georgia, serif;
-  line-height: 1;
-  pointer-events: none;
-}
-.footer-copy { color: #334155; font-size: .75rem; margin-top: 1rem; }
-
-/* ====== INSTALL BOX ====== */
-.install-box {
-  background: rgba(0,212,255,0.04);
-  border: 1px solid rgba(0,212,255,0.25);
-  border-radius: var(--r2);
-  padding: 1.5rem 2rem;
-  margin-bottom: 1.5rem;
-}
-.install-label {
-  font-size: .75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--accent);
-  margin-bottom: .75rem;
-}
-.install-cmd-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-.install-cmd {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: .85rem;
-  color: #cdd9e5;
-  background: rgba(0,0,0,0.4);
-  padding: .7rem 1rem;
-  border-radius: var(--r);
-  flex: 1;
-  user-select: all;
-  word-break: break-all;
-}
-.install-copy-btn {
-  padding: .6rem 1.2rem;
-  background: rgba(0,212,255,0.1);
-  border: 1px solid rgba(0,212,255,0.3);
-  color: var(--accent);
-  border-radius: 6px;
-  font-size: .82rem;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background .2s, border-color .2s;
-  white-space: nowrap;
-}
-.install-copy-btn:hover { background: rgba(0,212,255,0.2); border-color: var(--accent); }
-.install-copy-btn.copied { color: var(--accent3); border-color: var(--accent3); background: rgba(16,185,129,0.1); }
-.or-divider {
-  text-align: center;
-  position: relative;
-  margin: 2rem 0 1.5rem;
-  color: var(--muted);
-  font-size: .8rem;
-}
-.or-divider::before, .or-divider::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  width: 42%;
-  height: 1px;
-  background: var(--border);
-}
-.or-divider::before { left: 0; }
-.or-divider::after  { right: 0; }
-.or-divider span { background: var(--bg2); padding: 0 1rem; }
-.cta-center { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; padding-top: .5rem; }
-
-/* ====== ANIMATIONS ====== */
-@keyframes fadeIn { from{opacity:0} to{opacity:1} }
-@keyframes fadeInDown { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
-
-/* ====== TILT CARD ====== */
-.tilt-card { transform-style: preserve-3d; }
-
-/* ====== REVEAL ON SCROLL ====== */
-.reveal { opacity: 0; transform: translateY(30px); transition: opacity .6s ease, transform .6s ease; }
-.reveal.visible { opacity: 1; transform: translateY(0); }
-
-/* ====== RESPONSIVE ====== */
-
-/* ── Hamburger ──────────────────────────────────────────── */
-.nav-hamburger {
-  display: none;
-  flex-direction: column;
-  gap: 5px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: .4rem;
-  margin-left: auto;
-  z-index: 1100;
-}
-.nav-hamburger span {
-  display: block;
-  width: 24px;
-  height: 2px;
-  background: var(--text);
-  border-radius: 2px;
-  transition: transform .3s, opacity .3s;
-}
-.nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-.nav-hamburger.open span:nth-child(2) { opacity: 0; }
-.nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-
-.nav-mobile-menu {
-  display: none;
-  position: fixed;
-  top: 64px;
-  left: 0; right: 0;
-  background: rgba(5,8,16,0.97);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
-  z-index: 999;
-  padding: 1.5rem 2rem 2rem;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-.nav-mobile-menu.open { display: flex; }
-.nav-mobile-menu a {
-  color: var(--text);
-  text-decoration: none;
-  font-size: 1rem;
-  padding: .5rem 0;
-  border-bottom: 1px solid var(--border);
-  transition: color .2s;
-}
-.nav-mobile-menu a:hover { color: var(--accent); }
-.nav-mobile-menu .nav-btn {
-  display: inline-block;
-  margin-top: .5rem;
-  border-bottom: none;
-  text-align: center;
-}
-
-/* ── Tablet (≤1024px) ───────────────────────────────────── */
-@media(max-width:1024px) {
-  .hero-code-preview { gap: 1rem; }
-  .hero-code-preview .code-window { min-width: 220px; max-width: 340px; }
-  .syntax-grid { grid-template-columns: 1fr 1.2fr; }
-  .features-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
-  .example-split { grid-template-columns: 1fr 1.4fr; }
-  .steps-grid { grid-template-columns: repeat(2, 1fr); }
-  .section-inner { padding: 4.5rem 2rem; }
-}
-
-/* ── Phone / Tablet (≤768px) ────────────────────────────── */
-@media(max-width:768px) {
-  /* Cursor: hide on touch */
-  body { cursor: auto; }
-  #cursor-glow { display: none; }
-
-  /* Navbar */
-  .nav-links { display: none; }
-  .nav-btn.nav-btn-guide { display: none; }
-  .nav-btn:last-child { display: none; }
-  .nav-hamburger { display: flex; }
-
-  /* Hero */
-  #hero { padding: 5rem 1.25rem 7rem; }
-  .hero-content { padding-bottom: 3rem; }
-  .hero-title { font-size: clamp(2rem, 10vw, 3.2rem); }
-  .hero-sub { font-size: 1rem; }
-  .hero-code-preview {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .hero-code-preview .code-window {
-    max-width: 100%;
-    min-width: unset;
-    flex: unset;
-  }
-  .hero-arrow { transform: rotate(90deg); align-self: center; margin: .25rem 0; }
-  .hero-btns { flex-direction: column; align-items: center; }
-  .hero-btns a { width: 100%; max-width: 320px; text-align: center; }
-  .hero-stats { gap: 1.5rem 2rem; }
-  .hero-scroll-indicator { bottom: 1.5rem; }
-
-  /* Sections */
-  .section-inner { padding: 3.5rem 1.25rem; }
-  .section-title { margin-bottom: 2rem; }
-
-  /* Features */
-  .features-grid { grid-template-columns: 1fr; }
-
-  /* Syntax */
-  .syntax-grid { grid-template-columns: 1fr; }
-
-  /* Examples */
-  .example-split { grid-template-columns: 1fr; }
-
-  /* Compare */
-  .compare-table-wrap { border-radius: var(--r); }
-  .compare-table { font-size: .75rem; }
-  .compare-table th, .compare-table td { padding: .5rem .6rem; }
-
-  /* Steps */
-  .steps-grid { grid-template-columns: 1fr; }
-
-  /* Install box */
-  .install-box { padding: 1.25rem; }
-  .install-cmd { font-size: .72rem; }
-  .install-cmd-row { flex-direction: column; align-items: stretch; }
-  .install-copy-btn { width: 100%; }
-
-  /* CTA */
-  .cta-center { flex-direction: column; align-items: center; }
-  .cta-center a { width: 100%; max-width: 320px; text-align: center; }
-
-  /* Contact Responsive adjustments */
-  .contact-wrapper { padding: 1.8rem 1.25rem; }
-  .submit-btn { align-self: stretch; text-align: center; }
-
-  /* Footer */
-  .footer-links { gap: .75rem 1.5rem; font-size: .85rem; }
-  .footer-tagline { padding-top: 2rem; margin-bottom: 2rem; }
-
-  /* Disable 3D tilt on touch */
-  .tilt-card { transform: none !important; }
-}
-
-/* ── Small phones (≤480px) ──────────────────────────────── */
-@media(max-width:480px) {
-  .nav-inner { padding: 0 1rem; }
-  #navbar { padding: 0 1rem; }
-  .hero-badge { font-size: .72rem; }
-  .hero-stats .stat-num { font-size: 1.6rem; }
-  .code-body { font-size: .72rem; padding: .9rem; }
-  .feat-code { font-size: .68rem; }
-  .cheatsheet-pre { font-size: .7rem; }
-  .section-inner { padding: 3rem 1rem; }
-  .install-cmd { font-size: .65rem; }
-  .step-card { padding: 1.25rem 1rem; }
-  .feature-card { padding: 1.25rem 1rem; }
-  .compare-table { font-size: .68rem; }
-  .compare-table th, .compare-table td { padding: .4rem .5rem; }
-  .contact-wrapper { padding: 1.5rem 1rem; }
-  .contact-form input, .contact-form textarea { padding: .8rem 1rem; font-size: .75rem; }
-  .footer-inner { padding: 0 .5rem; }
-  .tagline-quote { font-size: .95rem; }
-}
-  </style>
+</style>
 </head>
 <body>
 
 <canvas id="physics-canvas"></canvas>
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
 
-<div id="cursor-glow"></div>
-
+<!-- NAVBAR -->
 <nav id="navbar">
   <div class="nav-inner">
-    <div class="nav-logo">
-      <span class="logo-icon">⚡</span>
+    <a href="#" class="nav-logo">
+      <div class="logo-mark">K</div>
       <span class="logo-text">Kinetrix</span>
-    </div>
+      <span class="logo-version">v3.1</span>
+    </a>
     <ul class="nav-links">
       <li><a href="#features">Features</a></li>
       <li><a href="#syntax">Syntax</a></li>
@@ -880,500 +311,650 @@ section { position: relative; z-index: 1; }
       <li><a href="#get-started">Get Started</a></li>
       <li><a href="#contact">Contact</a></li>
     </ul>
-    <a href="KINETRIX_COMPREHENSIVE_GUIDE.pdf" class="nav-btn nav-btn-guide" target="_blank">📄 Language Guide</a>
-    <a href="https://github.com/M4dM0nk3y/Kinetrix" class="nav-btn" target="_blank">GitHub ↗</a>
-    <button class="nav-hamburger" id="hamburger" aria-label="Menu">
-      <span></span><span></span><span></span>
-    </button>
+    <div class="nav-actions">
+      <a href="KINETRIX_LANGUAGE_GUIDE.pdf" class="nav-btn" target="_blank">📄 Docs</a>
+      <a href="https://github.com/M4dM0nk3y/Kinetrix" class="nav-btn nav-btn-primary" target="_blank">GitHub ↗</a>
+    </div>
+    <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
   </div>
 </nav>
-
-<div class="nav-mobile-menu" id="mobile-menu">
-  <a href="#features" class="mobile-link">Features</a>
-  <a href="#syntax" class="mobile-link">Syntax</a>
-  <a href="#examples" class="mobile-link">Examples</a>
-  <a href="#compare" class="mobile-link">Compare</a>
-  <a href="#get-started" class="mobile-link">Get Started</a>
-  <a href="#contact" class="mobile-link">Contact</a>
-  <a href="KINETRIX_COMPREHENSIVE_GUIDE.pdf" class="nav-btn nav-btn-guide" target="_blank" style="margin-top:.5rem">📄 Language Guide</a>
-  <a href="https://github.com/M4dM0nk3y/Kinetrix" class="nav-btn" target="_blank">GitHub ↗</a>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="#features">Features</a>
+  <a href="#syntax">Syntax</a>
+  <a href="#examples">Examples</a>
+  <a href="#compare">Compare</a>
+  <a href="#get-started">Get Started</a>
+  <a href="#contact">Contact</a>
+  <a href="KINETRIX_LANGUAGE_GUIDE.pdf" class="nav-btn" target="_blank">📄 Language Guide</a>
+  <a href="https://github.com/M4dM0nk3y/Kinetrix" class="nav-btn nav-btn-primary" target="_blank">GitHub ↗</a>
 </div>
 
+<!-- HERO -->
 <section id="hero">
-  <div class="hero-content">
-    <div class="hero-badge">🤖 Robotics Programming Language · v2.0</div>
-    <h1 class="hero-title">
-      Code Robots.<br/>
-      <span class="gradient-text">Think Human.</span><br/>
-      Compile Fast.
-    </h1>
-    <p class="hero-sub">Kinetrix turns plain-English commands into Arduino C++.<br/>No boilerplate. No complexity. Just robotics.</p>
-    <div class="hero-code-preview">
-      <div class="code-window">
-        <div class="code-titlebar">
-          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-          <span class="code-filename">blink.kx</span>
-        </div>
-        <pre class="code-body"><span class="kw">program</span> {
+  <div class="hero-badge"><span class="badge-dot"></span>Robotics Programming Language &nbsp;·&nbsp; Version 3.1 &nbsp;·&nbsp; ESP32 · Pico · RPi · ROS2</div>
+  <h1 class="hero-title">Write Hardware<br/><span class="gradient-text">Like Plain English.</span><br/>Ship Native Code.</h1>
+  <p class="hero-sub">Kinetrix is a compiled, statically-typed language for embedded systems. No boilerplate, no header hell — just hardware control that reads like your thoughts.</p>
+
+  <div class="hero-code">
+    <div class="code-win">
+      <div class="code-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-file">balance_robot.kx</span></div>
+      <pre class="code-body sm"><span class="kw">include</span> <span class="str">"sensors/mpu6050.kx"</span>
+<span class="kw">include</span> <span class="str">"control/pid.kx"</span>
+
+<span class="kw">shared make int</span> emergency = <span class="num">0</span>
+
+<span class="kw">task</span> <span class="fn">safety_monitor</span> {
     <span class="kw">loop forever</span> {
-        <span class="hw">turn on pin</span> <span class="num">13</span>
-        <span class="fn">wait</span> <span class="num">1000</span>
-        <span class="hw">turn off pin</span> <span class="num">13</span>
-        <span class="fn">wait</span> <span class="num">1000</span>
+        <span class="kw">make var</span> temp = <span class="hw">read analog pin</span> <span class="num">1</span>
+        <span class="kw">if</span> temp &gt; <span class="num">800</span> { <span class="kw">set</span> emergency <span class="kw">to</span> <span class="num">1</span> }
+        <span class="fn">wait</span> <span class="num">100</span>
+    }
+}
+
+<span class="kw">program</span> {
+    <span class="fn">mpu6050_init</span>()
+    <span class="fn">pid_init</span>(<span class="num">2.0</span>, <span class="num">0.1</span>, <span class="num">0.05</span>)
+    <span class="fn">pid_set_limits</span>(-<span class="num">255</span>, <span class="num">255</span>)
+    <span class="kw">start task</span> <span class="fn">safety_monitor</span>
+    <span class="kw">enable watchdog timeout</span> <span class="num">2000</span>ms
+
+    <span class="kw">loop forever</span> {
+        <span class="fn">feed watchdog</span>
+        <span class="fn">mpu6050_read_accel</span>()
+        <span class="kw">make var</span> output = <span class="fn">pid_compute</span>(<span class="num">512</span>, accel_x, <span class="num">0.01</span>)
+        <span class="kw">if</span> emergency <span class="op">is</span> <span class="num">0</span> {
+            <span class="hw">set pin</span> <span class="num">9</span> <span class="hw">to</span> <span class="fn">constrain</span>(output, <span class="num">0</span>, <span class="num">255</span>)
+        }
+        <span class="fn">wait</span> <span class="num">10</span>
     }
 }</pre>
-      </div>
-      <div class="hero-arrow">→</div>
-      <div class="code-window">
-        <div class="code-titlebar">
-          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-          <span class="code-filename">blink.ino (generated)</span>
-        </div>
-        <pre class="code-body cpp-code"><span class="cpp-kw">#include</span> &lt;Arduino.h&gt;
-<span class="cpp-kw">void</span> <span class="cpp-fn">setup</span>() { <span class="cpp-fn">pinMode</span>(13, OUTPUT); }
-<span class="cpp-kw">void</span> <span class="cpp-fn">loop</span>() {
-    <span class="cpp-fn">digitalWrite</span>(13, HIGH);
-    <span class="cpp-fn">delay</span>(1000);
-    <span class="cpp-fn">digitalWrite</span>(13, LOW);
-    <span class="cpp-fn">delay</span>(1000);
+    </div>
+    <div class="hero-arrow">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      compiles to
+    </div>
+    <div class="code-win">
+      <div class="code-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-file">balance_robot.ino (generated)</span></div>
+      <pre class="code-body sm"><span class="cmt">// ⚡ Generated by Kinetrix v3.1</span>
+<span class="kw">#include</span> &lt;Arduino.h&gt;
+<span class="kw">#include</span> &lt;Wire.h&gt;
+<span class="kw">#include</span> &lt;esp_task_wdt.h&gt;
+
+<span class="ty">volatile int</span> emergency = <span class="num">0</span>;
+
+<span class="ty">void</span> <span class="fn">TaskSafetyMonitor</span>(<span class="ty">void</span>* pvParams) {
+  <span class="kw">for</span>(;;) {
+    <span class="ty">int</span> temp = <span class="fn">analogRead</span>(<span class="num">1</span>);
+    <span class="kw">if</span>(temp > <span class="num">800</span>) emergency = <span class="num">1</span>;
+    <span class="fn">vTaskDelay</span>(<span class="num">100</span> / portTICK_PERIOD_MS);
+  }
+}
+
+<span class="ty">void</span> <span class="fn">setup</span>() {
+  <span class="fn">Wire.begin</span>();
+  <span class="fn">esp_task_wdt_init</span>(<span class="num">2</span>, <span class="kw">true</span>);
+  <span class="fn">esp_task_wdt_add</span>(<span class="kw">NULL</span>);
+  <span class="fn">mpu6050_init</span>();
+  <span class="fn">pid_init</span>(<span class="num">2.0</span>, <span class="num">0.1</span>, <span class="num">0.05</span>);
+  <span class="fn">pid_set_limits</span>(-<span class="num">255</span>, <span class="num">255</span>);
+  <span class="fn">xTaskCreate</span>(TaskSafetyMonitor,
+    <span class="str">"safety"</span>, <span class="num">4096</span>, <span class="kw">NULL</span>, <span class="num">1</span>, <span class="kw">NULL</span>);
+}
+
+<span class="ty">void</span> <span class="fn">loop</span>() {
+  <span class="fn">esp_task_wdt_reset</span>();
+  <span class="fn">mpu6050_read_accel</span>();
+  <span class="ty">float</span> out = <span class="fn">pid_compute</span>(<span class="num">512</span>,accel_x,<span class="num">0.01</span>);
+  <span class="kw">if</span>(emergency == <span class="num">0</span>)
+    <span class="fn">ledcWrite</span>(<span class="num">0</span>, <span class="fn">constrain</span>(out,<span class="num">0</span>,<span class="num">255</span>));
+  <span class="fn">delay</span>(<span class="num">10</span>);
 }</pre>
-      </div>
-    </div>
-    <div class="hero-btns">
-      <a href="#get-started" class="btn-primary magnetic">Get Started Free →</a>
-      <a href="KINETRIX_COMPREHENSIVE_GUIDE.pdf" class="btn-secondary magnetic" target="_blank">📄 Language Guide</a>
-      <a href="#examples" class="btn-secondary magnetic">View Examples</a>
-    </div>
-    <div class="hero-stats">
-      <div class="stat"><span class="stat-num">4x</span><span class="stat-lbl">Less Code</span></div>
-      <div class="stat"><span class="stat-num">100%</span><span class="stat-lbl">Test Pass Rate</span></div>
-      <div class="stat"><span class="stat-num">0ms</span><span class="stat-lbl">Runtime Overhead</span></div>
-      <div class="stat"><span class="stat-num">6+</span><span class="stat-lbl">Target Platforms</span></div>
     </div>
   </div>
-  <div class="hero-scroll-indicator">
-    <span>Scroll to explore</span>
-    <div class="scroll-arrow"></div>
+
+  <div class="hero-btns">
+    <a href="#get-started" class="btn btn-primary">Get Started Free →</a>
+    <a href="KINETRIX_LANGUAGE_GUIDE.pdf" class="btn btn-accent" target="_blank">📄 Language Guide</a>
+    <a href="#examples" class="btn btn-ghost">View Examples</a>
   </div>
+  <div class="hero-stats">
+    <div class="stat"><span class="stat-num" data-target="4">0</span><span class="stat-lbl">× Less Code</span></div>
+    <div class="stat"><span class="stat-num" data-target="100">0</span><span class="stat-lbl">% Test Pass Rate</span></div>
+    <div class="stat"><span class="stat-num" data-target="0">0</span><span class="stat-lbl">ms Runtime Overhead</span></div>
+    <div class="stat"><span class="stat-num" data-target="6">0</span><span class="stat-lbl">+ Target Platforms</span></div>
+    <div class="stat"><span class="stat-num" data-target="37">0</span><span class="stat-lbl">Language Features</span></div>
+  </div>
+  <div class="scroll-hint"><span>Scroll to explore</span><div class="scroll-chevron"></div></div>
 </section>
 
+<!-- FEATURES -->
 <section id="features">
   <div class="section-inner">
     <div class="section-tag">Capabilities</div>
-    <h2 class="section-title scramble" data-text="Everything You Need to Build Robots">Everything You Need to Build Robots</h2>
-    <div class="features-grid">
+    <h2 class="section-title">Everything You Need to<br/><span class="gradient-text">Build Real Robots</span></h2>
+    <div class="feat-grid">
 
-      <div class="feature-card tilt-card">
-        <div class="feat-icon">📌</div>
-        <h3>Variables &amp; Types</h3>
-        <p>Auto-typed variables. No manual type declarations needed.</p>
-        <pre class="feat-code"><span class="kw">make var</span> speed = <span class="num">150</span>
-<span class="kw">make var</span> temp = <span class="num">36.5</span>
-<span class="kw">make var</span> label = <span class="str">"ready"</span>
-<span class="kw">const</span> MAX = <span class="num">255</span></pre>
-      </div>
-
-      <div class="feature-card tilt-card">
-        <div class="feat-icon">🔁</div>
-        <h3>Loops</h3>
-        <p>Four loop types: forever, repeat, while, and for.</p>
-        <pre class="feat-code"><span class="kw">loop forever</span> { ... }
-<span class="kw">repeat</span> <span class="num">10</span> { ... }
-<span class="kw">while</span> x &lt; <span class="num">100</span> { ... }
-<span class="kw">for</span> i <span class="kw">from</span> <span class="num">0</span> <span class="kw">to</span> <span class="num">9</span> { ... }</pre>
-      </div>
-
-      <div class="feature-card tilt-card">
-        <div class="feat-icon">🔀</div>
-        <h3>Control Flow</h3>
-        <p>Full if/else if/else chains with logical operators.</p>
-        <pre class="feat-code"><span class="kw">if</span> x &gt; <span class="num">50</span> <span class="kw">and</span> x &lt; <span class="num">200</span> {
-    <span class="fn">print</span> <span class="str">"normal"</span>
-} <span class="kw">else if</span> x == <span class="num">0</span> {
-    <span class="fn">print</span> <span class="str">"stopped"</span>
-} <span class="kw">else</span> { ... }</pre>
-      </div>
-
-      <div class="feature-card tilt-card">
+      <div class="feat-card reveal tilt">
+        <div class="feat-tag new">NEW v3.1</div>
         <div class="feat-icon">⚡</div>
-        <h3>GPIO Control</h3>
-        <p>Digital, analog, and PWM in plain English.</p>
-        <pre class="feat-code"><span class="hw">turn on pin</span> <span class="num">13</span>
-<span class="hw">turn off pin</span> <span class="num">13</span>
-<span class="hw">set pin</span> <span class="num">9</span> <span class="hw">to</span> <span class="num">200</span>
-<span class="hw">read analog pin</span> <span class="num">0</span></pre>
+        <h3>Tasks &amp; Concurrency</h3>
+        <p>First-class FreeRTOS tasks. Run safety monitors, telemetry, and motor control in parallel — all in plain English.</p>
+        <pre class="feat-code"><span class="kw">task</span> <span class="fn">blinker</span> {
+    <span class="kw">loop forever</span> {
+        <span class="hw">turn on pin</span> <span class="num">13</span>
+        <span class="fn">wait</span> <span class="num">200</span>
+        <span class="hw">turn off pin</span> <span class="num">13</span>
+    }
+}
+<span class="kw">start task</span> <span class="fn">blinker</span></pre>
       </div>
 
-      <div class="feature-card tilt-card">
-        <div class="feat-icon">⚙️</div>
-        <h3>Functions</h3>
-        <p>Define reusable blocks with parameters and return values.</p>
-        <pre class="feat-code"><span class="kw">def</span> <span class="fn">blink</span>(pin, times) {
-    <span class="kw">repeat</span> times {
-        <span class="hw">turn on pin</span> pin
-        <span class="fn">wait</span> <span class="num">500</span>
-        <span class="hw">turn off pin</span> pin
-    }
+      <div class="feat-card reveal tilt">
+        <div class="feat-tag new">NEW v3.1</div>
+        <div class="feat-icon">🔔</div>
+        <h3>Hardware Interrupts</h3>
+        <p>Pin and timer interrupts with IRAM-safe ISR generation. Encoder counting, edge detection, and precise timers.</p>
+        <pre class="feat-code"><span class="kw">on pin</span> <span class="num">2</span> <span class="kw">rising</span> {
+    <span class="kw">change</span> pulse_count <span class="kw">by</span> <span class="num">1</span>
+}
+<span class="kw">on timer every</span> <span class="num">500</span> ms {
+    <span class="fn">feed watchdog</span>
 }</pre>
       </div>
 
-      <div class="feature-card tilt-card">
+      <div class="feat-card reveal tilt">
+        <div class="feat-tag new">NEW v3.1</div>
         <div class="feat-icon">🛡️</div>
-        <h3>Safety Built-In</h3>
-        <p>Hardware error detection at compile time, not runtime.</p>
-        <pre class="feat-code"><span class="fn">constrain</span>(speed, <span class="num">0</span>, <span class="num">200</span>)
-<span class="fn">map</span>(sensor, <span class="num">0</span>,<span class="num">1023</span>,<span class="num">0</span>,<span class="num">255</span>)
-<span class="fn">abs</span>(error)
-<span class="fn">min</span>(a, b)  <span class="fn">max</span>(a, b)</pre>
+        <h3>Watchdog &amp; Safety</h3>
+        <p>Hardware watchdog reboots if your robot hangs. Shared volatile variables, interrupt guards, and try/on error blocks.</p>
+        <pre class="feat-code"><span class="kw">enable watchdog timeout</span> <span class="num">2000</span>ms
+<span class="kw">loop forever</span> {
+    <span class="fn">feed watchdog</span>
+    <span class="kw">try</span> { <span class="cmt"># I2C read</span> }
+    <span class="kw">on error</span> { <span class="fn">print</span> <span class="str">"fail"</span> }
+}</pre>
       </div>
 
-      <div class="feature-card tilt-card">
-        <div class="feat-icon">🔬</div>
-        <h3>Math Library</h3>
-        <p>Full math suite: trig, sqrt, and more for sensor fusion.</p>
-        <pre class="feat-code"><span class="fn">sin</span>(angle)  <span class="fn">cos</span>(angle)
-<span class="fn">sqrt</span>(x*x + y*y)
-<span class="fn">atan</span>(y / x)
-<span class="fn">random</span>(<span class="num">0</span>, <span class="num">100</span>)</pre>
+      <div class="feat-card reveal tilt">
+        <div class="feat-tag new">NEW v3.1</div>
+        <div class="feat-icon">🧱</div>
+        <h3>Structs &amp; Arrays</h3>
+        <p>Define custom types with named fields. Fixed-size arrays and circular buffers for data collection and sensor fusion.</p>
+        <pre class="feat-code"><span class="kw">define type</span> Motor {
+    <span class="ty">int</span> fwd_pin
+    <span class="ty">int</span> spd
+}
+<span class="kw">make</span> Motor left
+<span class="kw">make array int</span> data[<span class="num">10</span>]
+<span class="kw">make buffer float</span> log[<span class="num">32</span>]</pre>
       </div>
 
-      <div class="feature-card tilt-card">
+      <div class="feat-card reveal tilt">
+        <div class="feat-tag new">NEW v3.1</div>
+        <div class="feat-icon">📡</div>
+        <h3>ESP-NOW Radio</h3>
+        <p>Peer-to-peer wireless between ESP32 robots. No WiFi router needed — send floats directly to other devices.</p>
+        <pre class="feat-code"><span class="fn">radio_send_peer</span>(robot_id, speed)
+<span class="kw">if</span> <span class="fn">radio_available</span>() {
+    <span class="kw">make float</span> cmd = <span class="fn">radio_read</span>()
+    <span class="hw">set pin</span> <span class="num">9</span> <span class="hw">to</span> <span class="fn">cast int</span> cmd
+}</pre>
+      </div>
+
+      <div class="feat-card reveal tilt">
+        <div class="feat-tag new">NEW v3.1</div>
+        <div class="feat-icon">📦</div>
+        <h3>Standard Library</h3>
+        <p>Include ready-made drivers: MPU6050 IMU, NEO-6M GPS, HMC5883L Compass, PID Controller, Kalman Filter &amp; more.</p>
+        <pre class="feat-code"><span class="kw">include</span> <span class="str">"sensors/mpu6050.kx"</span>
+<span class="kw">include</span> <span class="str">"control/pid.kx"</span>
+<span class="kw">include</span> <span class="str">"fusion/kalman_2d.kx"</span>
+<span class="kw">include</span> <span class="str">"safety/safety_checks.kx"</span></pre>
+      </div>
+
+      <div class="feat-card reveal tilt">
+        <div class="feat-tag core">CORE</div>
+        <div class="feat-icon">⚙️</div>
+        <h3>GPIO &amp; PWM</h3>
+        <p>Digital, analog ADC, PWM output, and pulse width measurement — all in plain English with auto-generated setup.</p>
+        <pre class="feat-code"><span class="hw">turn on pin</span> <span class="num">13</span>
+<span class="hw">set pin</span> <span class="num">9</span> <span class="hw">to</span> <span class="num">200</span>
+<span class="kw">make var</span> s = <span class="hw">read analog pin</span> <span class="num">0</span>
+<span class="kw">make var</span> d = <span class="hw">read pulse pin</span> <span class="num">14</span></pre>
+      </div>
+
+      <div class="feat-card reveal tilt">
+        <div class="feat-tag core">CORE</div>
+        <div class="feat-icon">🔗</div>
+        <h3>I2C · SPI · UART</h3>
+        <p>All three protocols have dedicated syntax. High-level device reads with named devices, or low-level byte control.</p>
+        <pre class="feat-code"><span class="kw">open i2c</span>
+<span class="kw">make var</span> v = <span class="hw">read i2c device</span> <span class="num">104</span>
+    <span class="hw">register</span> <span class="num">59</span>
+<span class="kw">open serial at</span> <span class="num">115200</span> <span class="kw">baud</span>
+<span class="kw">open spi at</span> <span class="num">1000000</span></pre>
+      </div>
+
+      <div class="feat-card reveal tilt">
+        <div class="feat-tag core">CORE</div>
+        <div class="feat-icon">🎛️</div>
+        <h3>Functions &amp; Loops</h3>
+        <p>Typed parameters, return values, and four loop types. Reuse logic cleanly without repetitive boilerplate code.</p>
+        <pre class="feat-code"><span class="kw">def</span> <span class="fn">clamp</span>(<span class="ty">int</span> v, <span class="ty">int</span> lo, <span class="ty">int</span> hi) {
+    <span class="kw">return</span> <span class="fn">constrain</span>(v, lo, hi)
+}
+<span class="kw">for</span> i <span class="kw">from</span> <span class="num">0</span> <span class="kw">to</span> <span class="num">100</span> <span class="kw">by</span> <span class="num">5</span> { }</pre>
+      </div>
+
+      <div class="feat-card reveal tilt">
+        <div class="feat-tag core">CORE</div>
         <div class="feat-icon">🎵</div>
         <h3>Servo &amp; Tone</h3>
-        <p>Native servo angle control and buzzer tone generation.</p>
+        <p>Native servo angle control and buzzer tone generation. No library imports, no channel management needed.</p>
         <pre class="feat-code"><span class="hw">set servo pin</span> <span class="num">9</span> <span class="hw">to</span> <span class="num">90</span>
 <span class="hw">set servo pin</span> <span class="num">10</span> <span class="hw">to</span> <span class="num">180</span>
-<span class="hw">tone pin</span> <span class="num">8</span> <span class="hw">to</span> <span class="num">440</span>
+<span class="hw">tone pin</span> <span class="num">8</span> <span class="hw">frequency</span> <span class="num">440</span>
 <span class="hw">notone pin</span> <span class="num">8</span></pre>
       </div>
 
-      <div class="feature-card tilt-card">
-        <div class="feat-icon">📡</div>
-        <h3>I2C Protocol</h3>
-        <p>Communicate with sensors and displays via I2C.</p>
-        <pre class="feat-code"><span class="hw">i2c begin</span>
-<span class="hw">i2c start</span> <span class="num">0x3C</span>
-<span class="hw">i2c send</span> <span class="num">0x00</span>
-<span class="hw">i2c stop</span></pre>
+      <div class="feat-card reveal tilt">
+        <div class="feat-tag core">CORE</div>
+        <div class="feat-icon">🔬</div>
+        <h3>Full Math Suite</h3>
+        <p>sin, cos, atan2, sqrt, map, constrain, abs, random — all built-in. Cast types explicitly for safe integer math.</p>
+        <pre class="feat-code"><span class="kw">make float</span> mag = <span class="fn">sqrt</span>(ax*ax + ay*ay)
+<span class="kw">make float</span> hdg = <span class="fn">atan2</span>(y, x)
+<span class="kw">make int</span> out = <span class="fn">map</span>(v,<span class="num">0</span>,<span class="num">1023</span>,<span class="num">0</span>,<span class="num">255</span>)
+<span class="kw">make float</span> r = <span class="fn">cast float</span> dist / t</pre>
       </div>
 
-      <div class="feature-card tilt-card">
-        <div class="feat-icon">⏱️</div>
-        <h3>Precision Timing</h3>
-        <p>Millisecond and microsecond timing for real-time control.</p>
-        <pre class="feat-code"><span class="fn">wait</span> <span class="num">1000</span>    <span class="cmt"># ms</span>
-<span class="fn">wait_us</span> <span class="num">500</span>  <span class="cmt"># µs</span>
-<span class="fn">print</span> <span class="str">"debug"</span>
-<span class="fn">print</span> variable</pre>
-      </div>
-
-      <div class="feature-card tilt-card">
-        <div class="feat-icon">🧩</div>
-        <h3>Multi-Platform</h3>
-        <p>Target Arduino Uno, ESP32, ESP8266, Raspberry Pi &amp; ROS2.</p>
-        <pre class="feat-code">./kcc program.kx -o out.ino
-<span class="cmt"># ESP32:</span>   kcc --target esp32
-<span class="cmt"># RPi:</span>     kcc --target rpi
-<span class="cmt"># ROS2:</span>    kcc --target ros2</pre>
-      </div>
-
-      <div class="feature-card tilt-card">
-        <div class="feat-icon">🔌</div>
-        <h3>VS Code Integration</h3>
-        <p>One-click compilation with Cmd+Shift+B build task.</p>
-        <pre class="feat-code"><span class="cmt"># Build shortcut</span>
-Cmd + Shift + B
-<span class="cmt"># Syntax highlighting</span>
-<span class="cmt"># Auto error checking</span></pre>
+      <div class="feat-card reveal tilt">
+        <div class="feat-tag core">CORE</div>
+        <div class="feat-icon">🎯</div>
+        <h3>Named Devices</h3>
+        <p>Define hardware devices once with human names. Reference them everywhere without repeating addresses or configs.</p>
+        <pre class="feat-code"><span class="kw">define device</span> bme280
+    <span class="kw">as i2c at</span> <span class="num">118</span>
+<span class="kw">define device</span> gps_uart
+    <span class="kw">as uart at</span> <span class="num">9600</span>
+<span class="kw">make int</span> t = <span class="hw">read i2c device</span>
+    bme280 <span class="hw">register</span> <span class="num">0xF3</span></pre>
       </div>
 
     </div>
   </div>
 </section>
 
+<!-- SYNTAX REFERENCE -->
 <section id="syntax">
   <div class="section-inner">
     <div class="section-tag">Language</div>
-    <h2 class="section-title scramble" data-text="Complete Syntax Reference">Complete Syntax Reference</h2>
-    <div class="syntax-grid">
-      <div class="syntax-table-wrap">
+    <h2 class="section-title">Complete Syntax <span class="gradient-text">Reference</span></h2>
+    <div class="syntax-layout">
+      <div class="ref-section reveal">
         <h3>Operators</h3>
         <table class="ref-table">
-          <tr><th>Operator</th><th>Meaning</th><th>Example</th></tr>
-          <tr><td><code>+  -  * /  %</code></td><td>Arithmetic</td><td><code>a * b + c</code></td></tr>
+          <tr><th>Symbol</th><th>Meaning</th><th>Example</th></tr>
+          <tr><td><code>+ - * / %</code></td><td>Arithmetic</td><td><code>a * b + c</code></td></tr>
           <tr><td><code>== != &lt; &gt; &lt;= &gt;=</code></td><td>Comparison</td><td><code>x &gt; 100</code></td></tr>
-          <tr><td><code>and  or  not</code></td><td>Logic</td><td><code>a and b</code></td></tr>
+          <tr><td><code>is</code></td><td>Equal (alt)</td><td><code>mode is 1</code></td></tr>
+          <tr><td><code>and  or  not</code></td><td>Logic</td><td><code>a and not b</code></td></tr>
+          <tr><td><code>+ (strings)</code></td><td>Concatenation</td><td><code>"val: " + x</code></td></tr>
         </table>
-
         <h3>Data Types</h3>
         <table class="ref-table">
-          <tr><th>Type</th><th>Example</th></tr>
-          <tr><td>Integer</td><td><code>make var x = 10</code></td></tr>
-          <tr><td>Float</td><td><code>make var x = 3.14</code></td></tr>
-          <tr><td>Boolean</td><td><code>make var x = true</code></td></tr>
-          <tr><td>String</td><td><code>make var x = "hello"</code></td></tr>
+          <tr><th>Type</th><th>Size</th><th>Example</th></tr>
+          <tr><td><code>int</code></td><td>32-bit</td><td><code>make int x = 10</code></td></tr>
+          <tr><td><code>float</code></td><td>32-bit</td><td><code>make float x = 3.14</code></td></tr>
+          <tr><td><code>bool</code></td><td>1-bit</td><td><code>make bool x = true</code></td></tr>
+          <tr><td><code>byte</code></td><td>8-bit</td><td><code>make byte x = 0xFF</code></td></tr>
+          <tr><td><code>var</code></td><td>inferred</td><td><code>make var x = 150</code></td></tr>
         </table>
-
-        <h3>Hardware Targets</h3>
+        <h3>Compilation Targets</h3>
         <table class="ref-table">
           <tr><th>Board</th><th>Flag</th></tr>
-          <tr><td>Arduino Uno/Mega/Nano</td><td><code>default</code></td></tr>
-          <tr><td>ESP32</td><td><code>--target esp32</code></td></tr>
-          <tr><td>Raspberry Pi</td><td><code>--target rpi</code></td></tr>
+          <tr><td>ESP32 (default)</td><td><code>--target esp32</code></td></tr>
+          <tr><td>Arduino Uno/Mega</td><td><code>default</code></td></tr>
+          <tr><td>Raspberry Pi Pico</td><td><code>--target pico</code></td></tr>
+          <tr><td>Raspberry Pi (Linux)</td><td><code>--target rpi</code></td></tr>
           <tr><td>ROS2</td><td><code>--target ros2</code></td></tr>
-          <tr><td>Pico</td><td><code>--target pico</code></td></tr>
+        </table>
+        <h3>Stdlib Modules</h3>
+        <table class="ref-table">
+          <tr><th>Module</th><th>Provides</th></tr>
+          <tr><td><code>sensors/mpu6050</code></td><td>IMU accel/gyro</td></tr>
+          <tr><td><code>sensors/neo6m_gps</code></td><td>GPS NMEA parser</td></tr>
+          <tr><td><code>sensors/hmc5883l</code></td><td>Compass heading</td></tr>
+          <tr><td><code>control/pid</code></td><td>PID controller</td></tr>
+          <tr><td><code>fusion/kalman</code></td><td>1D Kalman filter</td></tr>
+          <tr><td><code>fusion/kalman_2d</code></td><td>2D position filter</td></tr>
+          <tr><td><code>safety/safety_checks</code></td><td>Motor/battery limits</td></tr>
+          <tr><td><code>math/statistics</code></td><td>mean, variance, std</td></tr>
         </table>
       </div>
+      <div class="code-win reveal tilt glow-border">
+        <div class="code-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-file">cheatsheet_v3.1.kx</span></div>
+        <pre class="code-body" style="font-size:.72rem;line-height:1.9"><span class="cmt"># ── Variables ──────────────────────────</span>
+<span class="kw">make int</span> count = <span class="num">0</span>
+<span class="kw">make float</span> temp = <span class="num">36.5</span>
+<span class="kw">make var</span> speed = <span class="num">150</span>
+<span class="kw">const int</span> MAX = <span class="num">255</span>
+<span class="kw">shared make int</span> flag = <span class="num">0</span>
+<span class="kw">set</span> count <span class="kw">to</span> <span class="num">10</span>
+<span class="kw">change</span> count <span class="kw">by</span> <span class="num">1</span>
 
-      <div class="cheatsheet-card tilt-card">
-        <div class="code-titlebar">
-          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-          <span class="code-filename">cheatsheet.kx</span>
-        </div>
-        <pre class="cheatsheet-pre"><span class="cmt"># Variables</span>
-<span class="kw">make var</span> x = <span class="num">10</span>
-<span class="kw">const</span> MAX = <span class="num">255</span>
-<span class="kw">change</span> x <span class="kw">by</span> <span class="num">5</span>
+<span class="cmt"># ── Control Flow ───────────────────────</span>
+<span class="kw">if</span> x &gt; <span class="num">50</span> <span class="kw">and</span> x &lt; <span class="num">200</span> { }
+<span class="kw">else if</span> x <span class="op">is</span> <span class="num">0</span> { } <span class="kw">else</span> { }
 
-<span class="cmt"># Control Flow</span>
-<span class="kw">if</span> x &gt; <span class="num">10</span> <span class="kw">and</span> y &lt; <span class="num">5</span> { }
-<span class="kw">else if</span> x == <span class="num">0</span> { }
-<span class="kw">else</span> { }
-
-<span class="cmt"># Loops</span>
+<span class="cmt"># ── Loops ──────────────────────────────</span>
 <span class="kw">loop forever</span> { }
 <span class="kw">repeat</span> <span class="num">10</span> { }
 <span class="kw">while</span> x &lt; <span class="num">100</span> { }
 <span class="kw">for</span> i <span class="kw">from</span> <span class="num">0</span> <span class="kw">to</span> <span class="num">9</span> { }
+<span class="kw">for</span> i <span class="kw">from</span> <span class="num">0</span> <span class="kw">to</span> <span class="num">100</span> <span class="kw">by</span> <span class="num">5</span> { }
+<span class="kw">break</span>   <span class="kw">continue</span>
 
-<span class="cmt"># Hardware I/O</span>
-<span class="hw">turn on pin</span> <span class="num">13</span>
-<span class="hw">turn off pin</span> <span class="num">13</span>
-<span class="hw">set pin</span> <span class="num">9</span> <span class="hw">to</span> <span class="num">200</span>
-<span class="kw">make var</span> s = <span class="hw">read analog pin</span> <span class="num">0</span>
-<span class="kw">make var</span> b = <span class="hw">read pin</span> <span class="num">2</span>
-<span class="hw">set servo pin</span> <span class="num">9</span> <span class="hw">to</span> <span class="num">90</span>
-<span class="hw">tone pin</span> <span class="num">8</span> <span class="hw">to</span> <span class="num">440</span>
-<span class="hw">i2c begin</span>
-
-<span class="cmt"># Functions</span>
-<span class="kw">def</span> <span class="fn">myFunc</span>(a, b) {
+<span class="cmt"># ── Functions ──────────────────────────</span>
+<span class="kw">def</span> <span class="fn">myFunc</span>(<span class="ty">int</span> a, <span class="ty">float</span> b) {
     <span class="kw">return</span> a + b
 }
-<span class="fn">myFunc</span>(<span class="num">10</span>, <span class="num">20</span>)
 
-<span class="cmt"># Built-ins</span>
-<span class="fn">map</span>(val, <span class="num">0</span>, <span class="num">1023</span>, <span class="num">0</span>, <span class="num">255</span>)
-<span class="fn">constrain</span>(val, <span class="num">0</span>, <span class="num">200</span>)
-<span class="fn">abs</span>(error)
-<span class="fn">min</span>(a, b)  <span class="fn">max</span>(a, b)
-<span class="fn">random</span>(<span class="num">0</span>, <span class="num">100</span>)
+<span class="cmt"># ── Tasks ──────────────────────────────</span>
+<span class="kw">task</span> <span class="fn">blinker</span> { <span class="kw">loop forever</span> { } }
+<span class="kw">start task</span> <span class="fn">blinker</span>
 
-<span class="cmt"># Math</span>
-<span class="fn">sqrt</span>(x)  <span class="fn">sin</span>(x)  <span class="fn">cos</span>(x)
+<span class="cmt"># ── Hardware I/O ───────────────────────</span>
+<span class="hw">turn on pin</span> <span class="num">13</span>       <span class="cmt"># digitalWrite HIGH</span>
+<span class="hw">turn off pin</span> <span class="num">13</span>      <span class="cmt"># digitalWrite LOW</span>
+<span class="hw">set pin</span> <span class="num">9</span> <span class="hw">to</span> <span class="num">200</span>     <span class="cmt"># PWM 0–255</span>
+<span class="kw">make var</span> s = <span class="hw">read analog pin</span> <span class="num">0</span>
+<span class="kw">make var</span> b = <span class="hw">read pin</span> <span class="num">2</span>
+<span class="kw">make var</span> d = <span class="hw">read pulse pin</span> <span class="num">14</span>
+<span class="hw">set servo pin</span> <span class="num">9</span> <span class="hw">to</span> <span class="num">90</span>
+<span class="hw">tone pin</span> <span class="num">8</span> <span class="hw">frequency</span> <span class="num">440</span>
 
-<span class="cmt"># Timing</span>
-<span class="fn">wait</span> <span class="num">1000</span>     <span class="cmt"># ms</span>
-<span class="fn">wait_us</span> <span class="num">500</span>  <span class="cmt"># µs</span>
+<span class="cmt"># ── Protocols ──────────────────────────</span>
+<span class="kw">open i2c</span>
+<span class="kw">make var</span> v = <span class="hw">read i2c device</span> <span class="num">104</span> <span class="hw">register</span> <span class="num">59</span>
+<span class="hw">write i2c device</span> <span class="num">104</span> <span class="hw">value</span> <span class="num">0</span>
+<span class="kw">open serial at</span> <span class="num">115200</span> <span class="kw">baud</span>
+<span class="kw">open spi at</span> <span class="num">1000000</span>
 
-<span class="cmt"># Output</span>
-<span class="fn">print</span> <span class="str">"hello"</span>
-<span class="fn">print</span> variable</pre>
+<span class="cmt"># ── Interrupts ─────────────────────────</span>
+<span class="kw">on pin</span> <span class="num">2</span> <span class="kw">rising</span> { <span class="kw">change</span> count <span class="kw">by</span> <span class="num">1</span> }
+<span class="kw">on timer every</span> <span class="num">500</span> ms { <span class="fn">feed watchdog</span> }
+<span class="kw">disable interrupts</span>
+<span class="kw">make int</span> safe = shared_counter
+<span class="kw">enable interrupts</span>
+
+<span class="cmt"># ── Structs / Arrays / Buffers ─────────</span>
+<span class="kw">define type</span> Motor { <span class="ty">int</span> pin  <span class="ty">int</span> spd }
+<span class="kw">make</span> Motor m
+<span class="kw">set</span> m.pin <span class="kw">to</span> <span class="num">9</span>
+<span class="kw">make array int</span> data[<span class="num">10</span>]
+<span class="kw">make buffer float</span> log[<span class="num">32</span>]
+<span class="fn">push</span> log <span class="num">36.5</span>
+
+<span class="cmt"># ── Wireless ───────────────────────────</span>
+<span class="fn">radio_send_peer</span>(<span class="num">0</span>, speed)
+<span class="kw">if</span> <span class="fn">radio_available</span>() { <span class="fn">radio_read</span>() }
+
+<span class="cmt"># ── Watchdog &amp; Safety ──────────────────</span>
+<span class="kw">enable watchdog timeout</span> <span class="num">2000</span>ms
+<span class="fn">feed watchdog</span>
+<span class="kw">try</span> { } <span class="kw">on error</span> { <span class="fn">print</span> <span class="str">"err"</span> }
+<span class="kw">assert</span> reading &gt; <span class="num">0</span>
+
+<span class="cmt"># ── Math &amp; Timing ──────────────────────</span>
+<span class="fn">sqrt</span>(x)  <span class="fn">sin</span>(a)  <span class="fn">atan2</span>(y,x)
+<span class="fn">map</span>(v,<span class="num">0</span>,<span class="num">1023</span>,<span class="num">0</span>,<span class="num">255</span>)  <span class="fn">constrain</span>(v,<span class="num">0</span>,<span class="num">200</span>)
+<span class="fn">cast float</span> dist / time
+<span class="fn">wait</span> <span class="num">1000</span>    <span class="cmt"># ms</span>
+<span class="fn">wait</span> <span class="num">2</span> seconds
+<span class="fn">wait_us</span> <span class="num">500</span> <span class="cmt"># µs</span>
+<span class="fn">print</span> <span class="str">"Speed: "</span> + speed
+<span class="fn">println</span> value</pre>
       </div>
     </div>
   </div>
 </section>
 
+<!-- EXAMPLES -->
 <section id="examples">
   <div class="section-inner">
     <div class="section-tag">Examples</div>
-    <h2 class="section-title">Real Programs, Real Robots</h2>
+    <h2 class="section-title">Real Programs, <span class="gradient-text">Real Robots</span></h2>
     <div class="tabs">
       <button class="tab active" data-tab="blink">LED Blink</button>
-      <button class="tab" data-tab="traffic">Traffic Light</button>
-      <button class="tab" data-tab="linefollower">Line Follower</button>
-      <button class="tab" data-tab="robot">Robot Navigation</button>
-      <button class="tab" data-tab="binary">Binary Counter</button>
-      <button class="tab" data-tab="balancing">Self-Balancing</button>
+      <button class="tab" data-tab="interrupt">Encoder ISR</button>
+      <button class="tab" data-tab="multitask">Multi-task</button>
+      <button class="tab" data-tab="pid">PID Control</button>
+      <button class="tab" data-tab="wireless">Wireless Telemetry</button>
+      <button class="tab" data-tab="nav">Full Navigation</button>
     </div>
-    <div class="tab-panels">
+    <div>
 
       <div class="tab-panel active" id="tab-blink">
-        <div class="example-split">
-          <div>
-            <h3>LED Blink — Hello World</h3>
-            <p>The classic "Hello World" for hardware. Blinks an LED on pin 13 every second with just 4 lines of code.</p>
-            <div class="example-badge">4 lines vs 12 in Arduino C++</div>
-          </div>
-          <div class="code-window">
-            <div class="code-titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-filename">blink.kx</span></div>
-            <pre class="code-body"><span class="kw">program</span> {
+        <div class="ex-info">
+          <h3>LED Blink</h3>
+          <p>The classic "Hello World" for hardware. Blinks an LED on pin 13 every second — only 6 lines of Kinetrix vs 12 lines of Arduino C++.</p>
+          <div class="ex-badge">6 lines vs 12 in Arduino C++</div>
+        </div>
+        <div class="code-win">
+          <div class="code-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-file">blink.kx</span></div>
+          <pre class="code-body"><span class="kw">program</span> {
     <span class="kw">loop forever</span> {
         <span class="hw">turn on pin</span> <span class="num">13</span>
-        <span class="fn">wait</span> <span class="num">1000</span>
+        <span class="fn">wait</span> <span class="num">1</span> seconds
         <span class="hw">turn off pin</span> <span class="num">13</span>
-        <span class="fn">wait</span> <span class="num">1000</span>
+        <span class="fn">wait</span> <span class="num">1</span> seconds
     }
 }</pre>
-          </div>
         </div>
       </div>
 
-      <div class="tab-panel" id="tab-traffic">
-        <div class="example-split">
-          <div>
-            <h3>Traffic Light System</h3>
-            <p>Control a 3-LED traffic light sequence. Red → Yellow → Green, cycling forever on Arduino pins.</p>
-            <div class="example-badge">Real-world automation</div>
-          </div>
-          <div class="code-window">
-            <div class="code-titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-filename">traffic.kx</span></div>
-            <pre class="code-body"><span class="kw">program</span> {
+      <div class="tab-panel" id="tab-interrupt">
+        <div class="ex-info">
+          <h3>Encoder RPM Counter</h3>
+          <p>Uses a hardware interrupt on pin 2 to count encoder pulses. Safely reads the counter using interrupt guards to prevent race conditions.</p>
+          <div class="ex-badge">Hardware interrupts + shared vars</div>
+        </div>
+        <div class="code-win">
+          <div class="code-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-file">encoder.kx</span></div>
+          <pre class="code-body"><span class="kw">shared make int</span> pulse_count = <span class="num">0</span>
+
+<span class="kw">on pin</span> <span class="num">2</span> <span class="kw">rising</span> {
+    <span class="kw">change</span> pulse_count <span class="kw">by</span> <span class="num">1</span>
+}
+
+<span class="kw">program</span> {
     <span class="kw">loop forever</span> {
-        <span class="hw">turn on pin</span> <span class="num">13</span>   <span class="cmt"># Red</span>
-        <span class="fn">wait</span> <span class="num">3000</span>
-        <span class="hw">turn off pin</span> <span class="num">13</span>
-        <span class="hw">turn on pin</span> <span class="num">12</span>   <span class="cmt"># Yellow</span>
-        <span class="fn">wait</span> <span class="num">1000</span>
-        <span class="hw">turn off pin</span> <span class="num">12</span>
-        <span class="hw">turn on pin</span> <span class="num">11</span>   <span class="cmt"># Green</span>
-        <span class="fn">wait</span> <span class="num">3000</span>
-        <span class="hw">turn off pin</span> <span class="num">11</span>
+        <span class="kw">disable interrupts</span>
+        <span class="kw">make int</span> count = pulse_count
+        <span class="kw">set</span> pulse_count <span class="kw">to</span> <span class="num">0</span>
+        <span class="kw">enable interrupts</span>
+
+        <span class="kw">make float</span> rpm = count * <span class="num">60.0</span>
+        <span class="fn">println</span> <span class="str">"RPM: "</span> + rpm
+        <span class="fn">wait</span> <span class="num">1</span> seconds
     }
 }</pre>
-          </div>
         </div>
       </div>
 
-      <div class="tab-panel" id="tab-linefollower">
-        <div class="example-split">
-          <div>
-            <h3>Line Follower Robot</h3>
-            <p>Reads two IR sensors and adjusts motor speeds to follow a black line on the ground.</p>
-            <div class="example-badge">Sensor fusion + motor control</div>
-          </div>
-          <div class="code-window">
-            <div class="code-titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-filename">line_follower.kx</span></div>
-            <pre class="code-body"><span class="kw">program</span> {
-    <span class="kw">loop forever</span> {
-        <span class="kw">make var</span> left  = <span class="hw">read analog pin</span> <span class="num">0</span>
-        <span class="kw">make var</span> right = <span class="hw">read analog pin</span> <span class="num">1</span>
+      <div class="tab-panel" id="tab-multitask">
+        <div class="ex-info">
+          <h3>Multi-task Safety System</h3>
+          <p>Two FreeRTOS tasks run in parallel: a safety monitor watching temperature, and a motor controller that respects the emergency stop flag.</p>
+          <div class="ex-badge">FreeRTOS tasks + shared variables</div>
+        </div>
+        <div class="code-win">
+          <div class="code-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-file">multitask.kx</span></div>
+          <pre class="code-body"><span class="kw">shared make int</span> emergency = <span class="num">0</span>
 
-        <span class="kw">if</span> left &gt; <span class="num">500</span> <span class="kw">and</span> right &gt; <span class="num">500</span> {
-            <span class="hw">set pin</span> <span class="num">9</span> <span class="hw">to</span> <span class="num">200</span>
-            <span class="hw">set pin</span> <span class="num">10</span> <span class="hw">to</span> <span class="num">200</span>
-        } <span class="kw">else if</span> left &lt; <span class="num">500</span> {
-            <span class="hw">set pin</span> <span class="num">9</span> <span class="hw">to</span> <span class="num">200</span>
-            <span class="hw">set pin</span> <span class="num">10</span> <span class="hw">to</span> <span class="num">50</span>
-        } <span class="kw">else</span> {
-            <span class="hw">set pin</span> <span class="num">9</span> <span class="hw">to</span> <span class="num">50</span>
-            <span class="hw">set pin</span> <span class="num">10</span> <span class="hw">to</span> <span class="num">200</span>
+<span class="kw">task</span> <span class="fn">safety_monitor</span> {
+    <span class="kw">loop forever</span> {
+        <span class="kw">make var</span> temp = <span class="hw">read analog pin</span> <span class="num">1</span>
+        <span class="kw">if</span> temp &gt; <span class="num">800</span> {
+            <span class="kw">set</span> emergency <span class="kw">to</span> <span class="num">1</span>
+            <span class="fn">println</span> <span class="str">"Overheat!"</span>
         }
-        <span class="fn">wait</span> <span class="num">10</span>
+        <span class="fn">wait</span> <span class="num">100</span>
     }
-}</pre>
-          </div>
-        </div>
-      </div>
+}
 
-      <div class="tab-panel" id="tab-robot">
-        <div class="example-split">
-          <div>
-            <h3>Function-Based Robot</h3>
-            <p>Reusable motor functions — forward, turn left, turn right, stop. Clean and modular robot code.</p>
-            <div class="example-badge">Functions + parameters</div>
-          </div>
-          <div class="code-window">
-            <div class="code-titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-filename">robot.kx</span></div>
-            <pre class="code-body"><span class="kw">program</span> {
-    <span class="kw">def</span> <span class="fn">forward</span>(speed) {
-        <span class="hw">set pin</span> <span class="num">9</span> <span class="hw">to</span> speed
-        <span class="hw">set pin</span> <span class="num">10</span> <span class="hw">to</span> speed
-    }
-    <span class="kw">def</span> <span class="fn">turn_left</span>(speed) {
-        <span class="hw">set pin</span> <span class="num">9</span> <span class="hw">to</span> <span class="num">0</span>
-        <span class="hw">set pin</span> <span class="num">10</span> <span class="hw">to</span> speed
-    }
-    <span class="kw">def</span> <span class="fn">stop_robot</span>() {
-        <span class="hw">set pin</span> <span class="num">9</span> <span class="hw">to</span> <span class="num">0</span>
-        <span class="hw">set pin</span> <span class="num">10</span> <span class="hw">to</span> <span class="num">0</span>
-    }
+<span class="kw">task</span> <span class="fn">motor_control</span> {
     <span class="kw">loop forever</span> {
-        <span class="fn">forward</span>(<span class="num">200</span>)
-        <span class="fn">wait</span> <span class="num">2000</span>
-        <span class="fn">turn_left</span>(<span class="num">150</span>)
-        <span class="fn">wait</span> <span class="num">500</span>
-        <span class="fn">stop_robot</span>()
-        <span class="fn">wait</span> <span class="num">1000</span>
-    }
-}</pre>
-          </div>
-        </div>
-      </div>
-
-      <div class="tab-panel" id="tab-binary">
-        <div class="example-split">
-          <div>
-            <h3>4-Bit Binary Counter</h3>
-            <p>Counts 0–15 in binary, showing each bit on a separate LED. Uses modulo arithmetic and bit-shifting logic.</p>
-            <div class="example-badge">Advanced math + GPIO</div>
-          </div>
-          <div class="code-window">
-            <div class="code-titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-filename">binary_counter.kx</span></div>
-            <pre class="code-body"><span class="kw">program</span> {
-    <span class="kw">make var</span> count = <span class="num">0</span>
-    <span class="kw">loop forever</span> {
-        <span class="kw">if</span> count % <span class="num">2</span> == <span class="num">1</span> {
-            <span class="hw">turn on pin</span> <span class="num">10</span>
-        } <span class="kw">else</span> { <span class="hw">turn off pin</span> <span class="num">10</span> }
-        <span class="kw">if</span> (count / <span class="num">2</span>) % <span class="num">2</span> == <span class="num">1</span> {
-            <span class="hw">turn on pin</span> <span class="num">11</span>
-        } <span class="kw">else</span> { <span class="hw">turn off pin</span> <span class="num">11</span> }
-        <span class="kw">if</span> (count / <span class="num">4</span>) % <span class="num">2</span> == <span class="num">1</span> {
-            <span class="hw">turn on pin</span> <span class="num">12</span>
-        } <span class="kw">else</span> { <span class="hw">turn off pin</span> <span class="num">12</span> }
-        <span class="kw">change</span> count <span class="kw">by</span> <span class="num">1</span>
-        <span class="kw">if</span> count &gt;= <span class="num">16</span> {
-            <span class="kw">change</span> count <span class="kw">by</span> <span class="num">-16</span>
-        }
-        <span class="fn">wait</span> <span class="num">500</span>
-    }
-}</pre>
-          </div>
-        </div>
-      </div>
-
-      <div class="tab-panel" id="tab-balancing">
-        <div class="example-split">
-          <div>
-            <h3>Self-Balancing Robot</h3>
-            <p>PID-style balance control using analog sensors and PWM motor output. Advanced real-time robotics.</p>
-            <div class="example-badge">Real-time control + math</div>
-          </div>
-          <div class="code-window">
-            <div class="code-titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-filename">balance.kx</span></div>
-            <pre class="code-body"><span class="kw">program</span> {
-    <span class="kw">const</span> KP = <span class="num">2</span>
-    <span class="kw">const</span> SETPOINT = <span class="num">512</span>
-
-    <span class="kw">loop forever</span> {
-        <span class="kw">make var</span> tilt = <span class="hw">read analog pin</span> <span class="num">0</span>
-        <span class="kw">make var</span> error = SETPOINT - tilt
-        <span class="kw">make var</span> output = <span class="fn">abs</span>(error) * KP
-
-        <span class="kw">make var</span> speed = <span class="fn">constrain</span>(output, <span class="num">0</span>, <span class="num">255</span>)
-
-        <span class="kw">if</span> error &gt; <span class="num">0</span> {
-            <span class="hw">set pin</span> <span class="num">9</span> <span class="hw">to</span> speed
-            <span class="hw">set pin</span> <span class="num">10</span> <span class="hw">to</span> <span class="num">0</span>
-        } <span class="kw">else</span> {
+        <span class="kw">if</span> emergency <span class="op">is</span> <span class="num">1</span> {
             <span class="hw">set pin</span> <span class="num">9</span> <span class="hw">to</span> <span class="num">0</span>
-            <span class="hw">set pin</span> <span class="num">10</span> <span class="hw">to</span> speed
+            <span class="fn">println</span> <span class="str">"EMERGENCY STOP"</span>
+        } <span class="kw">else</span> {
+            <span class="hw">set pin</span> <span class="num">9</span> <span class="hw">to</span> <span class="num">180</span>
         }
-        <span class="fn">wait</span> <span class="num">10</span>
+        <span class="fn">wait</span> <span class="num">50</span>
+    }
+}
+
+<span class="kw">program</span> {
+    <span class="kw">start task</span> <span class="fn">safety_monitor</span>
+    <span class="kw">start task</span> <span class="fn">motor_control</span>
+    <span class="kw">enable watchdog timeout</span> <span class="num">5000</span>ms
+    <span class="kw">loop forever</span> { <span class="fn">feed watchdog</span>  <span class="fn">wait</span> <span class="num">500</span> }
+}</pre>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tab-pid">
+        <div class="ex-info">
+          <h3>PID Motor Controller</h3>
+          <p>Uses the stdlib PID module and encoder interrupts to drive a motor at a precise target speed, automatically correcting for load changes.</p>
+          <div class="ex-badge">stdlib PID + hardware interrupt</div>
+        </div>
+        <div class="code-win">
+          <div class="code-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-file">pid_motor.kx</span></div>
+          <pre class="code-body"><span class="kw">include</span> <span class="str">"control/pid.kx"</span>
+
+<span class="kw">const float</span> TARGET = <span class="num">200.0</span>
+<span class="kw">const int</span>   ENCODER_PIN = <span class="num">2</span>
+<span class="kw">const int</span>   MOTOR_PIN = <span class="num">9</span>
+
+<span class="kw">shared make int</span> tick_count = <span class="num">0</span>
+
+<span class="kw">on pin</span> ENCODER_PIN <span class="kw">rising</span> {
+    <span class="kw">change</span> tick_count <span class="kw">by</span> <span class="num">1</span>
+}
+
+<span class="kw">program</span> {
+    <span class="fn">pid_init</span>(<span class="num">2.0</span>, <span class="num">0.1</span>, <span class="num">0.05</span>)
+    <span class="fn">pid_set_limits</span>(<span class="num">0</span>, <span class="num">255</span>)
+
+    <span class="kw">loop forever</span> {
+        <span class="kw">disable interrupts</span>
+        <span class="kw">make int</span> ticks = tick_count
+        <span class="kw">set</span> tick_count <span class="kw">to</span> <span class="num">0</span>
+        <span class="kw">enable interrupts</span>
+
+        <span class="kw">make float</span> speed = ticks * <span class="num">10.0</span>
+        <span class="kw">make float</span> out = <span class="fn">pid_compute</span>(TARGET, speed, <span class="num">0.1</span>)
+        <span class="hw">set pin</span> MOTOR_PIN <span class="hw">to</span> <span class="fn">cast int</span> out
+        <span class="fn">wait</span> <span class="num">100</span>
     }
 }</pre>
-          </div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tab-wireless">
+        <div class="ex-info">
+          <h3>Wireless Telemetry</h3>
+          <p>A sensor task reads data and broadcasts it via ESP-NOW radio to a base station, while also receiving motor commands wirelessly.</p>
+          <div class="ex-badge">ESP-NOW + multi-task + watchdog</div>
+        </div>
+        <div class="code-win">
+          <div class="code-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-file">telemetry.kx</span></div>
+          <pre class="code-body"><span class="kw">shared make float</span> sensor_value = <span class="num">0.0</span>
+<span class="kw">shared make bool</span>  new_data = <span class="kw">false</span>
+
+<span class="kw">task</span> <span class="fn">sensor_reader</span> {
+    <span class="kw">loop forever</span> {
+        <span class="kw">set</span> sensor_value <span class="kw">to</span> <span class="hw">read analog pin</span> <span class="num">0</span>
+        <span class="kw">set</span> new_data <span class="kw">to</span> <span class="kw">true</span>
+        <span class="fn">wait</span> <span class="num">200</span>
+    }
+}
+
+<span class="kw">program</span> {
+    <span class="kw">start task</span> <span class="fn">sensor_reader</span>
+    <span class="kw">enable watchdog timeout</span> <span class="num">5000</span>ms
+    <span class="kw">make int</span> base_station = <span class="num">0</span>
+
+    <span class="kw">loop forever</span> {
+        <span class="fn">feed watchdog</span>
+        <span class="kw">if</span> new_data {
+            <span class="fn">radio_send_peer</span>(base_station, sensor_value)
+            <span class="kw">set</span> new_data <span class="kw">to</span> <span class="kw">false</span>
+        }
+        <span class="kw">if</span> <span class="fn">radio_available</span>() {
+            <span class="kw">make float</span> cmd = <span class="fn">radio_read</span>()
+            <span class="hw">set pin</span> <span class="num">9</span> <span class="hw">to</span> <span class="fn">cast int</span> cmd
+        }
+        <span class="fn">wait</span> <span class="num">50</span>
+    }
+}</pre>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tab-nav">
+        <div class="ex-info">
+          <h3>Full Navigation with Kalman Filter</h3>
+          <p>Production-grade navigation: MPU6050 IMU, GPS, Compass, and a 2D Kalman filter for position estimation. The complete robotics stack in Kinetrix.</p>
+          <div class="ex-badge">IMU + GPS + Compass + Kalman 2D</div>
+        </div>
+        <div class="code-win">
+          <div class="code-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-file">navigation.kx</span></div>
+          <pre class="code-body sm"><span class="kw">include</span> <span class="str">"sensors/mpu6050.kx"</span>
+<span class="kw">include</span> <span class="str">"sensors/neo6m_gps.kx"</span>
+<span class="kw">include</span> <span class="str">"sensors/hmc5883l_compass.kx"</span>
+<span class="kw">include</span> <span class="str">"fusion/kalman_2d.kx"</span>
+<span class="kw">include</span> <span class="str">"fusion/calibration.kx"</span>
+
+<span class="kw">program</span> {
+    <span class="fn">mpu6050_init</span>()
+    <span class="fn">gps_init</span>()
+    <span class="fn">hmc5883l_init</span>()
+    <span class="fn">calibrate_imu_accel</span>(<span class="num">100</span>)
+    <span class="fn">calibrate_imu_gyro</span>(<span class="num">100</span>)
+    <span class="fn">calibrate_compass</span>(<span class="num">200</span>)
+    <span class="fn">set_magnetic_declination</span>(<span class="num">5</span>)
+    <span class="fn">kalman_2d_init</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>)
+
+    <span class="kw">loop forever</span> {
+        <span class="fn">mpu6050_read_accel</span>()
+        <span class="fn">hmc5883l_read</span>()
+        <span class="fn">gps_process_byte</span>()
+
+        <span class="kw">make var</span> ax = accel_x - imu_accel_offset_x
+        <span class="kw">make var</span> ay = accel_y - imu_accel_offset_y
+
+        <span class="fn">kalman_2d_predict</span>(<span class="num">0.1</span>)
+        <span class="fn">kalman_2d_update_accel</span>(ax, ay, <span class="num">0.1</span>)
+
+        <span class="kw">if</span> <span class="fn">has_gps_fix</span>() {
+            <span class="fn">kalman_2d_update</span>(<span class="fn">get_latitude</span>(), <span class="fn">get_longitude</span>())
+        }
+
+        <span class="kw">make var</span> x = <span class="fn">kalman_2d_get_x</span>()
+        <span class="kw">make var</span> y = <span class="fn">kalman_2d_get_y</span>()
+        <span class="kw">make var</span> hdg = <span class="fn">apply_compass_calibration</span>()
+        <span class="kw">make var</span> vx = <span class="fn">kalman_2d_get_vx</span>()
+        <span class="kw">make var</span> vy = <span class="fn">kalman_2d_get_vy</span>()
+        <span class="kw">make float</span> spd = <span class="fn">sqrt</span>(vx*vx + vy*vy)
+
+        <span class="fn">print</span> <span class="str">"X: "</span> + x + <span class="str">" Y: "</span> + y
+        <span class="fn">println</span> <span class="str">" Hdg: "</span> + hdg + <span class="str">" Spd: "</span> + spd
+        <span class="fn">wait</span> <span class="num">100</span>
+    }
+}</pre>
         </div>
       </div>
 
@@ -1381,404 +962,443 @@ Cmd + Shift + B
   </div>
 </section>
 
+<!-- COMPARE -->
 <section id="compare">
   <div class="section-inner">
     <div class="section-tag">vs. The World</div>
-    <h2 class="section-title">Why Kinetrix Wins</h2>
-    <div class="compare-table-wrap tilt-card">
+    <h2 class="section-title">Why <span class="gradient-text">Kinetrix Wins</span></h2>
+    <div class="compare-wrap reveal">
       <table class="compare-table">
         <thead>
           <tr>
             <th>Feature</th>
-            <th class="highlight-col">⚡ Kinetrix</th>
+            <th class="col-kx">⚡ Kinetrix 3.1</th>
             <th>Arduino C++</th>
             <th>MicroPython</th>
             <th>Scratch</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td>Runs on Arduino/ESP32</td><td class="yes">✅ Yes</td><td class="yes">✅ Yes</td><td class="no">⚠️ Limited</td><td class="no">❌ No</td></tr>
-          <tr><td>Beginner-friendly</td><td class="yes">✅ Yes</td><td class="no">❌ No</td><td class="yes">✅ Yes</td><td class="yes">✅ Yes</td></tr>
-          <tr><td>Compiles to native code</td><td class="yes">✅ Yes</td><td class="yes">✅ Yes</td><td class="no">❌ No</td><td class="no">❌ No</td></tr>
-          <tr><td>Zero boilerplate</td><td class="yes">✅ Yes</td><td class="no">❌ No</td><td class="no">⚠️ Some</td><td class="yes">✅ Yes</td></tr>
-          <tr><td>Real-time control</td><td class="yes">✅ Yes</td><td class="yes">✅ Yes</td><td class="no">❌ No</td><td class="no">❌ No</td></tr>
-          <tr><td>Hardware safety checks</td><td class="yes">✅ Compile-time</td><td class="no">❌ Runtime</td><td class="no">❌ Runtime</td><td class="no">❌ No</td></tr>
-          <tr><td>Lines to blink LED</td><td class="yes">✅ 4 lines</td><td class="no">~12 lines</td><td class="no">~6 lines</td><td class="no">N/A</td></tr>
-          <tr><td>Servo / Tone / I2C</td><td class="yes">✅ Built-in</td><td class="no">Needs libraries</td><td class="no">Needs libraries</td><td class="no">❌ No</td></tr>
+          <tr><td>Runs on Arduino / ESP32</td><td class="yes col-kx">✅ Yes</td><td class="yes">✅ Yes</td><td class="no">⚠️ Limited</td><td class="no">❌ No</td></tr>
+          <tr><td>Beginner friendly</td><td class="yes col-kx">✅ Yes</td><td class="no">❌ No</td><td class="yes">✅ Yes</td><td class="yes">✅ Yes</td></tr>
+          <tr><td>Compiles to native C++</td><td class="yes col-kx">✅ Yes</td><td class="yes">✅ Yes</td><td class="no">❌ No</td><td class="no">❌ No</td></tr>
+          <tr><td>Zero boilerplate</td><td class="yes col-kx">✅ Yes</td><td class="no">❌ No</td><td class="no">⚠️ Some</td><td class="yes">✅ Yes</td></tr>
+          <tr><td>Real-time / FreeRTOS tasks</td><td class="yes col-kx">✅ Built-in</td><td class="no">Manual</td><td class="no">❌ No</td><td class="no">❌ No</td></tr>
+          <tr><td>Hardware interrupts</td><td class="yes col-kx">✅ Built-in</td><td class="no">Manual IRAM</td><td class="no">❌ No</td><td class="no">❌ No</td></tr>
+          <tr><td>Watchdog timer</td><td class="yes col-kx">✅ 1 line</td><td class="no">~5 lines</td><td class="no">❌ No</td><td class="no">❌ No</td></tr>
+          <tr><td>ESP-NOW wireless</td><td class="yes col-kx">✅ Built-in</td><td class="no">Needs library</td><td class="no">❌ No</td><td class="no">❌ No</td></tr>
+          <tr><td>stdlib sensors / PID / Kalman</td><td class="yes col-kx">✅ Included</td><td class="no">DIY</td><td class="no">DIY</td><td class="no">❌ No</td></tr>
+          <tr><td>Lines to blink LED</td><td class="yes col-kx">✅ 6 lines</td><td class="no">~12 lines</td><td class="no">~6 lines</td><td class="no">N/A</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 </section>
 
+<!-- GET STARTED -->
 <section id="get-started">
   <div class="section-inner">
     <div class="section-tag">Get Started</div>
-    <h2 class="section-title">Up and Running in 5 Minutes</h2>
+    <h2 class="section-title">Up and Running <span class="gradient-text">in 5 Minutes</span></h2>
 
-    <div class="install-box tilt-card">
+    <div class="install-box reveal">
       <div class="install-label">⚡ One-line install (Mac / Linux)</div>
-      <div class="install-cmd-row">
-        <code class="install-cmd" id="install-cmd-text">curl -fsSL https://raw.githubusercontent.com/M4dM0nk3y/Kinetrix/main/install.sh | bash</code>
-        <button class="install-copy-btn" onclick="copyInstall()" title="Copy to clipboard">📋 Copy</button>
+      <div class="install-row">
+        <code class="install-cmd" id="install-cmd">curl -fsSL https://raw.githubusercontent.com/M4dM0nk3y/Kinetrix/main/install.sh | bash</code>
+        <button class="copy-btn" id="copy-btn" onclick="copyInstall()">📋 Copy</button>
       </div>
     </div>
 
-    <div class="or-divider"><span>or install manually</span></div>
+    <div class="or-div"><span>or install manually</span></div>
 
     <div class="steps-grid">
-      <div class="step-card tilt-card">
+      <div class="step-card reveal tilt">
         <div class="step-num">01</div>
         <h3>Clone the Repo</h3>
-        <pre class="code-body small">git clone https://github.com/M4dM0nk3y/Kinetrix
+        <pre class="code-body sm">git clone https://github.com/
+  M4dM0nk3y/Kinetrix
 cd Kinetrix</pre>
       </div>
-      <div class="step-card tilt-card">
+      <div class="step-card reveal tilt">
         <div class="step-num">02</div>
         <h3>Build the Compiler</h3>
-        <pre class="code-body small">gcc -o kcc compiler_v3.c parser.c \
-    codegen.c ast.c error.c \
-    pin_tracker.c symbol_table.c \
-    diagnostics.c -lm</pre>
+        <pre class="code-body sm">gcc -o kcc compiler_v3.c \
+  parser.c codegen.c \
+  ast.c error.c \
+  pin_tracker.c \
+  symbol_table.c -lm</pre>
       </div>
-      <div class="step-card tilt-card">
+      <div class="step-card reveal tilt">
         <div class="step-num">03</div>
         <h3>Write &amp; Compile</h3>
-        <pre class="code-body small"><span class="cmt"># Write your program</span>
-nano my_robot.kx
+        <pre class="code-body sm"><span class="cmt"># Default: ESP32 target</span>
+./kcc robot.kx
 
-<span class="cmt"># Compile it</span>
-./kcc my_robot.kx -o my_robot.ino</pre>
+<span class="cmt"># Other targets:</span>
+./kcc robot.kx --target pico
+./kcc robot.kx --target rpi
+./kcc robot.kx --target ros2</pre>
       </div>
-      <div class="step-card tilt-card">
+      <div class="step-card reveal tilt">
         <div class="step-num">04</div>
-        <h3>Upload to Arduino</h3>
-        <pre class="code-body small"><span class="cmt"># Open in Arduino IDE</span>
-<span class="cmt"># Select: Tools → Board</span>
-<span class="cmt"># Select: Tools → Port</span>
-<span class="cmt"># Click Upload →</span></pre>
+        <h3>Flash to Device</h3>
+        <pre class="code-body sm"><span class="cmt"># Open .ino in Arduino IDE</span>
+<span class="cmt"># Select Tools → Board → ESP32</span>
+<span class="cmt"># Select Tools → Port</span>
+<span class="cmt"># Click Upload (→)</span></pre>
       </div>
     </div>
-    <div class="cta-center">
-      <a href="https://github.com/M4dM0nk3y/Kinetrix" class="btn-primary magnetic" target="_blank">View on GitHub ↗</a>
-      <a href="https://raw.githubusercontent.com/M4dM0nk3y/Kinetrix/main/install.sh" class="btn-secondary magnetic" download="install.sh">⬇ Download install.sh</a>
+    <div class="cta-row">
+      <a href="https://github.com/M4dM0nk3y/Kinetrix" class="btn btn-primary" target="_blank">View on GitHub ↗</a>
+      <a href="KINETRIX_LANGUAGE_GUIDE.pdf" class="btn btn-accent" target="_blank">📄 Full Language Guide</a>
+      <a href="#contact" class="btn btn-ghost">Get in Touch</a>
     </div>
   </div>
 </section>
 
+<!-- CONTACT -->
 <section id="contact">
   <div class="section-inner">
-    <div class="section-tag">Comm-Link</div>
-    <h2 class="section-title scramble" data-text="Secure Transmission">Secure Transmission</h2>
-    
-    <div class="contact-wrapper tilt-card reveal">
-      <form action="https://formspree.io/f/xbdyjawq" method="POST" class="contact-form">
-        
-        <div class="form-group">
-          <label for="name">Identifier (Name)</label>
-          <input type="text" id="name" name="name" required placeholder="Enter your designation..." />
+    <div class="section-tag">Contact</div>
+    <h2 class="section-title">Get in <span class="gradient-text">Touch</span></h2>
+    <div class="contact-grid">
+      <div class="contact-info">
+        <h3>Built for builders.<br/>Open to everyone.</h3>
+        <p>Have a question about Kinetrix? Want to report a bug, suggest a feature, or collaborate on the project? Send a message — Soham reads every one.</p>
+        <p>Kinetrix is open-source under the MIT License. Contributions and feedback are always welcome.</p>
+        <div class="contact-links">
+          <a href="https://github.com/M4dM0nk3y/Kinetrix" class="contact-link" target="_blank">
+            <div class="contact-link-icon">⌥</div>
+            GitHub — M4dM0nk3y/Kinetrix
+          </a>
+          <a href="KINETRIX_LANGUAGE_GUIDE.pdf" class="contact-link" target="_blank">
+            <div class="contact-link-icon">📄</div>
+            Kinetrix v3.1 Language Guide (PDF)
+          </a>
+          <a href="mailto:kinetrix@example.com" class="contact-link">
+            <div class="contact-link-icon">✉</div>
+            kinetrix@example.com
+          </a>
         </div>
-        
-        <div class="form-group">
-          <label for="email">Return Address (Email)</label>
-          <input type="email" id="email" name="email" required placeholder="Enter comms channel..." />
-        </div>
-        
-        <div class="form-group">
-          <label for="message">Data Packet (Message)</label>
-          <textarea id="message" name="message" rows="5" required placeholder="Type your transmission..."></textarea>
-        </div>
-        
-        <button type="submit" class="btn-primary magnetic submit-btn">Transmit Data ↗</button>
-      </form>
+      </div>
+      <div class="contact-form-wrap reveal">
+        <form id="contact-form" action="https://formspree.io/f/xbdyjawq" method="POST" class="contact-form">
+          <div class="form-group">
+            <label for="fname">Your Name</label>
+            <input type="text" id="fname" name="name" required placeholder="Ada Lovelace"/>
+          </div>
+          <div class="form-group">
+            <label for="femail">Email Address</label>
+            <input type="email" id="femail" name="email" required placeholder="ada@robots.dev"/>
+          </div>
+          <div class="form-group">
+            <label for="fsubject">Subject</label>
+            <select id="fsubject" name="subject">
+              <option value="">Select a topic...</option>
+              <option value="bug">🐛 Bug Report</option>
+              <option value="feature">✨ Feature Request</option>
+              <option value="question">❓ General Question</option>
+              <option value="collab">🤝 Collaboration</option>
+              <option value="other">💬 Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="fmessage">Message</label>
+            <textarea id="fmessage" name="message" rows="5" required placeholder="Type your message... e.g. I built a balancing robot with Kinetrix and it's 🔥"></textarea>
+          </div>
+          <div id="form-status" class="form-status"></div>
+          <button type="submit" class="btn btn-primary" style="align-self:flex-start;cursor:pointer">Transmit Message ↗</button>
+        </form>
+      </div>
     </div>
   </div>
 </section>
 
+<!-- FOOTER -->
 <footer id="footer">
   <div class="footer-inner">
-    <div class="footer-logo">
-      <span class="logo-icon">⚡</span>
-      <span class="logo-text">Kinetrix</span>
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="#" class="nav-logo" style="text-decoration:none">
+          <div class="logo-mark">K</div>
+          <span class="logo-text">Kinetrix</span>
+          <span class="logo-version">v3.1</span>
+        </a>
+        <p>A compiled, statically-typed language for robotics and embedded systems. Write hardware in plain English. Ship optimised C++ in minutes.</p>
+        <div class="badges">
+          <span class="footer-badge">MIT License</span>
+          <span class="footer-badge">Open Source</span>
+          <span class="footer-badge">ESP32</span>
+          <span class="footer-badge">Arduino</span>
+          <span class="footer-badge">RPi</span>
+          <span class="footer-badge">ROS2</span>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Language</h4>
+        <ul>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#syntax">Syntax Reference</a></li>
+          <li><a href="#examples">Examples</a></li>
+          <li><a href="#compare">Comparison</a></li>
+          <li><a href="KINETRIX_LANGUAGE_GUIDE.pdf" target="_blank">Language Guide PDF</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="#get-started">Get Started</a></li>
+          <li><a href="https://github.com/M4dM0nk3y/Kinetrix" target="_blank">GitHub Repo</a></li>
+          <li><a href="#contact">Contact / Feedback</a></li>
+          <li><a href="https://github.com/M4dM0nk3y/Kinetrix/issues" target="_blank">Report Bug</a></li>
+        </ul>
+      </div>
     </div>
-    <p class="footer-sub">Built by <strong>Soham Mulik</strong> · v2.0 · February 2026</p>
-    <p class="footer-desc">Open source · MIT License · Targets Arduino, ESP32, Raspberry Pi, ROS2</p>
-    <div class="footer-links">
-      <a href="https://github.com/M4dM0nk3y/Kinetrix" target="_blank">GitHub</a>
-      <a href="#features">Features</a>
-      <a href="#syntax">Syntax</a>
-      <a href="#examples">Examples</a>
+    <div class="footer-bottom">
+      <div class="footer-tagline-wrap">
+        <p class="footer-tagline">
+          "Machines don't need less intelligence — they need a language that honours theirs."
+          <span>— Kinetrix v3.1 · Built by Soham Mulik · February 2026 · Where silicon speaks, engineers listen.</span>
+        </p>
+      </div>
+      <div class="footer-copy">
+        <p>© 2026 Kinetrix · Soham Mulik · MIT License</p>
+        <div class="footer-copy-links">
+          <a href="https://github.com/M4dM0nk3y/Kinetrix" target="_blank">GitHub</a>
+          <a href="KINETRIX_LANGUAGE_GUIDE.pdf" target="_blank">Docs</a>
+          <a href="#contact">Contact</a>
+        </div>
+      </div>
     </div>
-    <div class="footer-tagline">
-      <p class="tagline-quote">"In a world where machines learn to think, Kinetrix teaches humans to <em>speak their language</em> —<br/>one line, one robot, one revolution at a time."</p>
-    </div>
-    <p class="footer-copy">© 2026 Kinetrix · Soham Mulik · All rights reserved.</p>
   </div>
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
 <script>
-/* ── CURSOR GLOW ── */
-const cursorGlow = document.getElementById('cursor-glow');
-let mx = -100, my = -100, cx = -100, cy = -100;
+/* ── CURSOR ─────────────────────────────────────────────── */
+const cur = document.getElementById('cursor');
+const ring = document.getElementById('cursor-ring');
+let mx = -200, my = -200, cx = -200, cy = -200, rx = -200, ry = -200;
 document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
-(function animCursor() {
-  cx += (mx - cx) * 0.12;
-  cy += (my - cy) * 0.12;
-  cursorGlow.style.left = cx + 'px';
-  cursorGlow.style.top  = cy + 'px';
-  requestAnimationFrame(animCursor);
+(function animCur() {
+  cx += (mx - cx) * .18; cy += (my - cy) * .18;
+  rx += (mx - rx) * .07; ry += (my - ry) * .07;
+  cur.style.left = cx + 'px'; cur.style.top = cy + 'px';
+  ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+  requestAnimationFrame(animCur);
 })();
-document.querySelectorAll('a,button,.tab,.tilt-card').forEach(el => {
-  el.addEventListener('mouseenter', () => { cursorGlow.style.width = '40px'; cursorGlow.style.height = '40px'; });
-  el.addEventListener('mouseleave', () => { cursorGlow.style.width = '20px'; cursorGlow.style.height = '20px'; });
+document.querySelectorAll('a,button,.tab,.tilt,.feat-card,.step-card').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    cur.style.width = '6px'; cur.style.height = '6px';
+    ring.style.width = '50px'; ring.style.height = '50px';
+    ring.style.borderColor = 'rgba(0,229,255,0.7)';
+  });
+  el.addEventListener('mouseleave', () => {
+    cur.style.width = '12px'; cur.style.height = '12px';
+    ring.style.width = '36px'; ring.style.height = '36px';
+    ring.style.borderColor = 'rgba(0,229,255,0.4)';
+  });
 });
 
-/* ── NAVBAR SCROLL ── */
-const navbar = document.getElementById('navbar');
+/* ── NAVBAR SCROLL ──────────────────────────────────────── */
 window.addEventListener('scroll', () => {
-  navbar.classList.toggle('scrolled', window.scrollY > 40);
+  document.getElementById('navbar').classList.toggle('scrolled', scrollY > 40);
 });
 
-/* ── TABS ── */
+/* ── HAMBURGER ──────────────────────────────────────────── */
+const ham = document.getElementById('hamburger');
+const mob = document.getElementById('mobile-menu');
+ham.addEventListener('click', () => { ham.classList.toggle('open'); mob.classList.toggle('open'); });
+mob.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { ham.classList.remove('open'); mob.classList.remove('open'); }));
+
+/* ── TABS ───────────────────────────────────────────────── */
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     tab.classList.add('active');
-    const id = 'tab-' + tab.dataset.tab;
-    const panel = document.getElementById(id);
+    const panel = document.getElementById('tab-' + tab.dataset.tab);
     if (panel) panel.classList.add('active');
   });
 });
 
-/* ── SCROLL REVEAL ── */
-document.querySelectorAll('.feature-card,.step-card,.syntax-table-wrap,.compare-table-wrap,.cheatsheet-card').forEach(el => {
-  el.classList.add('reveal');
-});
-const observer = new IntersectionObserver(entries => {
-  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+/* ── REVEAL ON SCROLL ───────────────────────────────────── */
+const revObs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
 }, { threshold: 0.1 });
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+document.querySelectorAll('.reveal').forEach(el => revObs.observe(el));
 
-/* ── 3D TILT ── */
-document.querySelectorAll('.tilt-card').forEach(card => {
-  card.addEventListener('mousemove', e => {
-    const rect = card.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top)  / rect.height - 0.5;
-    card.style.transform = `perspective(800px) rotateY(${x * 10}deg) rotateX(${-y * 10}deg) scale(1.02)`;
-  });
-  card.addEventListener('mouseleave', () => {
-    card.style.transform = 'perspective(800px) rotateY(0) rotateX(0) scale(1)';
-    card.style.transition = 'transform 0.4s ease';
-  });
-  card.addEventListener('mouseenter', () => { card.style.transition = 'transform 0.05s'; });
-});
-
-/* ── MAGNETIC BUTTONS ── */
-document.querySelectorAll('.magnetic').forEach(btn => {
-  btn.addEventListener('mousemove', e => {
-    const rect = btn.getBoundingClientRect();
-    const dx = e.clientX - (rect.left + rect.width / 2);
-    const dy = e.clientY - (rect.top + rect.height / 2);
-    btn.style.transform = `translate(${dx * 0.25}px, ${dy * 0.25}px)`;
-  });
-  btn.addEventListener('mouseleave', () => {
-    btn.style.transform = '';
-    btn.style.transition = 'transform 0.4s ease';
-  });
-});
-
-/* ── TEXT SCRAMBLE ── */
-class Scramble {
-  constructor(el) {
-    this.el = el;
-    this.chars = '!<>-_\\/[]{}—=+*^?#ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-    this.update = this.update.bind(this);
-  }
-  setText(newText) {
-    const old = this.el.innerText;
-    const len = Math.max(old.length, newText.length);
-    const promise = new Promise(res => this.resolve = res);
-    this.queue = [];
-    for (let i = 0; i < len; i++) {
-      const from = old[i] || '', to = newText[i] || '';
-      const start = Math.floor(Math.random() * 20);
-      const end = start + Math.floor(Math.random() * 20);
-      this.queue.push({ from, to, start, end });
-    }
-    cancelAnimationFrame(this.frameReq);
-    this.frame = 0;
-    this.update();
-    return promise;
-  }
-  update() {
-    let output = '', complete = 0;
-    for (let i = 0; i < this.queue.length; i++) {
-      const { from, to, start, end } = this.queue[i];
-      let char = this.queue[i].char;
-      if (this.frame >= end) { complete++; output += to; }
-      else if (this.frame >= start) {
-        if (!char || Math.random() < 0.28) {
-          char = this.chars[Math.floor(Math.random() * this.chars.length)];
-          this.queue[i].char = char;
-        }
-        output += `<span style="color:#00d4ff66">${char}</span>`;
-      } else { output += from; }
-    }
-    this.el.innerHTML = output;
-    if (complete === this.queue.length) { this.resolve(); }
-    else { this.frameReq = requestAnimationFrame(this.update); this.frame++; }
-  }
-}
-document.querySelectorAll('.scramble').forEach(el => {
-  const sc = new Scramble(el);
+/* ── COUNTER ANIMATION ──────────────────────────────────── */
+const suffixes = { '4':'x','100':'%','0':'ms','6':'+','37':'' };
+document.querySelectorAll('[data-target]').forEach(el => {
   const io = new IntersectionObserver(entries => {
-    if (entries[0].isIntersecting) { sc.setText(el.dataset.text || el.innerText); io.disconnect(); }
-  }, { threshold: 0.5 });
+    if (!entries[0].isIntersecting) return;
+    const target = +el.dataset.target;
+    const suf = suffixes[el.dataset.target] ?? '';
+    let start = null;
+    const dur = 1600;
+    (function step(ts) {
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / dur, 1);
+      const eased = p < .5 ? 2*p*p : -1+(4-2*p)*p;
+      el.textContent = Math.round(target * eased) + suf;
+      if (p < 1) requestAnimationFrame(step);
+    })(performance.now());
+    io.disconnect();
+  }, { threshold: .5 });
   io.observe(el);
 });
 
-/* ── COUNTER ANIMATION ── */
-document.querySelectorAll('.stat-num').forEach(el => {
-  const io2 = new IntersectionObserver(entries => {
-    if (!entries[0].isIntersecting) return;
-    const text = el.innerText;
-    const num = parseFloat(text);
-    if (isNaN(num)) return;
-    const suffix = text.replace(/[\d.]/g, '');
-    let start = 0; const dur = 1500;
-    const step = ts => {
-      if (!start) start = ts;
-      const p = Math.min((ts - start) / dur, 1);
-      el.innerText = (num * p % 1 === 0 ? Math.floor(num * p) : (num * p).toFixed(1)) + suffix;
-      if (p < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-    io2.disconnect();
-  }, { threshold: 0.5 });
-  io2.observe(el);
+/* ── 3D TILT ────────────────────────────────────────────── */
+document.querySelectorAll('.tilt').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const r = card.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - .5;
+    const y = (e.clientY - r.top) / r.height - .5;
+    card.style.transform = `perspective(900px) rotateY(${x*8}deg) rotateX(${-y*8}deg) scale(1.018)`;
+    card.style.transition = 'transform .05s';
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = 'perspective(900px) rotateY(0) rotateX(0) scale(1)';
+    card.style.transition = 'transform .5s ease';
+  });
 });
 
-/* ── MATTER.JS PHYSICS BACKGROUND ── */
-(function initPhysics() {
+/* ── COPY INSTALL ───────────────────────────────────────── */
+function copyInstall() {
+  const btn = document.getElementById('copy-btn');
+  navigator.clipboard.writeText(document.getElementById('install-cmd').textContent).then(() => {
+    btn.textContent = '✅ Copied!'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+/* ── CONTACT FORM ───────────────────────────────────────── */
+const form = document.getElementById('contact-form');
+const status = document.getElementById('form-status');
+if (form) {
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = form.querySelector('button[type="submit"]');
+    btn.textContent = 'Sending...'; btn.disabled = true;
+    try {
+      const res = await fetch(form.action, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        body: new FormData(form)
+      });
+      if (res.ok) {
+        status.textContent = '✅ Message transmitted! Soham will reply soon.';
+        status.className = 'form-status success'; form.reset();
+      } else {
+        throw new Error();
+      }
+    } catch {
+      status.textContent = '❌ Transmission failed. Try emailing directly.';
+      status.className = 'form-status error';
+    }
+    btn.textContent = 'Transmit Message ↗'; btn.disabled = false;
+  });
+}
+
+/* ── PHYSICS BACKGROUND ─────────────────────────────────── */
+(function() {
   if (typeof Matter === 'undefined') return;
   const { Engine, Render, Runner, Bodies, Body, Composite, Events } = Matter;
   const canvas = document.getElementById('physics-canvas');
-  canvas.width  = window.innerWidth;
-  canvas.height = window.innerHeight;
-  const engine = Engine.create({ gravity: { y: 0.3 } });
-  const world = engine.world;
+  canvas.width = innerWidth; canvas.height = innerHeight;
+  const engine = Engine.create({ gravity: { y: 0.15 } });
   const render = Render.create({
     canvas, engine,
-    options: { width: window.innerWidth, height: window.innerHeight, wireframes: false, background: 'transparent' }
+    options: { width: innerWidth, height: innerHeight, wireframes: false, background: 'transparent' }
   });
-  const colors = ['#00d4ff22','#7c3aed22','#10b98122','#f472b622','#f78c6c22'];
-  function makeParticle() {
-    const size = 8 + Math.random() * 24;
-    const x = Math.random() * window.innerWidth;
-    const y = Math.random() * window.innerHeight;
-    const sides = Math.random() > 0.4 ? 4 : 6;
-    const body = sides === 4
-      ? Bodies.rectangle(x, y, size, size, { angle: Math.random() * Math.PI })
-      : Bodies.polygon(x, y, sides, size / 2);
-    Body.setVelocity(body, { x: (Math.random() - 0.5) * 1.5, y: (Math.random() - 0.5) * 1.5 });
-    body.frictionAir = 0.005;
-    body.restitution = 0.9;
-    body.render.fillStyle = colors[Math.floor(Math.random() * colors.length)];
-    body.render.strokeStyle = '#00d4ff44';
-    body.render.lineWidth = 1;
-    return body;
-  }
-  const walls = [
-    Bodies.rectangle(window.innerWidth/2, -25, window.innerWidth, 50, { isStatic: true, render: { visible: false } }),
-    Bodies.rectangle(window.innerWidth/2, window.innerHeight+25, window.innerWidth, 50, { isStatic: true, render: { visible: false } }),
-    Bodies.rectangle(-25, window.innerHeight/2, 50, window.innerHeight, { isStatic: true, render: { visible: false } }),
-    Bodies.rectangle(window.innerWidth+25, window.innerHeight/2, 50, window.innerHeight, { isStatic: true, render: { visible: false } }),
+
+  // Particle colors: accent palette
+  const colors = [
+    'rgba(0,229,255,0.12)', 'rgba(124,58,237,0.12)', 'rgba(0,255,136,0.1)',
+    'rgba(255,107,53,0.08)', 'rgba(0,229,255,0.06)', 'rgba(200,100,255,0.1)'
   ];
-  Composite.add(world, walls);
-  const particles = [];
-  for (let i = 0; i < 55; i++) {
-    const p = makeParticle();
-    particles.push(p);
-    Composite.add(world, p);
+
+  function mkParticle() {
+    const sz = 6 + Math.random() * 18;
+    const x = Math.random() * innerWidth;
+    const y = Math.random() * innerHeight;
+    const type = Math.random();
+    let b;
+    if (type < .35) b = Bodies.rectangle(x, y, sz, sz, { angle: Math.random() * Math.PI * 2 });
+    else if (type < .65) b = Bodies.polygon(x, y, 6, sz / 2);
+    else b = Bodies.polygon(x, y, 3, sz / 2);
+    Body.setVelocity(b, { x: (Math.random() - .5) * 1.2, y: (Math.random() - .5) * 1.2 });
+    b.frictionAir = 0.004; b.restitution = 0.88;
+    const c = colors[Math.floor(Math.random() * colors.length)];
+    b.render.fillStyle = c;
+    b.render.strokeStyle = 'rgba(0,229,255,0.15)';
+    b.render.lineWidth = .5;
+    return b;
   }
-  let mPhysX = window.innerWidth / 2, mPhysY = window.innerHeight / 2;
-  document.addEventListener('mousemove', e => { mPhysX = e.clientX; mPhysY = e.clientY; });
+
+  // Walls
+  const walls = [
+    Bodies.rectangle(innerWidth/2, -30, innerWidth, 60, { isStatic: true, render: { visible: false } }),
+    Bodies.rectangle(innerWidth/2, innerHeight+30, innerWidth, 60, { isStatic: true, render: { visible: false } }),
+    Bodies.rectangle(-30, innerHeight/2, 60, innerHeight, { isStatic: true, render: { visible: false } }),
+    Bodies.rectangle(innerWidth+30, innerHeight/2, 60, innerHeight, { isStatic: true, render: { visible: false } }),
+  ];
+  Composite.add(engine.world, walls);
+
+  const particles = [];
+  for (let i = 0; i < 60; i++) {
+    const p = mkParticle(); particles.push(p);
+    Composite.add(engine.world, p);
+  }
+
+  let mX = innerWidth / 2, mY = innerHeight / 2;
+  document.addEventListener('mousemove', e => { mX = e.clientX; mY = e.clientY; });
+
   Events.on(engine, 'beforeUpdate', () => {
     particles.forEach(p => {
-      const dx = mPhysX - p.position.x;
-      const dy = mPhysY - p.position.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 180 && dist > 1) {
-        const force = 0.000018 * p.mass;
-        Body.applyForce(p, p.position, { x: dx * force, y: dy * force });
+      // Mouse attraction
+      const dx = mX - p.position.x, dy = mY - p.position.y;
+      const d = Math.hypot(dx, dy);
+      if (d < 200 && d > 1) {
+        const f = 0.000016 * p.mass;
+        Body.applyForce(p, p.position, { x: dx * f, y: dy * f });
       }
-      if (p.position.x < -50) Body.setPosition(p, { x: window.innerWidth + 50, y: p.position.y });
-      if (p.position.x > window.innerWidth + 50) Body.setPosition(p, { x: -50, y: p.position.y });
-      if (p.position.y < -50) Body.setPosition(p, { x: p.position.x, y: window.innerHeight + 50 });
-      if (p.position.y > window.innerHeight + 50) Body.setPosition(p, { x: p.position.x, y: -50 });
+      // Wrap
+      if (p.position.x < -60) Body.setPosition(p, { x: innerWidth + 60, y: p.position.y });
+      if (p.position.x > innerWidth + 60) Body.setPosition(p, { x: -60, y: p.position.y });
+      if (p.position.y < -60) Body.setPosition(p, { x: p.position.x, y: innerHeight + 60 });
+      if (p.position.y > innerHeight + 60) Body.setPosition(p, { x: p.position.x, y: -60 });
     });
   });
-  Render.run(render);
-  Runner.run(Runner.create(), engine);
+
+  // Draw connection lines after render
   Events.on(render, 'afterRender', () => {
     const ctx = canvas.getContext('2d');
     for (let i = 0; i < particles.length; i++) {
       for (let j = i + 1; j < particles.length; j++) {
         const a = particles[i].position, b = particles[j].position;
-        const dx = a.x - b.x, dy = a.y - b.y;
-        const d = Math.sqrt(dx * dx + dy * dy);
-        if (d < 120) {
+        const d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (d < 110) {
           ctx.save();
-          ctx.globalAlpha = (1 - d / 120) * 0.25;
-          ctx.strokeStyle = '#00d4ff';
-          ctx.lineWidth = 0.8;
-          ctx.beginPath();
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(b.x, b.y);
-          ctx.stroke();
+          ctx.globalAlpha = (1 - d / 110) * 0.18;
+          ctx.strokeStyle = '#00e5ff';
+          ctx.lineWidth = .7;
+          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
           ctx.restore();
         }
       }
     }
   });
-  window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    render.options.width = window.innerWidth;
-    render.options.height = window.innerHeight;
-  });
-})();
-/* ── HAMBURGER MENU ── */
-(function() {
-  const btn  = document.getElementById('hamburger');
-  const menu = document.getElementById('mobile-menu');
-  if (!btn || !menu) return;
-  btn.addEventListener('click', () => {
-    btn.classList.toggle('open');
-    menu.classList.toggle('open');
-  });
-  // close on link click
-  menu.querySelectorAll('a').forEach(a => {
-    a.addEventListener('click', () => {
-      btn.classList.remove('open');
-      menu.classList.remove('open');
-    });
-  });
-})();
 
-/* ── COPY INSTALL COMMAND ── */
-function copyInstall() {
-  const text = document.getElementById('install-cmd-text').innerText;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.querySelector('.install-copy-btn');
-    btn.textContent = '✅ Copied!';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('copied'); }, 2000);
+  Render.run(render);
+  Runner.run(Runner.create(), engine);
+
+  window.addEventListener('resize', () => {
+    canvas.width = render.options.width = innerWidth;
+    canvas.height = render.options.height = innerHeight;
   });
-}
+})();
 </script>
 </body>
 </html>
