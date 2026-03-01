@@ -379,7 +379,6 @@ section{position:relative;z-index:1}
 <div id="cursor"></div>
 <div id="cursor-ring"></div>
 
-<!-- NAVBAR -->
 <nav id="navbar">
   <div class="nav-inner">
     <a href="#" class="nav-logo">
@@ -413,7 +412,6 @@ section{position:relative;z-index:1}
   <a href="https://github.com/M4dM0nk3y/Kinetrix" class="nav-btn nav-btn-primary" target="_blank">GitHub ↗</a>
 </div>
 
-<!-- HERO -->
 <section id="hero">
   <div class="hero-badge"><span class="badge-dot"></span>Robotics Programming Language &nbsp;·&nbsp; Version 3.1 &nbsp;·&nbsp; ESP32 · Pico · RPi · ROS2</div>
   <h1 class="hero-title">Write Hardware<br/><span class="gradient-text">Like Plain English.</span><br/>Ship Native Code.</h1>
@@ -511,7 +509,6 @@ section{position:relative;z-index:1}
   <div class="scroll-hint"><span>Scroll to explore</span><div class="scroll-chevron"></div></div>
 </section>
 
-<!-- FEATURES -->
 <section id="features">
   <div class="section-inner">
     <div class="section-tag">Capabilities</div>
@@ -669,7 +666,6 @@ section{position:relative;z-index:1}
   </div>
 </section>
 
-<!-- SYNTAX REFERENCE -->
 <section id="syntax">
   <div class="section-inner">
     <div class="section-tag">Language</div>
@@ -710,39 +706,35 @@ section{position:relative;z-index:1}
           <tr><td><code>sensors/neo6m_gps</code></td><td>GPS NMEA parser</td></tr>
           <tr><td><code>sensors/hmc5883l</code></td><td>Compass heading</td></tr>
           <tr><td><code>control/pid</code></td><td>PID controller</td></tr>
-          <tr><td><code>fusion/kalman</code></td><td>1D Kalman filter</td></tr>
-          <tr><td><code>fusion/kalman_2d</code></td><td>2D position filter</td></tr>
+          <tr><td><code>fusion/kalman_2d</code></td><td>1D / 2D position filter</td></tr>
           <tr><td><code>safety/safety_checks</code></td><td>Motor/battery limits</td></tr>
-          <tr><td><code>math/statistics</code></td><td>mean, variance, std</td></tr>
+          <tr><td><code>math/*</code></td><td>statistics, matrix, fft</td></tr>
+          <tr><td><code>realtime/timer</code></td><td>Software timers</td></tr>
+          <tr><td><code>memory/arena</code></td><td>Arena allocator</td></tr>
         </table>
       </div>
       <div class="code-win reveal tilt glow-border">
         <div class="code-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-file">cheatsheet_v3.1.kx</span></div>
-        <pre class="code-body" style="font-size:.72rem;line-height:1.9"><span class="cmt"># ── Variables ──────────────────────────</span>
+        <pre class="code-body" style="font-size:.68rem;line-height:1.9"><span class="cmt"># ── Variables &amp; Constants ──────────────</span>
 <span class="kw">make int</span> count = <span class="num">0</span>
 <span class="kw">make float</span> temp = <span class="num">36.5</span>
-<span class="kw">make var</span> speed = <span class="num">150</span>
-<span class="kw">const int</span> MAX = <span class="num">255</span>
+<span class="kw">const byte</span> I2C_ADDR = <span class="num">0x68</span>
 <span class="kw">shared make int</span> flag = <span class="num">0</span>
 <span class="kw">set</span> count <span class="kw">to</span> <span class="num">10</span>
 <span class="kw">change</span> count <span class="kw">by</span> <span class="num">1</span>
 
-<span class="cmt"># ── Control Flow ───────────────────────</span>
-<span class="kw">if</span> x &gt; <span class="num">50</span> <span class="kw">and</span> x &lt; <span class="num">200</span> { }
-<span class="kw">else if</span> x <span class="op">is</span> <span class="num">0</span> { } <span class="kw">else</span> { }
-
-<span class="cmt"># ── Loops ──────────────────────────────</span>
+<span class="cmt"># ── Control Flow &amp; Loops ───────────────</span>
+<span class="kw">if</span> x &gt; <span class="num">50</span> { } <span class="kw">else if</span> x <span class="op">is</span> <span class="num">0</span> { }
 <span class="kw">loop forever</span> { }
 <span class="kw">repeat</span> <span class="num">10</span> { }
+<span class="kw">loop</span> <span class="num">5</span> <span class="kw">times</span> { }
 <span class="kw">while</span> x &lt; <span class="num">100</span> { }
-<span class="kw">for</span> i <span class="kw">from</span> <span class="num">0</span> <span class="kw">to</span> <span class="num">9</span> { }
 <span class="kw">for</span> i <span class="kw">from</span> <span class="num">0</span> <span class="kw">to</span> <span class="num">100</span> <span class="kw">by</span> <span class="num">5</span> { }
 <span class="kw">break</span>   <span class="kw">continue</span>
 
-<span class="cmt"># ── Functions ──────────────────────────</span>
-<span class="kw">def</span> <span class="fn">myFunc</span>(<span class="ty">int</span> a, <span class="ty">float</span> b) {
-    <span class="kw">return</span> a + b
-}
+<span class="cmt"># ── Functions &amp; Externs ────────────────</span>
+<span class="kw">def</span> <span class="fn">myFunc</span>(<span class="ty">int</span> a) { <span class="kw">return</span> a }
+<span class="kw">extern</span> <span class="str">"C++"</span> <span class="kw">def</span> <span class="fn">millis</span>()
 
 <span class="cmt"># ── Tasks ──────────────────────────────</span>
 <span class="kw">task</span> <span class="fn">blinker</span> { <span class="kw">loop forever</span> { } }
@@ -754,7 +746,7 @@ section{position:relative;z-index:1}
 <span class="hw">set pin</span> <span class="num">9</span> <span class="hw">to</span> <span class="num">200</span>     <span class="cmt"># PWM 0–255</span>
 <span class="kw">make var</span> s = <span class="hw">read analog pin</span> <span class="num">0</span>
 <span class="kw">make var</span> b = <span class="hw">read pin</span> <span class="num">2</span>
-<span class="kw">make var</span> d = <span class="hw">read pulse pin</span> <span class="num">14</span>
+<span class="kw">make var</span> d = <span class="hw">read pulse pin</span> <span class="num">14</span> <span class="cmt"># ultrasonic</span>
 <span class="hw">set servo pin</span> <span class="num">9</span> <span class="hw">to</span> <span class="num">90</span>
 <span class="hw">tone pin</span> <span class="num">8</span> <span class="hw">frequency</span> <span class="num">440</span>
 
@@ -762,7 +754,14 @@ section{position:relative;z-index:1}
 <span class="kw">open i2c</span>
 <span class="kw">make var</span> v = <span class="hw">read i2c device</span> <span class="num">104</span> <span class="hw">register</span> <span class="num">59</span>
 <span class="hw">write i2c device</span> <span class="num">104</span> <span class="hw">value</span> <span class="num">0</span>
+<span class="kw">i2c begin</span>
+<span class="kw">i2c start</span> <span class="num">0x68</span>
+<span class="kw">i2c send</span> <span class="num">0x6B</span>
+<span class="kw">i2c stop</span>
+
 <span class="kw">open serial at</span> <span class="num">115200</span> <span class="kw">baud</span>
+<span class="kw">send serial</span> <span class="num">42</span>
+<span class="kw">make int</span> incoming = <span class="hw">read serial</span>
 <span class="kw">open spi at</span> <span class="num">1000000</span>
 
 <span class="cmt"># ── Interrupts ─────────────────────────</span>
@@ -774,9 +773,8 @@ section{position:relative;z-index:1}
 
 <span class="cmt"># ── Structs / Arrays / Buffers ─────────</span>
 <span class="kw">define type</span> Motor { <span class="ty">int</span> pin  <span class="ty">int</span> spd }
-<span class="kw">make</span> Motor m
-<span class="kw">set</span> m.pin <span class="kw">to</span> <span class="num">9</span>
 <span class="kw">make array int</span> data[<span class="num">10</span>]
+<span class="kw">make int</span> len = <span class="kw">size of</span> data
 <span class="kw">make buffer float</span> log[<span class="num">32</span>]
 <span class="fn">push</span> log <span class="num">36.5</span>
 
@@ -787,24 +785,24 @@ section{position:relative;z-index:1}
 <span class="cmt"># ── Watchdog &amp; Safety ──────────────────</span>
 <span class="kw">enable watchdog timeout</span> <span class="num">2000</span>ms
 <span class="fn">feed watchdog</span>
+<span class="kw">assert</span> value &gt; <span class="num">0</span>
 <span class="kw">try</span> { } <span class="kw">on error</span> { <span class="fn">print</span> <span class="str">"err"</span> }
-<span class="kw">assert</span> reading &gt; <span class="num">0</span>
 
 <span class="cmt"># ── Math &amp; Timing ──────────────────────</span>
-<span class="fn">sqrt</span>(x)  <span class="fn">sin</span>(a)  <span class="fn">atan2</span>(y,x)
+<span class="fn">sin</span>(x) <span class="fn">cos</span>(x) <span class="fn">tan</span>(x)
+<span class="fn">asin</span>(x) <span class="fn">acos</span>(x) <span class="fn">atan</span>(x) <span class="fn">atan2</span>(y,x)
+<span class="fn">sqrt</span>(x) <span class="fn">abs</span>(x)
 <span class="fn">map</span>(v,<span class="num">0</span>,<span class="num">1023</span>,<span class="num">0</span>,<span class="num">255</span>)  <span class="fn">constrain</span>(v,<span class="num">0</span>,<span class="num">200</span>)
 <span class="fn">cast float</span> dist / time
 <span class="fn">wait</span> <span class="num">1000</span>    <span class="cmt"># ms</span>
 <span class="fn">wait</span> <span class="num">2</span> seconds
 <span class="fn">wait_us</span> <span class="num">500</span> <span class="cmt"># µs</span>
-<span class="fn">print</span> <span class="str">"Speed: "</span> + speed
-<span class="fn">println</span> value</pre>
+<span class="fn">println</span> <span class="str">"Speed: "</span> + speed</pre>
       </div>
     </div>
   </div>
 </section>
 
-<!-- EXAMPLES -->
 <section id="examples">
   <div class="section-inner">
     <div class="section-tag">Examples</div>
@@ -1046,7 +1044,6 @@ section{position:relative;z-index:1}
   </div>
 </section>
 
-<!-- COMPARE -->
 <section id="compare">
   <div class="section-inner">
     <div class="section-tag">vs. The World</div>
@@ -1079,7 +1076,6 @@ section{position:relative;z-index:1}
   </div>
 </section>
 
-<!-- GET STARTED -->
 <section id="get-started">
   <div class="section-inner">
     <div class="section-tag">Get Started</div>
@@ -1140,7 +1136,6 @@ cd Kinetrix</pre>
   </div>
 </section>
 
-<!-- CONTACT -->
 <section id="contact">
   <div class="section-inner">
     <div class="section-tag">Contact</div>
@@ -1198,7 +1193,6 @@ cd Kinetrix</pre>
   </div>
 </section>
 
-<!-- FOOTER -->
 <footer id="footer">
   <div class="footer-inner">
     <div class="footer-top">
@@ -1475,4 +1469,20 @@ if (form) {
     }
   });
 
-  Render.r
+  Render.run(render);
+  const runner = Runner.create();
+  Runner.run(runner, engine);
+
+  // Keep canvas sized correctly on window resize
+  window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    render.options.width = window.innerWidth;
+    render.options.height = window.innerHeight;
+    render.canvas.width = window.innerWidth;
+    render.canvas.height = window.innerHeight;
+  });
+})();
+</script>
+</body>
+</html>
