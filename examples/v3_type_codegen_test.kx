@@ -1,0 +1,10 @@
+make int speed = 200
+make float temp = 36.5
+make bool active = 1
+make byte flag = 0
+
+program types_test {
+    loop forever {
+        wait 1000
+    }
+}

@@ -1,0 +1,15 @@
+# OTA Fleet Update Demo
+# Compile: ./kcc examples/v3_ota_demo.kx --target esp32
+
+program {
+    # Enable OTA with fleet name and password
+    enable ota "my_robot_fleet" password "kinetrix123"
+
+    # Normal robot code - blink LED
+    loop forever {
+        turn on pin 13
+        wait 500
+        turn off pin 13
+        wait 500
+    }
+}

@@ -1,0 +1,12 @@
+task blinker {
+    loop forever {
+        turn on pin 13
+        wait 100
+        turn off pin 13
+        wait 200
+    }
+}
+
+program {
+    start task blinker
+}

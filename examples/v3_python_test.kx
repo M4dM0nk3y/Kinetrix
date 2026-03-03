@@ -1,0 +1,28 @@
+program {
+    make array int data[5]
+    make buffer history[10] of float
+    
+    push history 3.14
+    make float last = history[0]
+    
+    task bg {
+        wait 100
+        print "Hi"
+    }
+    
+    start task bg
+    repeat 5 {
+        wait 10
+    }
+    
+    on pin 2 rising {
+        print "Pin 2"
+    }
+
+    try {
+        make int i2c_val = read i2c device 0x68 register 0x00
+        print i2c_val
+    } on error {
+        print "error"
+    }
+}

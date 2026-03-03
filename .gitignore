@@ -1,0 +1,27 @@
+# Build artifacts
+*.o
+*.dSYM/
+kcc
+kcc_demo
+
+# Editor / IDE
+.vscode/
+*.swp
+*.swo
+*~
+
+# Temporary test files
+test_*.kx
+/tmp/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Cloud data
+cloud_data/
+robot_deployment/
+
+# Python cache
+__pycache__/
+*.pyc

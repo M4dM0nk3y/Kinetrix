@@ -1,0 +1,7 @@
+include "v3_includes_module.kx"
+
+program {
+    make int result = module_math(10, 3)
+    print result
+    print PI
+}

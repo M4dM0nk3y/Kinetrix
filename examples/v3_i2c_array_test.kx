@@ -1,0 +1,4 @@
+open i2c
+make array int acc[6]
+read i2c device 104 register 59 count 6 into acc
+print acc[0]

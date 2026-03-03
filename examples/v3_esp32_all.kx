@@ -1,0 +1,40 @@
+program {
+    # 1. Arrays & Buffers
+    make array int mybuf[10]
+    push mybuf 42
+
+    # 2. Hardware Interrupts
+    on pin 2 rising {
+        change mybuf[0] by 1
+    }
+    
+    # 3. Communication Protocols
+    open i2c
+    make int val = read i2c device 104 register 59
+    write i2c device 104 value 0
+
+    # 4. Error Handling & Watchdog
+    enable watchdog timeout 2000ms
+    try {
+        feed watchdog
+        assert val > 0
+    } on error {
+        turn off pin 13
+    }
+    
+    # 5. Structs
+    define type Sensor {
+        int pin
+        float val
+    }
+    make Sensor s1
+    set s1.pin to 4
+    
+    # 6. Tasks
+    shared make int flag = 0
+    task monitor {
+        wait 100
+        print "monitoring"
+    }
+    start task monitor
+}

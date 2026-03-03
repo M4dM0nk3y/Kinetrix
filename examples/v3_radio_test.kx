@@ -1,0 +1,13 @@
+program {
+    shared int packets = 0
+    make var peer = 100
+    
+    // Send
+    radio_send_peer(peer, packets)
+    
+    // Recv
+    if radio_available() {
+        make int data = radio_read()
+        packets = packets + 1
+    }
+}

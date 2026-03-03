@@ -1,0 +1,12 @@
+shared int tick_count = 0
+
+program {
+    // Watchdog
+    enable watchdog 5000 ms
+    
+    // Timer
+    on timer every 100 ms {
+        tick_count = tick_count + 1
+        feed watchdog
+    }
+}

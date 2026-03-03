@@ -1,0 +1,13 @@
+program {
+    def compute_speed(int distance, int time) {
+        make float spd = cast float distance / cast float time
+        return spd
+    }
+    
+    task telemetry {
+        wait 500
+        print compute_speed(100, 2)
+    }
+    
+    start task telemetry
+}

@@ -1,0 +1,18 @@
+# Standard Drive Library
+# Abstracts pins 2, 3, 5 as motors
+
+def drive_forward(speed) {
+    # Simulate Left Motor (Pin 3)
+    set pin 3 to speed
+    
+    # Simulate Right Motor (Pin 5)
+    set pin 5 to speed
+    
+    print "Driving Forward..."
+}
+
+def stop_motors {
+    turn off 3
+    turn off 5
+    print "Motors Stopped."
+}

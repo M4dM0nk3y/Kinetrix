@@ -1,0 +1,3 @@
+program {
+    wait_us 500
+}

@@ -1,0 +1,2 @@
+print "Value: " + 10
+println "Another: " + "String"

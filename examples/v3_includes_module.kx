@@ -1,0 +1,5 @@
+def module_math(int a, int b) {
+    return (a * b) + (a % b)
+}
+
+make float PI = 3.14159

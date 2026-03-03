@@ -1,0 +1,51 @@
+# SOS Signal
+# Morse code SOS pattern
+
+program {
+    loop forever {
+        turn on pin 13
+        wait 200
+        turn off pin 13
+        wait 200
+        
+        turn on pin 13
+        wait 200
+        turn off pin 13
+        wait 200
+        
+        turn on pin 13
+        wait 200
+        turn off pin 13
+        wait 600
+        
+        turn on pin 13
+        wait 600
+        turn off pin 13
+        wait 200
+        
+        turn on pin 13
+        wait 600
+        turn off pin 13
+        wait 200
+        
+        turn on pin 13
+        wait 600
+        turn off pin 13
+        wait 600
+        
+        turn on pin 13
+        wait 200
+        turn off pin 13
+        wait 200
+        
+        turn on pin 13
+        wait 200
+        turn off pin 13
+        wait 200
+        
+        turn on pin 13
+        wait 200
+        turn off pin 13
+        wait 2000
+    }
+}

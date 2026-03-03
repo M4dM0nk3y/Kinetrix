@@ -1,0 +1,19 @@
+program interrupt_test {
+    // 1. Declare variables
+    make int pulse_counter = 0
+
+    // 2. Define ISR
+    on pin 2 rising {
+        change pulse_counter by 1
+    }
+
+    // 3. Main Loop
+    loop forever {
+        disable interrupts
+        make int safe_copy = pulse_counter
+        set pulse_counter to 0
+        enable interrupts
+        
+        wait 1000
+    }
+}

@@ -1,0 +1,10 @@
+# Standard Math Library
+# Converts a raw sensor value (0-1023) to a percentage (0-100)
+
+def map_to_percent(val) {
+    # We use simple integer math: (Value * 100) / 1023
+    make var result = val * 100
+    make var final = result / 1023
+    print "Level %:"
+    print final
+}
