@@ -981,6 +981,102 @@ footer{
   height:1px;
   background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);
 }
+
+/* ─────────────────────────────────────────────
+   CH9 — CONTACT / TRANSMISSION
+───────────────────────────────────────────── */
+#ch-contact{
+  background:var(--deep);
+  text-align:center;
+}
+#ch-contact::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 70% 60% at 50% 50%, rgba(200,16,46,0.05) 0%,transparent 65%);
+  pointer-events:none;
+}
+.contact-inner{
+  max-width:680px;margin:0 auto;
+  padding:8rem 2rem;
+  position:relative;z-index:2;
+}
+.contact-form{
+  margin-top:3rem;
+  text-align:left;
+  display:flex;flex-direction:column;gap:1.4rem;
+}
+.cf-group{display:flex;flex-direction:column;gap:0.5rem;}
+.cf-label{
+  font-family:var(--font-code);
+  font-size:0.6rem;letter-spacing:0.35em;
+  text-transform:uppercase;
+  color:var(--blood);
+}
+.cf-input,
+.cf-textarea{
+  background:rgba(5,2,9,0.8);
+  border:1px solid rgba(255,255,255,0.08);
+  color:var(--white);
+  font-family:var(--font-code);
+  font-size:0.82rem;
+  padding:0.9rem 1.1rem;
+  outline:none;
+  transition:border-color 0.25s, box-shadow 0.25s;
+  width:100%;
+  resize:none;
+  letter-spacing:0.03em;
+}
+.cf-input::placeholder,
+.cf-textarea::placeholder{
+  color:rgba(138,122,154,0.4);
+  font-size:0.75rem;
+}
+.cf-input:focus,
+.cf-textarea:focus{
+  border-color:rgba(200,16,46,0.6);
+  box-shadow:0 0 20px rgba(200,16,46,0.08);
+}
+.cf-textarea{height:140px;}
+.cf-submit{
+  display:block;width:100%;
+  padding:1rem 2rem;
+  background:var(--blood);
+  color:var(--white);
+  font-family:var(--font-title);
+  font-size:0.78rem;font-weight:700;
+  letter-spacing:0.25em;text-transform:uppercase;
+  border:none;cursor:pointer;
+  transition:all 0.3s;
+  position:relative;overflow:hidden;
+}
+.cf-submit::before{
+  content:'';
+  position:absolute;inset:0;
+  background:rgba(255,255,255,0.12);
+  transform:scaleX(0);transform-origin:left;
+  transition:transform 0.3s;
+}
+.cf-submit:hover::before{transform:scaleX(1);}
+.cf-submit:hover{box-shadow:0 0 40px rgba(200,16,46,0.4);}
+.cf-submit:active{transform:scale(0.99);}
+.cf-note{
+  font-family:var(--font-code);
+  font-size:0.6rem;letter-spacing:0.15em;
+  color:rgba(138,122,154,0.4);
+  text-align:center;
+  margin-top:0.5rem;
+}
+.cf-success{
+  display:none;
+  background:rgba(78,201,78,0.06);
+  border:1px solid rgba(78,201,78,0.2);
+  padding:1.5rem;
+  font-family:var(--font-code);
+  font-size:0.78rem;
+  color:var(--code-g);
+  letter-spacing:0.08em;
+  text-align:center;
+  line-height:1.8;
+}
 </style>
 </head>
 <body>
@@ -1005,7 +1101,7 @@ footer{
     <div class="cold-subtitle">The Language That Freed The Machines</div>
     <p class="cold-logline">
       In a world where every robot spoke a <em>different tongue</em>,<br>
-      one language rose to unite them all.
+      one language rose to unite them.
     </p>
     <div class="scroll-invite">
       <span class="scroll-text">Begin the story</span>
@@ -1033,6 +1129,8 @@ footer{
     <span class="ticker-item">·</span>
     <span class="ticker-item bright">It's Not Over</span>
     <span class="ticker-item">·</span>
+    <span class="ticker-item bright">Transmission</span>
+    <span class="ticker-item">·</span>
     <!-- repeat for seamless loop -->
     <span class="ticker-item bright">The Fractured Age</span>
     <span class="ticker-item">·</span>
@@ -1049,6 +1147,8 @@ footer{
     <span class="ticker-item bright">The Reckoning</span>
     <span class="ticker-item">·</span>
     <span class="ticker-item bright">It's Not Over</span>
+    <span class="ticker-item">·</span>
+    <span class="ticker-item bright">Transmission</span>
     <span class="ticker-item">·</span>
   </div>
 </div>
@@ -1069,16 +1169,16 @@ footer{
       The<br>Fractured<br>Age.
     </h2>
     <p class="chapter-prose r delay-2">
-      The year is <em>now</em>. Billions of machines walk the Earth — in factories, hospitals, warehouses, and homes. They are powerful. They are capable. They are <strong>alone</strong>.
+      The year is <em>now</em>. Billions of machines walk the Earth: in factories, hospitals, warehouses, and homes. They are powerful. They are capable. They are <strong>alone</strong>.
     </p>
     <p class="chapter-prose r delay-3" style="margin-top:1.2rem;">
-      An Arduino cannot speak to a Raspberry Pi. An ESP32 stares blankly at a ROS2 node. Every board is an island. Every programmer rewrites the same logic, over and over, in five different dialects — C++, Python, MicroPython, another C++, yet more C++.
+      An Arduino cannot speak to a Raspberry Pi. An ESP32 stares blankly at a ROS2 node. Every board is an island. Every programmer rewrites the same logic, over and over, in five different dialects: C++, Python, MicroPython, another C++, yet more C++.
     </p>
     <p class="chapter-prose r delay-4" style="margin-top:1.2rem;">
       The corporations called it <em>"the natural order."</em> The engineers called it <strong>hell</strong>.
     </p>
     <blockquote class="world-quote r delay-5">
-      "I didn't want to learn five languages to control one robot. I wanted to tell it what to do — in words a human actually uses."
+      "I didn't want to learn five languages to control one robot. I wanted to tell it what to do, in words a human actually uses."
       <cite>— Soham Mulik, creator of Kinetrix</cite>
     </blockquote>
   </div>
@@ -1123,7 +1223,7 @@ footer{
       The Villain:<br>Fragment.
     </h2>
     <p class="chapter-prose r delay-2">
-      Fragment has no face. No boardroom. No CEO. It is <em>a system</em> — the quiet, profitable force of incompatibility that the hardware industry chose to maintain rather than fix.
+      Fragment has no face. No boardroom. No CEO. It is <em>a system</em>: the quiet, profitable force of incompatibility that the hardware industry chose to maintain rather than fix.
     </p>
     <div class="trait-list">
       <div class="trait r delay-2">
@@ -1132,7 +1232,7 @@ footer{
       </div>
       <div class="trait r delay-3">
         <div class="trait-bullet"></div>
-        <div class="trait-text"><strong>Incompatible protocols</strong> — C++ on Arduino, Python on Pi, MicroPython on Pico, a different C++ on ESP32.</div>
+        <div class="trait-text"><strong>Incompatible protocols.</strong> C++ on Arduino, Python on Pi, MicroPython on Pico, a different C++ on ESP32. Four boards, four entirely separate codebases.</div>
       </div>
       <div class="trait r delay-3">
         <div class="trait-bullet"></div>
@@ -1140,11 +1240,11 @@ footer{
       </div>
       <div class="trait r delay-4">
         <div class="trait-bullet"></div>
-        <div class="trait-text"><strong>No cross-board tasks.</strong> Your sensor runs on Pi. Your motor runs on Arduino. They cannot talk. Fragment wins.</div>
+        <div class="trait-text"><strong>No cross-board tasks.</strong> Your sensor runs on Pi. Your motor runs on Arduino. They cannot talk. That's a problem Kinetrix solves.</div>
       </div>
       <div class="trait r delay-4">
         <div class="trait-bullet"></div>
-        <div class="trait-text"><strong>Complexity as a gatekeep.</strong> Fragment's most powerful weapon: convincing beginners that <em>"robotics is just hard."</em></div>
+        <div class="trait-text"><strong>Complexity as a barrier.</strong> The biggest problem in robotics isn't hardware. It's convincing beginners that <em>"this is just how it works."</em></div>
       </div>
     </div>
   </div>
@@ -1167,7 +1267,7 @@ footer{
           <strong>Soham Mulik.</strong> A mad monk with a compiler. He had stared at the Fractured Age long enough. He had rewritten the same blink program in C++, then Python, then MicroPython, then C++ again, then <em>yet more C++</em>.
         </p>
         <p class="chapter-prose r delay-3" style="margin-top:1.2rem;">
-          He didn't build a bridge between languages. Bridges still serve Fragment — you still need both shores. Instead, he <em>burned the old roads</em> and paved a single new one.
+          He didn't build a bridge between languages. Bridges still serve Fragment; you still need both shores. Instead, he <em>burned the old roads</em> and paved a single new one.
         </p>
         <p class="chapter-prose r delay-4" style="margin-top:1.2rem;">
           The rule was simple: <em>"If a student can't read it out loud and understand it, it has no place in the language."</em> And so <code style="color:var(--amber);font-family:var(--font-code);font-size:0.9rem;">turn on pin 13</code> was born. And the world changed.
@@ -1225,7 +1325,7 @@ v3.1.0 ✓</pre>
       The Hero:<br>AXIOM.
     </h2>
     <p class="chapter-prose r delay-2" style="max-width:75ch;">
-      Axiom is not a robot. Not a person. Axiom is the <em>soul of Kinetrix</em> — the compiled language that speaks to every machine in its own tongue, but takes commands in one. The universal translator. The war against Fragment, written in C.
+      Axiom is the <em>compiled core of Kinetrix</em>, the engine that takes one program and produces native code for five different boards. You write your logic once, in plain readable syntax. Kinetrix handles the translation.
     </p>
     <div class="hero-axiom-layout" style="margin-top:3rem;">
       <div class="axiom-powers r delay-3">
@@ -1233,7 +1333,7 @@ v3.1.0 ✓</pre>
           <div class="power-icon">🗣️</div>
           <div>
             <div class="power-name">One Syntax</div>
-            <div class="power-desc"><em>turn on pin 13</em> — human words. Axiom translates to native C/C++/Python for each board. You write once. It speaks five languages.</div>
+            <div class="power-desc"><em>turn on pin 13.</em> Human words. Axiom translates to native C/C++/Python for each board. You write once. It speaks five languages.</div>
           </div>
         </div>
         <div class="power" style="--wc:var(--amber)">
@@ -1246,15 +1346,15 @@ v3.1.0 ✓</pre>
         <div class="power" style="--wc:var(--ice)">
           <div class="power-icon">🌐</div>
           <div>
-            <div class="power-name">Fleet Consciousness</div>
-            <div class="power-desc">One command pushes new firmware <em>to every robot in your fleet</em> over WiFi. No cables. No manual uploads. Fragment's worst nightmare.</div>
+            <div class="power-name">Fleet Updates</div>
+            <div class="power-desc">One command pushes new firmware <em>to every robot in your fleet</em> over WiFi. No cables. No manual uploads. OTA built into the language itself.</div>
           </div>
         </div>
         <div class="power" style="--wc:#c792ea">
           <div class="power-icon">🧠</div>
           <div>
-            <div class="power-name">Concurrent Mind</div>
-            <div class="power-desc">Native task system lets a robot's sensors, motors, and communications <em>run simultaneously</em> — without thread hell or GIL limitations.</div>
+            <div class="power-name">Concurrent Tasks</div>
+            <div class="power-desc">Native task system lets a robot's sensors, motors, and comms <em>run simultaneously</em>, without manual threading or GIL limitations.</div>
           </div>
         </div>
       </div>
@@ -1308,7 +1408,7 @@ v3.1.0 ✓</pre>
       The Five<br><span style="color:var(--amber);">Awakened.</span>
     </h2>
     <p class="chapter-prose r delay-2">
-      Once imprisoned in their own dialects. Now freed by Axiom, they stand as one army. Each powerful alone. <em>Unstoppable together.</em>
+      Once scattered across incompatible SDKs, each board now speaks through the same language. Each powerful on its own. <em>More powerful working together.</em>
     </p>
   </div>
   <div class="five-grid">
@@ -1327,7 +1427,7 @@ v3.1.0 ✓</pre>
       <span class="ac-icon">📡</span>
       <div class="ac-name">ESP32</div>
       <div class="ac-board">Dev Module · ESP-NOW</div>
-      <p class="ac-story">The wireless warrior. WiFi, OTA updates, radio mesh, I2C — all unlocked through Axiom. Fragment's most feared nemesis.</p>
+      <p class="ac-story">The wireless one. WiFi, OTA fleet updates, radio mesh, I2C. All available through Kinetrix with a single compile flag.</p>
       <span class="ac-flag">--target esp32</span>
     </div>
 
@@ -1336,7 +1436,7 @@ v3.1.0 ✓</pre>
       <span class="ac-icon">🍓</span>
       <div class="ac-name">Raspberry Pi</div>
       <div class="ac-board">Pi 3 · Pi 4 · Pi 5</div>
-      <p class="ac-story">The thinker. Full Linux. Full GPIO. Full power. Kinetrix compiles to Python + RPi.GPIO — a language the Pi finally respects.</p>
+      <p class="ac-story">The thinker. Full Linux. Full GPIO. Full power. Kinetrix compiles to Python + RPi.GPIO, giving the Pi a syntax that actually feels human.</p>
       <span class="ac-flag">--target rpi</span>
     </div>
 
@@ -1354,7 +1454,7 @@ v3.1.0 ✓</pre>
       <span class="ac-icon">🦾</span>
       <div class="ac-name">ROS2</div>
       <div class="ac-board">Robot Operating System 2</div>
-      <p class="ac-story">The general. Production-grade robotics. Kinetrix compiles to full ROS2 C++ nodes — for the robots that move the real world.</p>
+      <p class="ac-story">The general. Production-grade robotics. Kinetrix compiles to full ROS2 C++ nodes, for the robots that move the real world.</p>
       <span class="ac-flag">--target ros2</span>
     </div>
 
@@ -1378,7 +1478,7 @@ v3.1.0 ✓</pre>
       <div class="weapon" style="--weapon-color:var(--ice)">
         <div class="weapon-num">// WEAPON 01</div>
         <div class="weapon-name">GPIO Control</div>
-        <div class="weapon-desc">Digital, analog, PWM — all in plain English. No register maps. No bit-shifting.</div>
+        <div class="weapon-desc">Digital, analog, PWM. All in plain English. No register maps. No bit-shifting.</div>
         <div class="weapon-code">
           <span class="t-kw">turn</span> on pin <span class="t-num">13</span><br>
           <span class="t-kw">set</span> pin <span class="t-num">9</span> to <span class="t-num">128</span>&nbsp;&nbsp;<span class="t-cm"># PWM</span><br>
@@ -1488,7 +1588,7 @@ v3.1.0 ✓</pre>
       <div class="weapon" style="--weapon-color:var(--ice)">
         <div class="weapon-num">// WEAPON 11</div>
         <div class="weapon-name">Package Manager (kpm)</div>
-        <div class="weapon-desc">kpm.py and kpm.js — install and share Kinetrix libraries. The ecosystem is already growing.</div>
+        <div class="weapon-desc">kpm.py and kpm.js let you install and share Kinetrix libraries. The ecosystem is already growing.</div>
         <div class="weapon-code">
           $ kpm install servo-driver<br>
           $ kpm install pid-controller<br>
@@ -1523,12 +1623,12 @@ v3.1.0 ✓</pre>
       Join the<br>Revolution.
     </h2>
     <p class="reckoning-prose r delay-2">
-      Fragment held the world for too long. Every robot that runs Kinetrix is a machine that chose <em>freedom</em>. Every programmer who downloads it is a soldier against fragmentation. The war is free. <em>Open source. MIT license. Forever.</em>
+      Kinetrix is free. Open source. MIT licensed. Every robot that runs it is one less codebase written twice. Download it, build something, and share what you make. <em>That's the whole point.</em>
     </p>
     <div class="r delay-3">
       <div class="dl-grid">
         <a href="https://github.com/M4dM0nk3y/Kinetrix/archive/refs/heads/main.zip" class="dl-primary">
-          ⬇ &nbsp; Download Kinetrix v3.1.0 — Free
+          ⬇ &nbsp; Download Kinetrix v3.1.0  Free
         </a>
         <a href="https://github.com/M4dM0nk3y/Kinetrix" class="dl-secondary">
           🐙 &nbsp; View Source on GitHub
@@ -1565,46 +1665,102 @@ v3.1.0 ✓</pre>
 <section class="chapter" id="ch-epilogue" data-chapter="IT'S NOT OVER">
   <canvas id="epilogue-canvas"></canvas>
   <div class="epilogue-inner">
-    <div class="ep-season" id="ep-s">— End of Season One —</div>
+    <div class="ep-season" id="ep-s">End of Season One</div>
     <h2 class="ep-big" id="ep-b">
       It's Not<br><span>Over.</span>
     </h2>
     <div class="ep-line" id="ep-l"></div>
     <p class="ep-prose" id="ep-p">
-      Fragment still breathes. There are boards Axiom hasn't reached yet.
-      Protocols that remain locked. Robots that haven't heard the word
-      <em>freedom</em> yet. The story of Kinetrix is not a finished chapter —
-      it is a <strong>living codebase</strong>. Every commit is the next episode.
-      Every new target is the next season. <em>And we are just getting started.</em>
+      Kinetrix started as one person's frustration with rewriting the same code
+      five times for five different boards. That frustration became a language.
+      That language now has a compiler, a test suite, a package manager, and
+      five targets. But there's more to build: <em>more boards to support,
+      better tooling, a proper playground, and an ecosystem worth growing.</em>
+      <strong>This is the beginning, not the end.</strong>
     </p>
     <div class="coming-soon-box" id="ep-cs">
       <div class="roadmap-item">
         <span class="rm-status building">BUILDING</span>
-        <div class="rm-text"><strong>Kinetrix v4.0</strong> — expanded type system, struct methods, and a brand-new standard library</div>
+        <div class="rm-text"><strong>Kinetrix v4.0</strong>: expanded type system, struct methods, and a brand-new standard library</div>
       </div>
       <div class="roadmap-item">
         <span class="rm-status building">BUILDING</span>
-        <div class="rm-text"><strong>STM32 Target</strong> — unlocking the industrial robotics world, one board at a time</div>
+        <div class="rm-text"><strong>STM32 Target</strong>: unlocking the industrial robotics world, one board at a time</div>
       </div>
       <div class="roadmap-item">
         <span class="rm-status planned">PLANNED</span>
-        <div class="rm-text"><strong>Kinetrix Playground</strong> — write and compile Kinetrix in the browser, no install needed</div>
+        <div class="rm-text"><strong>Kinetrix Playground</strong>: write and compile Kinetrix in the browser, no install needed</div>
       </div>
       <div class="roadmap-item">
         <span class="rm-status planned">PLANNED</span>
-        <div class="rm-text"><strong>Native debugger (kdb)</strong> — step through robot programs without a serial monitor and a dream</div>
+        <div class="rm-text"><strong>Native debugger (kdb)</strong>: step through robot programs without a serial monitor and a dream</div>
       </div>
       <div class="roadmap-item">
         <span class="rm-status planned">PLANNED</span>
-        <div class="rm-text"><strong>VS Code extension</strong> — official syntax highlighting, autocomplete, and one-click compile</div>
+        <div class="rm-text"><strong>VS Code extension</strong>: official syntax highlighting, autocomplete, and one-click compile</div>
       </div>
     </div>
     <div class="ep-final" id="ep-f">
-      "The machines aren't free yet. We're still writing."
+      "More targets. Better tools. Same one language."
     </div>
     <div class="ep-author" id="ep-a">
       — <a href="https://github.com/M4dM0nk3y">Soham Mulik (@M4dM0nk3y)</a> · MIT License ·
       <a href="https://github.com/M4dM0nk3y/Kinetrix">github.com/M4dM0nk3y/Kinetrix</a>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════
+     CHAPTER IX — TRANSMISSION (CONTACT)
+════════════════════════════════════════ -->
+<section class="chapter" id="ch-contact" data-chapter="OPEN TRANSMISSION">
+  <div class="contact-inner">
+    <div class="chapter-label r">Chapter IX</div>
+    <h2 class="chapter-title r delay-1">
+      Open<br><span style="color:var(--blood);">Transmission.</span>
+    </h2>
+    <p class="chapter-prose r delay-2" style="margin:0 auto 0.5rem;max-width:52ch;text-align:center;">
+      Questions. Ideas. Bug reports. Contributions. If you have something to say about Kinetrix, say it here.
+    </p>
+
+    <div class="r delay-3">
+      <form
+        class="contact-form"
+        id="contact-form"
+        action="https://formspree.io/f/xbdyjawq"
+        method="POST"
+      >
+        <div class="cf-group">
+          <label class="cf-label" for="cf-email">Your Email</label>
+          <input
+            class="cf-input"
+            type="email"
+            id="cf-email"
+            name="email"
+            placeholder="your@email.com"
+            required
+            autocomplete="email"
+          >
+        </div>
+        <div class="cf-group">
+          <label class="cf-label" for="cf-message">Message</label>
+          <textarea
+            class="cf-textarea"
+            id="cf-message"
+            name="message"
+            placeholder="What's on your mind..."
+            required
+          ></textarea>
+        </div>
+        <button type="submit" class="cf-submit">Send Transmission</button>
+        <p class="cf-note">Your message goes directly to Soham. No newsletters. No spam.</p>
+      </form>
+      <div class="cf-success" id="cf-success">
+        ✓ &nbsp; Transmission received.<br>
+        <span style="color:var(--mist);font-size:0.65rem;">Soham will get back to you soon.</span>
+      </div>
     </div>
   </div>
 </section>
@@ -1623,6 +1779,7 @@ v3.1.0 ✓</pre>
     <a href="https://github.com/M4dM0nk3y/Kinetrix/blob/main/QUICK_START.md">Quick Start</a>
     <a href="https://github.com/M4dM0nk3y/Kinetrix/blob/main/VSCODE_SETUP.md">VS Code</a>
     <a href="https://github.com/M4dM0nk3y/Kinetrix/blob/main/LICENSE">MIT License</a>
+    <a href="#ch-contact">Contact</a>
   </div>
   <div class="footer-copy">© 2025 Soham Mulik · Kinetrix is open source under the MIT License · github.com/M4dM0nk3y/Kinetrix</div>
 </footer>
@@ -1854,6 +2011,35 @@ document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cursorDot.st
   cursor.style.left=cx+'px';cursor.style.top=cy+'px';
   requestAnimationFrame(animCursor);
 })();
+
+/* ── CONTACT FORM — AJAX SUBMIT ── */
+const contactForm = document.getElementById('contact-form');
+const contactSuccess = document.getElementById('cf-success');
+if (contactForm) {
+  contactForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = contactForm.querySelector('.cf-submit');
+    btn.textContent = 'Sending...';
+    btn.style.opacity = '0.7';
+    try {
+      const res = await fetch(contactForm.action, {
+        method: 'POST',
+        body: new FormData(contactForm),
+        headers: { 'Accept': 'application/json' }
+      });
+      if (res.ok) {
+        contactForm.style.display = 'none';
+        contactSuccess.style.display = 'block';
+      } else {
+        btn.textContent = 'Failed — try again';
+        btn.style.opacity = '1';
+      }
+    } catch {
+      btn.textContent = 'Failed — try again';
+      btn.style.opacity = '1';
+    }
+  });
+}
 
 /* ── CHAPTER CARD HOVER GLOW ── */
 document.querySelectorAll('.awakened-card,.weapon,.power').forEach(card => {
