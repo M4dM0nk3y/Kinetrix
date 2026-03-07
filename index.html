@@ -3,9 +3,137 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KINETRIX — The Language That Freed The Machines</title>
-<meta name="description" content="Kinetrix — a compiled robotics programming language for Arduino, Raspberry Pi, ESP32, Pico and ROS2. The story of one language that united them all.">
-<meta name="keywords" content="kinetrix, robotics programming language, arduino language, raspberry pi language, esp32 compiler, robotics language">
+
+<!-- ═══ PRIMARY SEO ═══ -->
+<title>Kinetrix — Robotics Programming Language for Arduino, ESP32, Raspberry Pi & ROS2</title>
+<meta name="description" content="Kinetrix is a free, open-source compiled programming language for robotics. Write once, deploy to Arduino, ESP32, Raspberry Pi, Pico, and ROS2. Human-readable syntax, no boilerplate, 48/48 tests passing. MIT licensed.">
+<meta name="keywords" content="Kinetrix, robotics programming language, Arduino language, ESP32 compiler, Raspberry Pi language, Pico language, ROS2 language, robotics DSL, embedded systems language, open source robotics, kcc compiler, kinetrix language">
+<meta name="author" content="Soham Mulik">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+<link rel="canonical" href="https://m4dm0nk3y.github.io/Kinetrix/">
+
+<!-- ═══ OPEN GRAPH (Facebook, LinkedIn, Discord, WhatsApp previews) ═══ -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Kinetrix">
+<meta property="og:title" content="Kinetrix — Robotics Programming Language">
+<meta property="og:description" content="Write once. Run on Arduino, ESP32, Raspberry Pi, Pico, and ROS2. Free, open-source, MIT licensed. The compiled language built specifically for robotics.">
+<meta property="og:url" content="https://m4dm0nk3y.github.io/Kinetrix/">
+<meta property="og:image" content="https://m4dm0nk3y.github.io/Kinetrix/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Kinetrix — Robotics Programming Language">
+<meta property="og:locale" content="en_US">
+
+<!-- ═══ TWITTER / X CARD ═══ -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Kinetrix — Robotics Programming Language">
+<meta name="twitter:description" content="Write once. Run on Arduino, ESP32, Raspberry Pi, Pico, and ROS2. Free and open source.">
+<meta name="twitter:image" content="https://m4dm0nk3y.github.io/Kinetrix/og-image.png">
+<meta name="twitter:creator" content="@M4dM0nk3y">
+
+<!-- ═══ JSON-LD STRUCTURED DATA (Google Rich Results) ═══ -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://m4dm0nk3y.github.io/Kinetrix/#software",
+      "name": "Kinetrix",
+      "alternateName": ["Kinetrix Language", "kcc", "Kinetrix Compiler"],
+      "description": "Kinetrix is a free, open-source compiled programming language designed for robotics and embedded systems. It compiles to Arduino C++, ESP32 C++, Raspberry Pi Python, MicroPython, and ROS2 C++ from a single human-readable source file.",
+      "applicationCategory": "DeveloperApplication",
+      "applicationSubCategory": "Programming Language",
+      "url": "https://m4dm0nk3y.github.io/Kinetrix/",
+      "downloadUrl": "https://github.com/M4dM0nk3y/Kinetrix/archive/refs/heads/main.zip",
+      "installUrl": "https://github.com/M4dM0nk3y/Kinetrix",
+      "softwareVersion": "3.1.0",
+      "releaseNotes": "Library Wrappers V3.1: native servo, DHT11, ultrasonic, NeoPixel, and LCD support",
+      "operatingSystem": ["Windows", "macOS", "Linux"],
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "license": "https://opensource.org/licenses/MIT",
+      "author": {
+        "@type": "Person",
+        "name": "Soham Mulik",
+        "url": "https://github.com/M4dM0nk3y"
+      },
+      "codeRepository": "https://github.com/M4dM0nk3y/Kinetrix",
+      "programmingLanguage": "C",
+      "keywords": ["robotics", "programming language", "Arduino", "ESP32", "Raspberry Pi", "Pico", "ROS2", "compiler", "embedded systems"],
+      "featureList": [
+        "Compiles to Arduino C++, ESP32 C++, Raspberry Pi Python, MicroPython, ROS2 C++",
+        "Human-readable English-like syntax",
+        "Native GPIO, PWM, I2C, SPI, UART support",
+        "Concurrent tasks with shared memory",
+        "OTA fleet updates via ESP-NOW",
+        "Hardware interrupts and watchdog timers",
+        "Library wrappers for servo, DHT11, NeoPixel, LCD",
+        "Static pin conflict analysis at compile time",
+        "48 of 48 tests passing"
+      ]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://m4dm0nk3y.github.io/Kinetrix/#website",
+      "name": "Kinetrix",
+      "url": "https://m4dm0nk3y.github.io/Kinetrix/",
+      "description": "Official website for Kinetrix, the open-source robotics programming language.",
+      "publisher": {
+        "@type": "Person",
+        "name": "Soham Mulik",
+        "url": "https://github.com/M4dM0nk3y"
+      },
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://github.com/M4dM0nk3y/Kinetrix/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is Kinetrix?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Kinetrix is a free, open-source compiled programming language designed for robotics and embedded systems. It lets you write code once and deploy it to Arduino, ESP32, Raspberry Pi, Raspberry Pi Pico, and ROS2 from a single source file."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What boards does Kinetrix support?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Kinetrix supports Arduino (Uno, Nano, Mega), ESP32, Raspberry Pi (3, 4, 5), Raspberry Pi Pico and Pico W, and ROS2. A single .kx source file compiles to the correct output for each target using the --target flag."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is Kinetrix free?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Kinetrix is completely free and open source under the MIT license. Download it at https://github.com/M4dM0nk3y/Kinetrix."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How do I install Kinetrix?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Download the latest release from GitHub at https://github.com/M4dM0nk3y/Kinetrix, then build the compiler with: gcc -o kcc compiler_v3.c parser.c codegen.c ast.c error.c pin_tracker.c symbol_table.c diagnostics.c -lm"
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400;1,600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
