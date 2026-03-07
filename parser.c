@@ -1160,6 +1160,32 @@ static ASTNode *parse_primary(Parser *parser) {
       return ast_serial_recv();
     }
 
+    /* read distance trigger N echo M */
+    if (parser_match_id(parser, "distance")) {
+      lexer_next_token(parser->lexer);
+      /* expect 'trigger' */
+      if (parser_match_id(parser, "trigger"))
+        lexer_next_token(parser->lexer);
+      ASTNode *trigger = parse_expression(parser);
+      /* expect 'echo' */
+      if (parser_match_id(parser, "echo"))
+        lexer_next_token(parser->lexer);
+      ASTNode *echo = parse_expression(parser);
+      return ast_distance_read(trigger, echo);
+    }
+
+    /* read temperature */
+    if (parser_match_id(parser, "temperature")) {
+      lexer_next_token(parser->lexer);
+      return ast_dht_read_temp();
+    }
+
+    /* read humidity */
+    if (parser_match_id(parser, "humidity")) {
+      lexer_next_token(parser->lexer);
+      return ast_dht_read_humid();
+    }
+
     /* receive spi becomes an error; transfer spi handled below */
     if (parser_match(parser, TOK_ID)) {
       /* read <devicename>  OR  read <devicename> register <reg> */
@@ -1579,6 +1605,16 @@ static ASTNode *parse_statement(Parser *parser) {
     lexer_next_token(parser->lexer);
 
     ASTNode *target;
+    /* set pixel N to R G B */
+    if (parser_match_id(parser, "pixel")) {
+      lexer_next_token(parser->lexer);
+      ASTNode *index = parse_expression(parser);
+      parser_expect(parser, TOK_TO);
+      ASTNode *r = parse_expression(parser);
+      ASTNode *g = parse_expression(parser);
+      ASTNode *b = parse_expression(parser);
+      return ast_neopixel_set(index, r, g, b);
+    }
     if (parser_match(parser, TOK_PIN)) {
       lexer_next_token(parser->lexer);
       ASTNode *pin = parse_expression(parser);
@@ -2044,6 +2080,122 @@ static ASTNode *parse_statement(Parser *parser) {
   if (parser_match(parser, TOK_CONTINUE)) {
     lexer_next_token(parser->lexer);
     return ast_continue();
+  }
+
+  /* ============================================================
+   * Library Wrapper Statement Handlers
+   * ============================================================ */
+
+  /* attach servo pin N */
+  /* attach dht11 pin N  /  attach dht22 pin N */
+  /* attach strip pin N count C */
+  /* attach lcd columns C rows R */
+  if (parser_match_id(parser, "attach")) {
+    lexer_next_token(parser->lexer);
+    const char *what = parser->lexer->current_token.value;
+
+    if (strcmp(what, "servo") == 0) {
+      lexer_next_token(parser->lexer);
+      if (parser_match(parser, TOK_PIN))
+        lexer_next_token(parser->lexer);
+      ASTNode *pin = parse_expression(parser);
+      return ast_servo_attach(pin);
+    }
+    if (strcmp(what, "dht11") == 0) {
+      lexer_next_token(parser->lexer);
+      if (parser_match(parser, TOK_PIN))
+        lexer_next_token(parser->lexer);
+      ASTNode *pin = parse_expression(parser);
+      return ast_dht_attach(pin, 11);
+    }
+    if (strcmp(what, "dht22") == 0) {
+      lexer_next_token(parser->lexer);
+      if (parser_match(parser, TOK_PIN))
+        lexer_next_token(parser->lexer);
+      ASTNode *pin = parse_expression(parser);
+      return ast_dht_attach(pin, 22);
+    }
+    if (strcmp(what, "strip") == 0) {
+      lexer_next_token(parser->lexer);
+      if (parser_match(parser, TOK_PIN))
+        lexer_next_token(parser->lexer);
+      ASTNode *pin = parse_expression(parser);
+      if (parser_match_id(parser, "count"))
+        lexer_next_token(parser->lexer);
+      ASTNode *count = parse_expression(parser);
+      return ast_neopixel_init(pin, count);
+    }
+    if (strcmp(what, "lcd") == 0) {
+      lexer_next_token(parser->lexer);
+      if (parser_match_id(parser, "columns"))
+        lexer_next_token(parser->lexer);
+      ASTNode *cols = parse_expression(parser);
+      if (parser_match_id(parser, "rows"))
+        lexer_next_token(parser->lexer);
+      ASTNode *rows = parse_expression(parser);
+      return ast_lcd_init(cols, rows);
+    }
+  }
+
+  /* move servo to N */
+  if (parser_match_id(parser, "move")) {
+    lexer_next_token(parser->lexer);
+    if (parser_match(parser, TOK_SERVO) || parser_match_id(parser, "servo")) {
+      lexer_next_token(parser->lexer);
+      parser_expect(parser, TOK_TO);
+      ASTNode *angle = parse_expression(parser);
+      return ast_servo_move(angle);
+    }
+  }
+
+  /* detach servo pin N */
+  if (parser_match_id(parser, "detach")) {
+    lexer_next_token(parser->lexer);
+    if (parser_match(parser, TOK_SERVO) || parser_match_id(parser, "servo")) {
+      lexer_next_token(parser->lexer);
+      if (parser_match(parser, TOK_PIN))
+        lexer_next_token(parser->lexer);
+      ASTNode *pin = parse_expression(parser);
+      return ast_servo_detach(pin);
+    }
+  }
+
+  /* show pixels */
+  if (parser_match_id(parser, "show")) {
+    lexer_next_token(parser->lexer);
+    if (parser_match_id(parser, "pixels")) {
+      lexer_next_token(parser->lexer);
+      return ast_neopixel_show();
+    }
+  }
+
+  /* clear pixels */
+  if (parser_match_id(parser, "clear")) {
+    lexer_next_token(parser->lexer);
+    if (parser_match_id(parser, "pixels")) {
+      lexer_next_token(parser->lexer);
+      return ast_neopixel_clear();
+    }
+  }
+
+  /* lcd print "text" line N  /  lcd clear */
+  if (parser_match_id(parser, "lcd")) {
+    lexer_next_token(parser->lexer);
+    const char *action = parser->lexer->current_token.value;
+    if (strcmp(action, "print") == 0) {
+      lexer_next_token(parser->lexer);
+      ASTNode *text = parse_expression(parser);
+      ASTNode *line = NULL;
+      if (parser_match_id(parser, "line")) {
+        lexer_next_token(parser->lexer);
+        line = parse_expression(parser);
+      }
+      return ast_lcd_print(text, line);
+    }
+    if (strcmp(action, "clear") == 0) {
+      lexer_next_token(parser->lexer);
+      return ast_lcd_clear();
+    }
   }
 
   // Handle special identifier-based statements: const

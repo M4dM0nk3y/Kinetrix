@@ -1,0 +1,38 @@
+# Kinetrix Library Wrapper Demo — Servo, NeoPixel, LCD, DHT, Ultrasonic
+# This tests all 5 new library wrappers
+
+program {
+    # Servo motor
+    attach servo pin 9
+    move servo to 90
+    wait 1000
+    move servo to 0
+    detach servo pin 9
+
+    # NeoPixel LED strip
+    attach strip pin 6 count 30
+    set pixel 0 to 255 0 0
+    set pixel 1 to 0 255 0
+    set pixel 2 to 0 0 255
+    show pixels
+    wait 1000
+    clear pixels
+
+    # LCD display
+    attach lcd columns 16 rows 2
+    lcd print "Hello" line 0
+    lcd print "Kinetrix!" line 1
+    wait 2000
+    lcd clear
+
+    # DHT temperature sensor
+    attach dht11 pin 4
+    make float temp = read temperature
+    make float humid = read humidity
+    println temp
+    println humid
+
+    # Ultrasonic distance sensor
+    make float dist = read distance trigger 12 echo 11
+    println dist
+}

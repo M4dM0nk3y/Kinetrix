@@ -1031,3 +1031,77 @@ ASTNode *ast_radio_send(ASTNode *peer_id, ASTNode *data) {
 ASTNode *ast_radio_available() { return ast_create(NODE_RADIO_AVAILABLE); }
 
 ASTNode *ast_radio_read() { return ast_create(NODE_RADIO_READ); }
+
+/* --- Library Wrapper APIs --- */
+
+ASTNode *ast_servo_attach(ASTNode *pin) {
+  ASTNode *node = ast_create(NODE_SERVO_ATTACH);
+  node->data.servo_attach.pin = pin;
+  return node;
+}
+
+ASTNode *ast_servo_move(ASTNode *angle) {
+  ASTNode *node = ast_create(NODE_SERVO_MOVE);
+  node->data.servo_write.angle = angle;
+  return node;
+}
+
+ASTNode *ast_servo_detach(ASTNode *pin) {
+  ASTNode *node = ast_create(NODE_SERVO_DETACH);
+  node->data.servo_detach.pin = pin;
+  return node;
+}
+
+ASTNode *ast_distance_read(ASTNode *trigger_pin, ASTNode *echo_pin) {
+  ASTNode *node = ast_create(NODE_DISTANCE_READ);
+  node->data.distance_read.trigger_pin = trigger_pin;
+  node->data.distance_read.echo_pin = echo_pin;
+  return node;
+}
+
+ASTNode *ast_dht_attach(ASTNode *pin, int dht_type) {
+  ASTNode *node = ast_create(NODE_DHT_ATTACH);
+  node->data.dht_attach.pin = pin;
+  node->data.dht_attach.dht_type = dht_type;
+  return node;
+}
+
+ASTNode *ast_dht_read_temp() { return ast_create(NODE_DHT_READ_TEMP); }
+
+ASTNode *ast_dht_read_humid() { return ast_create(NODE_DHT_READ_HUMID); }
+
+ASTNode *ast_neopixel_init(ASTNode *pin, ASTNode *count) {
+  ASTNode *node = ast_create(NODE_NEOPIXEL_INIT);
+  node->data.neopixel_init.pin = pin;
+  node->data.neopixel_init.count = count;
+  return node;
+}
+
+ASTNode *ast_neopixel_set(ASTNode *index, ASTNode *r, ASTNode *g, ASTNode *b) {
+  ASTNode *node = ast_create(NODE_NEOPIXEL_SET);
+  node->data.neopixel_set.index = index;
+  node->data.neopixel_set.r = r;
+  node->data.neopixel_set.g = g;
+  node->data.neopixel_set.b = b;
+  return node;
+}
+
+ASTNode *ast_neopixel_show() { return ast_create(NODE_NEOPIXEL_SHOW); }
+
+ASTNode *ast_neopixel_clear() { return ast_create(NODE_NEOPIXEL_CLEAR); }
+
+ASTNode *ast_lcd_init(ASTNode *cols, ASTNode *rows) {
+  ASTNode *node = ast_create(NODE_LCD_INIT);
+  node->data.lcd_init.cols = cols;
+  node->data.lcd_init.rows = rows;
+  return node;
+}
+
+ASTNode *ast_lcd_print(ASTNode *text, ASTNode *line) {
+  ASTNode *node = ast_create(NODE_LCD_PRINT);
+  node->data.lcd_print.text = text;
+  node->data.lcd_print.line = line;
+  return node;
+}
+
+ASTNode *ast_lcd_clear() { return ast_create(NODE_LCD_CLEAR); }

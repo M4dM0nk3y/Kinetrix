@@ -488,6 +488,51 @@ open spi at 1000000     # 1 MHz clock
 make number result = spi transfer 0xFF
 ```
 
+### Library Wrappers (V3.1)
+
+Kinetrix V3.1 introduces built-in cross-platform support for common hardware modules. The compiler automatically includes the correct underlying libraries (e.g. `Servo.h` or `RPi.GPIO`) based on the target platform.
+
+#### Servo Motors
+```kinetrix
+attach servo pin 9
+move servo to 90
+wait 1000
+detach servo pin 9
+```
+
+#### Ultrasonic Distance Sensors (HC-SR04)
+```kinetrix
+# Returns distance in cm
+make float dist = read distance trigger 12 echo 11
+```
+
+#### DHT Temperature & Humidity Sensors
+```kinetrix
+attach dht11 pin 4    # Or use dht22
+make float temp = read temperature
+make float humid = read humidity
+```
+
+#### NeoPixel LED Strips (WS2812B)
+```kinetrix
+attach strip pin 6 count 30
+set pixel 0 to 255 0 0    # Red
+set pixel 1 to 0 255 0    # Green
+set pixel 2 to 0 0 255    # Blue
+show pixels
+wait 1000
+clear pixels
+```
+
+#### I2C LCD Displays
+```kinetrix
+attach lcd columns 16 rows 2
+lcd print "Hello Robot" line 0
+lcd print "Sensors OK" line 1
+wait 2000
+lcd clear
+```
+
 ### Interrupts
 
 ```kinetrix
