@@ -114,6 +114,7 @@ nav{
 }
 #star-canvas{
   position:absolute;inset:0;
+  width:100%;height:100%;
   pointer-events:none;z-index:0;
 }
 .cold-inner{position:relative;z-index:1;padding:2rem;}
@@ -755,6 +756,7 @@ nav{
 }
 #epilogue-canvas{
   position:absolute;inset:0;
+  width:100%;height:100%;
   pointer-events:none;z-index:0;
 }
 .epilogue-inner{
@@ -982,6 +984,86 @@ footer{
   background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);
 }
 
+/* ── CINEMATIC: HEARTBEAT LINE ── */
+#heartbeat-svg{
+  display:block;margin:1.8rem auto 0;opacity:0;
+  width:320px;overflow:visible;
+  animation:fadeIn 1s 3.6s forwards;
+}
+#hb-path{
+  stroke:var(--blood);stroke-width:1.5;fill:none;
+  filter:drop-shadow(0 0 5px rgba(200,16,46,0.9)) drop-shadow(0 0 14px rgba(200,16,46,0.4));
+  stroke-dasharray:700;stroke-dashoffset:700;
+  animation:drawHB 1.4s 3.9s cubic-bezier(.4,0,.2,1) forwards;
+}
+@keyframes drawHB{to{stroke-dashoffset:0;}}
+
+/* ── CINEMATIC: SCANLINE SWEEP ── */
+#scanline{
+  position:fixed;top:-150px;left:0;right:0;height:150px;
+  background:linear-gradient(180deg,
+    transparent 0%,rgba(200,16,46,0.02) 30%,
+    rgba(255,255,255,0.055) 50%,
+    rgba(200,16,46,0.02) 70%,transparent 100%);
+  pointer-events:none;z-index:9996;opacity:0;
+}
+
+/* ── CINEMATIC: MOUSE HALO ── */
+#mouse-halo{
+  position:fixed;width:550px;height:550px;
+  border-radius:50%;pointer-events:none;z-index:1;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle,
+    rgba(200,16,46,0.045) 0%,rgba(168,216,240,0.015) 35%,transparent 70%);
+  mix-blend-mode:screen;will-change:left,top;
+}
+
+/* ── CINEMATIC: CODE RAIN ── */
+#code-rain-canvas{
+  position:absolute;inset:0;width:100%;height:100%;
+  pointer-events:none;z-index:0;opacity:0.22;
+}
+
+/* ── CINEMATIC: SHOCKWAVE ── */
+.shockwave{
+  position:fixed;left:50%;top:50%;
+  border-radius:50%;border:1px solid rgba(200,16,46,0.55);
+  pointer-events:none;z-index:9988;
+  animation:shockExpand 1.3s ease-out forwards;
+  transform:translate(-50%,-50%);
+}
+@keyframes shockExpand{
+  from{width:0;height:0;opacity:0.9;box-shadow:0 0 30px rgba(200,16,46,0.4);}
+  to{width:500px;height:500px;opacity:0;box-shadow:none;}
+}
+
+/* ── CINEMATIC: LETTER DROP ── */
+.cold-title-letter{
+  display:inline-block;opacity:0;
+  animation:letterDrop 0.7s both cubic-bezier(.16,1,.3,1);
+}
+@keyframes letterDrop{
+  from{opacity:0;transform:translateY(-40px) rotateX(80deg);filter:blur(6px);}
+  to{opacity:1;transform:none;filter:none;}
+}
+
+/* ── CINEMATIC: CHAPTER TITLE LIGHT SWEEP ── */
+.chapter-title{position:relative;overflow:visible;}
+.chapter-title::after{
+  content:'';position:absolute;top:0;left:-100%;
+  width:60%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.07),transparent);
+  pointer-events:none;opacity:0;
+}
+.chapter-title.swept::after{animation:titleSweep 0.9s ease-out forwards;}
+@keyframes titleSweep{
+  from{left:-60%;opacity:1;}
+  to{left:130%;opacity:0;}
+}
+
+/* ── CINEMATIC: MAGNETIC BUTTON ── */
+.dl-primary,.nav-dl,.cf-submit{will-change:transform;}
+
 /* ─────────────────────────────────────────────
    CH9 — CONTACT / TRANSMISSION
 ───────────────────────────────────────────── */
@@ -1082,6 +1164,8 @@ footer{
 <body>
 
 <div id="progress-bar"></div>
+<div id="scanline"></div>
+<div id="mouse-halo"></div>
 
 <!-- NAV -->
 <nav id="main-nav">
@@ -1099,6 +1183,9 @@ footer{
     <div class="cold-studio">A language born from necessity · An open-source legend · A story in code</div>
     <h1 class="cold-title">KINETRIX</h1>
     <div class="cold-subtitle">The Language That Freed The Machines</div>
+    <svg id="heartbeat-svg" viewBox="0 0 320 50" xmlns="http://www.w3.org/2000/svg">
+      <path id="hb-path" d="M0,25 L55,25 L70,25 L80,5 L90,45 L100,10 L108,38 L115,25 L135,25 L150,25 L162,15 L170,35 L176,25 L200,25 L265,25 L320,25"/>
+    </svg>
     <p class="cold-logline">
       In a world where every robot spoke a <em>different tongue</em>,<br>
       one language rose to unite them.
@@ -1319,6 +1406,7 @@ v3.1.0 ✓</pre>
      CHAPTER IV — THE HERO: AXIOM
 ════════════════════════════════════════ -->
 <section class="chapter" id="ch-hero" data-chapter="THE HERO — AXIOM">
+  <canvas id="code-rain-canvas"></canvas>
   <div class="chapter-inner">
     <div class="chapter-label r">Chapter IV</div>
     <h2 class="chapter-title r delay-1" style="color:var(--code-g);">
@@ -1820,8 +1908,8 @@ window.addEventListener('scroll', () => {
   const ctx = canvas.getContext('2d');
   let W, H, stars, nebula;
   function resize() {
-    W = canvas.width = canvas.offsetWidth;
-    H = canvas.height = canvas.offsetHeight;
+    W = canvas.width = canvas.parentElement.offsetWidth;
+    H = canvas.height = canvas.parentElement.offsetHeight;
     init();
   }
   function init() {
@@ -1835,6 +1923,7 @@ window.addEventListener('scroll', () => {
     }));
   }
   function draw(t) {
+    if (!W || !H || !stars) { requestAnimationFrame(draw); return; }
     ctx.clearRect(0, 0, W, H);
     // deep nebula
     const grad = ctx.createRadialGradient(W*0.5,H*0.5,0,W*0.5,H*0.5,W*0.7);
@@ -1866,6 +1955,7 @@ window.addEventListener('scroll', () => {
   }
   window.addEventListener('resize', resize);
   resize();
+  setTimeout(resize, 200);
   requestAnimationFrame(draw);
 })();
 
@@ -1898,8 +1988,8 @@ window.addEventListener('scroll', () => {
   const ctx = canvas.getContext('2d');
   let W, H, embers;
   function resize() {
-    W = canvas.width = canvas.offsetWidth;
-    H = canvas.height = canvas.offsetHeight;
+    W = canvas.width = canvas.parentElement.offsetWidth;
+    H = canvas.height = canvas.parentElement.offsetHeight;
     embers = Array.from({length: 60}, () => spawnEmber());
   }
   function spawnEmber() {
@@ -1915,6 +2005,7 @@ window.addEventListener('scroll', () => {
     };
   }
   function draw() {
+    if (!W || !H || !embers) { requestAnimationFrame(draw); return; }
     ctx.clearRect(0,0,W,H);
     embers.forEach((e,i) => {
       e.x += e.vx + Math.sin(Date.now()*0.001 + i) * 0.3;
@@ -1938,6 +2029,7 @@ window.addEventListener('scroll', () => {
   }
   window.addEventListener('resize', resize);
   resize();
+  setTimeout(resize, 200);
   draw();
 })();
 
@@ -2031,11 +2123,11 @@ if (contactForm) {
         contactForm.style.display = 'none';
         contactSuccess.style.display = 'block';
       } else {
-        btn.textContent = 'Failed — try again';
+        btn.textContent = 'Failed. Try again.';
         btn.style.opacity = '1';
       }
     } catch {
-      btn.textContent = 'Failed — try again';
+      btn.textContent = 'Failed. Try again.';
       btn.style.opacity = '1';
     }
   });
@@ -2051,6 +2143,159 @@ document.querySelectorAll('.awakened-card,.weapon,.power').forEach(card => {
   });
   card.addEventListener('mouseleave', () => { card.style.background = ''; });
 });
+
+/* ══════════════════════════════════════════════
+   CINEMATIC EFFECTS
+══════════════════════════════════════════════ */
+
+/* ── 1. LETTER-BY-LETTER COLD TITLE ── */
+(function() {
+  const ct = document.querySelector('.cold-title');
+  if (!ct) return;
+  const text = ct.textContent.trim();
+  // Remove existing animation, handle opacity ourselves via letter animations
+  ct.style.cssText += 'opacity:1;animation:none;';
+  ct.innerHTML = text.split('').map((ch, i) =>
+    `<span class="cold-title-letter" style="animation-delay:${1.0 + i * 0.09}s">${ch === ' ' ? '&nbsp;' : ch}</span>`
+  ).join('');
+})();
+
+/* ── 2. PERIODIC TITLE GLITCH ── */
+(function() {
+  const ct = document.querySelector('.cold-title');
+  if (!ct) return;
+  function doGlitch() {
+    const steps = [
+      { shadow: '-4px 0 #c8102e, 4px 0 #a8d8f0', tx: '-2px,1px', skew: '-1deg' },
+      { shadow: '4px 0 #c8102e, -4px 0 #a8d8f0', tx: '2px,-1px', skew: '1deg' },
+      { shadow: '0 0 80px rgba(200,16,46,0.6)', tx: '0,0', skew: '0' },
+      { shadow: '-6px 0 #c8102e, 6px 0 #a8d8f0', tx: '-3px,0', skew: '-2deg' },
+      { shadow: '0 0 80px rgba(200,16,46,0.6), 0 0 160px rgba(200,16,46,0.2)', tx: '0,0', skew: '0' },
+    ];
+    let i = 0;
+    const tick = () => {
+      if (i >= steps.length) {
+        ct.style.textShadow = '0 0 80px rgba(200,16,46,0.6), 0 0 160px rgba(200,16,46,0.2)';
+        ct.style.transform = '';
+        return;
+      }
+      const s = steps[i++];
+      ct.style.textShadow = s.shadow;
+      ct.style.transform = `translate(${s.tx}) skewX(${s.skew})`;
+      setTimeout(tick, 60);
+    };
+    tick();
+    // schedule next
+    setTimeout(doGlitch, 5000 + Math.random() * 6000);
+  }
+  setTimeout(doGlitch, 4500);
+})();
+
+/* ── 3. SCANLINE SWEEP ── */
+(function() {
+  const sl = document.getElementById('scanline');
+  if (!sl) return;
+  function sweep() {
+    const vh = window.innerHeight;
+    sl.style.transition = 'none';
+    sl.style.top = '-150px';
+    sl.style.opacity = '1';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        sl.style.transition = `top ${vh * 1.4}ms linear`;
+        sl.style.top = (vh + 10) + 'px';
+        setTimeout(() => { sl.style.opacity = '0'; }, vh * 1.4 - 200);
+        setTimeout(sweep, 7000 + Math.random() * 5000);
+      });
+    });
+  }
+  setTimeout(sweep, 2500);
+})();
+
+/* ── 4. MOUSE HALO ── */
+(function() {
+  const halo = document.getElementById('mouse-halo');
+  if (!halo) return;
+  let hx = window.innerWidth / 2, hy = window.innerHeight / 2;
+  let tx = hx, ty = hy;
+  document.addEventListener('mousemove', e => { tx = e.clientX; ty = e.clientY; });
+  (function animHalo() {
+    hx += (tx - hx) * 0.08;
+    hy += (ty - hy) * 0.08;
+    halo.style.left = hx + 'px';
+    halo.style.top  = hy + 'px';
+    requestAnimationFrame(animHalo);
+  })();
+})();
+
+/* ── 5. CODE RAIN ON HERO SECTION ── */
+(function() {
+  const canvas = document.getElementById('code-rain-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let W, H, drops;
+  const words = ['turn','on','pin','set','wait','task','enable','kcc','target','read','send','start','stop','program','if','repeat','shared','make','number','radio','ota','i2c','compile','esp32','arduino','rpi','pico','ros2','0','1','kpm'];
+  function resize() {
+    W = canvas.width = canvas.parentElement.offsetWidth;
+    H = canvas.height = canvas.parentElement.offsetHeight;
+    const cols = Math.floor(W / 22);
+    drops = Array.from({length: cols}, () => Math.random() * -H);
+  }
+  function draw() {
+    ctx.fillStyle = 'rgba(11,4,20,0.07)';
+    ctx.fillRect(0, 0, W, H);
+    drops.forEach((y, i) => {
+      const word = words[Math.floor(Math.random() * words.length)];
+      const alpha = 0.08 + Math.random() * 0.18;
+      ctx.fillStyle = `rgba(78,201,78,${alpha})`;
+      ctx.font = `10px "Space Mono", monospace`;
+      ctx.fillText(word, i * 22, y);
+      drops[i] += 14;
+      if (drops[i] > H + 20) drops[i] = Math.random() * -300;
+    });
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+  draw();
+})();
+
+/* ── 6. SHOCKWAVE ON CHAPTER TITLE ENTRY ── */
+(function() {
+  const titles = document.querySelectorAll('.chapter-title');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      // shockwave
+      const s = document.createElement('div');
+      s.className = 'shockwave';
+      document.body.appendChild(s);
+      setTimeout(() => s.remove(), 1400);
+      // light sweep on title
+      e.target.classList.add('swept');
+      setTimeout(() => e.target.classList.remove('swept'), 1000);
+      obs.unobserve(e.target);
+    });
+  }, { threshold: 0.5 });
+  titles.forEach(t => obs.observe(t));
+})();
+
+/* ── 7. MAGNETIC BUTTONS ── */
+(function() {
+  document.querySelectorAll('.dl-primary, .nav-dl, .cf-submit').forEach(btn => {
+    btn.addEventListener('mousemove', e => {
+      const r = btn.getBoundingClientRect();
+      const x = (e.clientX - r.left - r.width  / 2) * 0.18;
+      const y = (e.clientY - r.top  - r.height / 2) * 0.22;
+      btn.style.transition = 'transform 0.1s ease-out, box-shadow 0.3s';
+      btn.style.transform = `translate(${x}px, ${y}px)`;
+    });
+    btn.addEventListener('mouseleave', () => {
+      btn.style.transition = 'transform 0.5s cubic-bezier(.16,1,.3,1), box-shadow 0.3s';
+      btn.style.transform = '';
+    });
+  });
+})();
 </script>
 </body>
 </html>
