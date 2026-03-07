@@ -1065,6 +1065,128 @@ footer{
 .dl-primary,.nav-dl,.cf-submit{will-change:transform;}
 
 /* ─────────────────────────────────────────────
+   CH6B — V3.1 LIBRARY WRAPPERS
+───────────────────────────────────────────── */
+#ch-v31{
+  background:linear-gradient(170deg,var(--void) 0%,#060312 100%);
+}
+#ch-v31::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 50%, rgba(232,168,32,0.05) 0%,transparent 65%),
+    radial-gradient(ellipse 60% 80% at 80% 80%, rgba(78,201,78,0.04) 0%,transparent 60%);
+  pointer-events:none;
+}
+.v31-badge{
+  display:inline-flex;align-items:center;gap:0.6rem;
+  background:rgba(232,168,32,0.1);
+  border:1px solid rgba(232,168,32,0.35);
+  padding:0.3rem 0.9rem;
+  font-family:var(--font-code);
+  font-size:0.58rem;letter-spacing:0.35em;
+  color:var(--amber);text-transform:uppercase;
+  margin-bottom:1.5rem;
+}
+.v31-badge::before{
+  content:'';
+  width:6px;height:6px;border-radius:50%;
+  background:var(--amber);
+  box-shadow:0 0 8px var(--amber);
+  animation:pulseDot 1.5s ease-in-out infinite;
+}
+@keyframes pulseDot{
+  0%,100%{opacity:1;transform:scale(1);}
+  50%{opacity:0.4;transform:scale(0.7);}
+}
+.v31-status{
+  display:inline-flex;align-items:center;gap:0.5rem;
+  font-family:var(--font-code);
+  font-size:0.58rem;letter-spacing:0.2em;
+  color:rgba(138,122,154,0.6);
+  margin-top:0.8rem;text-transform:uppercase;
+}
+.v31-status .dot-testing{
+  width:5px;height:5px;border-radius:50%;
+  background:var(--amber);opacity:0.7;
+}
+.lib-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+  gap:1px;
+  background:rgba(255,255,255,0.04);
+  margin-top:3rem;
+}
+.lib-card{
+  background:var(--void);
+  padding:2rem 2.2rem;
+  position:relative;
+  overflow:hidden;
+  transition:background 0.3s;
+}
+.lib-card::before{
+  content:'';
+  position:absolute;left:0;top:0;bottom:0;width:2px;
+  background:var(--lib-color,var(--amber));
+  box-shadow:0 0 12px var(--lib-color,var(--amber));
+  opacity:0;transition:opacity 0.3s;
+}
+.lib-card:hover{background:rgba(255,255,255,0.02);}
+.lib-card:hover::before{opacity:1;}
+.lib-icon{
+  font-size:1.6rem;margin-bottom:0.8rem;display:block;
+}
+.lib-name{
+  font-family:var(--font-title);
+  font-size:0.88rem;font-weight:700;
+  letter-spacing:0.1em;
+  color:var(--white);
+  margin-bottom:0.3rem;
+}
+.lib-tag{
+  font-family:var(--font-code);
+  font-size:0.58rem;letter-spacing:0.15em;
+  color:var(--lib-color,var(--amber));
+  margin-bottom:0.9rem;
+  display:block;
+}
+.lib-desc{
+  font-size:0.9rem;color:var(--mist);
+  line-height:1.6;margin-bottom:1.1rem;
+}
+.lib-code{
+  background:rgba(0,0,0,0.5);
+  padding:0.8rem 1rem;
+  font-family:var(--font-code);
+  font-size:0.68rem;line-height:1.8;
+  border-top:1px solid rgba(255,255,255,0.05);
+}
+.std-libs{
+  margin-top:3rem;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:1rem;
+}
+.std-lib{
+  background:rgba(232,168,32,0.04);
+  border:1px solid rgba(232,168,32,0.1);
+  padding:1rem 1.2rem;
+  display:flex;align-items:center;gap:0.8rem;
+  transition:border-color 0.25s;
+}
+.std-lib:hover{border-color:rgba(232,168,32,0.3);}
+.std-lib-icon{font-size:1.1rem;}
+.std-lib-info{}
+.std-lib-name{
+  font-family:var(--font-code);
+  font-size:0.7rem;color:var(--amber);
+  letter-spacing:0.1em;display:block;
+  margin-bottom:0.2rem;
+}
+.std-lib-desc{
+  font-size:0.8rem;color:var(--mist);line-height:1.4;
+}
+
+/* ─────────────────────────────────────────────
    CH9 — CONTACT / TRANSMISSION
 ───────────────────────────────────────────── */
 #ch-contact{
@@ -1702,11 +1824,121 @@ v3.1.0 ✓</pre>
 <div class="divider"></div>
 
 <!-- ═══════════════════════════════════════
-     CHAPTER VII — THE RECKONING (DOWNLOAD)
+     CHAPTER VII — V3.1 LIBRARY WRAPPERS
+════════════════════════════════════════ -->
+<section class="chapter" id="ch-v31" data-chapter="V3.1 — JUST SHIPPED">
+  <div class="chapter-inner">
+    <div class="chapter-label r">Chapter VII</div>
+    <div class="v31-badge r delay-1">v3.1.0 — Just Shipped</div>
+    <h2 class="chapter-title r delay-1">
+      Library<br><span style="color:var(--amber);">Wrappers.</span>
+    </h2>
+    <p class="chapter-prose r delay-2">
+      V3.1 brings native syntax for the components every robotics project actually uses. Servos, sensors, displays, LEDs.
+      The compiler handles the includes, the boilerplate, and the target-specific library differences automatically.
+      <em>You just describe what you want.</em>
+    </p>
+    <div class="v31-status r delay-2">
+      <span class="dot-testing"></span>
+      Compiler support live &nbsp;·&nbsp; Hardware testing in progress
+    </div>
+
+    <div class="lib-grid r delay-3">
+
+      <div class="lib-card" style="--lib-color:var(--amber)">
+        <span class="lib-icon">⚙️</span>
+        <div class="lib-name">Servo Motors</div>
+        <span class="lib-tag">auto-includes Servo.h · RPi.GPIO · MicroPython servo</span>
+        <div class="lib-desc">Attach, move, detach. The compiler picks the right servo library for each target automatically.</div>
+        <div class="lib-code">
+          <span class="t-kw">attach</span> servo pin <span class="t-num">9</span><br>
+          <span class="t-kw">move</span> servo to <span class="t-num">90</span>&nbsp;&nbsp;&nbsp;<span class="t-cm"># degrees</span><br>
+          <span class="t-kw">move</span> servo to <span class="t-num">0</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-cm"># full left</span><br>
+          <span class="t-kw">detach</span> servo pin <span class="t-num">9</span>
+        </div>
+      </div>
+
+      <div class="lib-card" style="--lib-color:var(--ice)">
+        <span class="lib-icon">🌡️</span>
+        <div class="lib-name">DHT11 / Temperature</div>
+        <span class="lib-tag">auto-includes DHT.h · adafruit_dht · dht module</span>
+        <div class="lib-desc">One-line sensor attachment. Read temperature and humidity without touching a datasheet.</div>
+        <div class="lib-code">
+          <span class="t-kw">attach</span> dht11 pin <span class="t-num">4</span><br>
+          <span class="t-kw">make</span> float temp = <span class="t-kw">read</span> temperature<br>
+          <span class="t-kw">make</span> float hum &nbsp;= <span class="t-kw">read</span> humidity<br>
+          <span class="t-kw">print</span> temp
+        </div>
+      </div>
+
+      <div class="lib-card" style="--lib-color:var(--code-g)">
+        <span class="lib-icon">📏</span>
+        <div class="lib-name">Ultrasonic Distance</div>
+        <span class="lib-tag">HC-SR04 · trigger/echo pattern · pulse timing</span>
+        <div class="lib-desc">Distance in centimetres, one expression. No manual pulse timing, no microsecond math.</div>
+        <div class="lib-code">
+          <span class="t-kw">make</span> float dist = <span class="t-kw">read</span> distance<br>
+          &nbsp;&nbsp;trigger <span class="t-num">12</span> echo <span class="t-num">11</span><br>
+          <span class="t-kw">if</span> dist &lt; <span class="t-num">20</span> {<br>
+          &nbsp;&nbsp;<span class="t-kw">turn</span> off pin <span class="t-num">9</span>&nbsp;<span class="t-cm"># stop motor</span><br>
+          }
+        </div>
+      </div>
+
+      <div class="lib-card" style="--lib-color:#c792ea">
+        <span class="lib-icon">💡</span>
+        <div class="lib-name">NeoPixel LEDs</div>
+        <span class="lib-tag">auto-includes Adafruit_NeoPixel · rpi_ws281x · neopixel</span>
+        <div class="lib-desc">Addressable RGB strips in three lines. Set individual pixels, show the frame, done.</div>
+        <div class="lib-code">
+          <span class="t-kw">attach</span> strip pin <span class="t-num">6</span> count <span class="t-num">30</span><br>
+          <span class="t-kw">set</span> pixel <span class="t-num">0</span> to <span class="t-num">255</span> <span class="t-num">0</span> <span class="t-num">0</span>&nbsp;<span class="t-cm"># red</span><br>
+          <span class="t-kw">set</span> pixel <span class="t-num">1</span> to <span class="t-num">0</span> <span class="t-num">0</span> <span class="t-num">255</span>&nbsp;<span class="t-cm"># blue</span><br>
+          <span class="t-kw">show</span> pixels
+        </div>
+      </div>
+
+      <div class="lib-card" style="--lib-color:var(--blood)">
+        <span class="lib-icon">🖥️</span>
+        <div class="lib-name">LCD Displays</div>
+        <span class="lib-tag">16x2 · 20x4 · I2C LCD · LiquidCrystal</span>
+        <div class="lib-desc">Print to an LCD without LiquidCrystal boilerplate. Specify columns, rows, and write.</div>
+        <div class="lib-code">
+          <span class="t-kw">attach</span> lcd columns <span class="t-num">16</span> rows <span class="t-num">2</span><br>
+          <span class="t-kw">lcd</span> print <span class="t-str">"KINETRIX v3.1"</span> line <span class="t-num">0</span><br>
+          <span class="t-kw">lcd</span> print <span class="t-str">"Hardware ready"</span> line <span class="t-num">1</span>
+        </div>
+      </div>
+
+      <div class="lib-card" style="--lib-color:var(--amber)">
+        <span class="lib-icon">📦</span>
+        <div class="lib-name">Standard Libraries</div>
+        <span class="lib-tag">drive.kx · sonar.kx · music.kx · math.kx</span>
+        <div class="lib-desc">Four ready-to-use Kinetrix libraries written in Kinetrix itself. Drop them in and call their functions.</div>
+        <div class="lib-code">
+          <span class="t-cm"># drive.kx</span><br>
+          <span class="t-fn">drive_forward</span>(<span class="t-num">200</span>)&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-cm"># pins 3,5</span><br>
+          <span class="t-cm"># sonar.kx</span><br>
+          <span class="t-fn">get_distance_from</span>(<span class="t-num">7</span>)<br>
+          <span class="t-cm"># music.kx</span><br>
+          <span class="t-fn">play_alert</span>()<br>
+          <span class="t-cm"># math.kx</span><br>
+          <span class="t-fn">map_to_percent</span>(sensor)
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════
+     CHAPTER VIII — THE RECKONING (DOWNLOAD)
 ════════════════════════════════════════ -->
 <section class="chapter" id="ch-reckoning" data-chapter="THE RECKONING">
   <div class="reckoning-inner">
-    <div class="reckoning-label r">Chapter VII · The Reckoning</div>
+    <div class="reckoning-label r">Chapter VIII · The Reckoning</div>
     <h2 class="reckoning-title r delay-1">
       Join the<br>Revolution.
     </h2>
@@ -1748,7 +1980,7 @@ v3.1.0 ✓</pre>
 </section>
 
 <!-- ═══════════════════════════════════════
-     CHAPTER VIII — EPILOGUE: NOT OVER
+     CHAPTER IX — EPILOGUE: NOT OVER
 ════════════════════════════════════════ -->
 <section class="chapter" id="ch-epilogue" data-chapter="IT'S NOT OVER">
   <canvas id="epilogue-canvas"></canvas>
@@ -1767,6 +1999,10 @@ v3.1.0 ✓</pre>
       <strong>This is the beginning, not the end.</strong>
     </p>
     <div class="coming-soon-box" id="ep-cs">
+      <div class="roadmap-item">
+        <span class="rm-status building">IN PROGRESS</span>
+        <div class="rm-text"><strong>V3.1 Hardware Validation</strong>: library wrappers (servo, DHT11, ultrasonic, NeoPixel, LCD) are compiler-complete — real-world hardware testing underway</div>
+      </div>
       <div class="roadmap-item">
         <span class="rm-status building">BUILDING</span>
         <div class="rm-text"><strong>Kinetrix v4.0</strong>: expanded type system, struct methods, and a brand-new standard library</div>
@@ -1805,7 +2041,7 @@ v3.1.0 ✓</pre>
 ════════════════════════════════════════ -->
 <section class="chapter" id="ch-contact" data-chapter="OPEN TRANSMISSION">
   <div class="contact-inner">
-    <div class="chapter-label r">Chapter IX</div>
+    <div class="chapter-label r">Chapter X</div>
     <h2 class="chapter-title r delay-1">
       Open<br><span style="color:var(--blood);">Transmission.</span>
     </h2>
