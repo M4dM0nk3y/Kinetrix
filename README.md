@@ -206,6 +206,31 @@ Then push updates to all robots on the network:
 ./kcc_push.sh robot.kx --target esp32 --password secret123
 ```
 
+### Library Wrappers (V3.1)
+
+Native cross-platform syntax for common components. The compiler automatically includes `Servo.h`, `RPi.GPIO`, etc. based on the target.
+
+```kinetrix
+# Servo Motors
+attach servo pin 9
+move servo to 90
+detach servo pin 9
+
+# Sensors
+make float dist = read distance trigger 12 echo 11
+attach dht11 pin 4
+make float temp = read temperature
+
+# NeoPixel LEDs
+attach strip pin 6 count 30
+set pixel 0 to 255 0 0
+show pixels
+
+# LCD Displays
+attach lcd columns 16 rows 2
+lcd print "Hello" line 0
+```
+
 ### Safety Features
 
 ```kinetrix
