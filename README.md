@@ -206,7 +206,7 @@ Then push updates to all robots on the network:
 ./kcc_push.sh robot.kx --target esp32 --password secret123
 ```
 
-### Library Wrappers (V3.1)
+### Library Wrappers — Wave 1: Sensors & Output (V3.1)
 
 Native cross-platform syntax for common components. The compiler automatically includes `Servo.h`, `RPi.GPIO`, etc. based on the target.
 
@@ -229,14 +229,19 @@ show pixels
 # LCD Displays
 attach lcd columns 16 rows 2
 lcd print "Hello" line 0
+```
 
-# Stepper Motors
+### Library Wrappers — Wave 2: Motion & Motor Control (V3.1) 🆕
+
+Full motor control and closed-loop feedback — compile for any board.
+
+```kinetrix
+# Stepper Motors (A4988 / DRV8825)
 attach stepper step 2 dir 3
 set stepper speed 500
 move stepper 200
-move stepper -200
 
-# DC Motors
+# DC Motor Drivers (L298N / TB6612)
 attach motor enable 9 forward 8 reverse 7
 move motor forward at 255
 move motor reverse at 128
@@ -310,24 +315,22 @@ Kinetrix/
 ├── error.c/.h             # Error reporting
 ├── diagnostics.c          # Compiler diagnostics
 ├── Makefile               # Build system
-├── test_all.sh            # Automated test suite
 ├── kcc_push.sh            # OTA fleet push tool
 ├── examples/              # Example programs
-├── examples_working/      # Beginner-friendly examples
-├── libs/                  # Standard library modules
-└── docs/                  # Documentation
+└── libs/                  # Standard library modules
 ```
 
 ---
 
 ## Testing
 
-```bash
-chmod +x test_all.sh
-./test_all.sh
-```
+The CI automatically compiles all example `.kx` files across all 5 targets on every push.
 
-Expected: **48/48 tests pass** ✅
+```bash
+# Run locally:
+make
+for f in examples/*.kx; do ./kcc --target=arduino "$f"; done
+```
 
 ---
 
@@ -342,18 +345,16 @@ Expected: **48/48 tests pass** ✅
 
 ## Examples
 
-See [`examples/`](examples/) for advanced programs and [`examples_working/`](examples_working/) for beginner tutorials:
+See [`examples/`](examples/) for complete programs:
 
 | Example | Features Demonstrated |
 |---------|----------------------|
-| `01_led_blink.kx` | Basic GPIO |
-| `04_knight_rider.kx` | Arrays, loops |
-| `09_line_follower.kx` | Analog read, motor control |
+| `v3_esp32_all.kx` | Full ESP32 feature demo |
 | `v3_interrupt_control.kx` | Interrupts, timers |
 | `v3_task_codegen_test.kx` | Concurrent tasks |
 | `v3_radio_test.kx` | ESP-NOW wireless |
 | `v3_ota_demo.kx` | OTA fleet updates |
-| `v3_esp32_all.kx` | Full ESP32 feature demo |
+| `v3_library_demo.kx` | Servo, sensors, NeoPixel, LCD |
 
 ---
 
