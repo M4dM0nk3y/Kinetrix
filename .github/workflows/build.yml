@@ -13,11 +13,41 @@ jobs:
     
     - name: Build Compiler
       run: make
-      
-    - name: Run Test Suite
-      run: |
-        chmod +x test_all.sh
-        ./test_all.sh
-      
+
     - name: Version Check
       run: ./kcc --version
+
+    - name: Compile Examples (Arduino)
+      run: |
+        for f in examples/*.kx; do
+          echo "=== Compiling $f (arduino) ==="
+          ./kcc --target=arduino "$f" || exit 1
+        done
+
+    - name: Compile Examples (ESP32)
+      run: |
+        for f in examples/*.kx; do
+          echo "=== Compiling $f (esp32) ==="
+          ./kcc --target=esp32 "$f" || exit 1
+        done
+
+    - name: Compile Examples (Raspberry Pi)
+      run: |
+        for f in examples/*.kx; do
+          echo "=== Compiling $f (rpi) ==="
+          ./kcc --target=rpi "$f" || exit 1
+        done
+
+    - name: Compile Examples (Pico)
+      run: |
+        for f in examples/*.kx; do
+          echo "=== Compiling $f (pico) ==="
+          ./kcc --target=pico "$f" || exit 1
+        done
+
+    - name: Compile Examples (ROS2)
+      run: |
+        for f in examples/*.kx; do
+          echo "=== Compiling $f (ros2) ==="
+          ./kcc --target=ros2 "$f" || exit 1
+        done
