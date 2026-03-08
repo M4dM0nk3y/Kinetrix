@@ -2,6 +2,9 @@
 *.o
 *.dSYM/
 kcc
+
+# Generated compiler output
+Kinetrix_Output.*
 kcc_demo
 
 # Editor / IDE
