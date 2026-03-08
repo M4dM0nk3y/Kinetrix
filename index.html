@@ -6,8 +6,8 @@
 
 <!-- ═══ PRIMARY SEO ═══ -->
 <title>Kinetrix — Robotics Programming Language for Arduino, ESP32, Raspberry Pi & ROS2</title>
-<meta name="description" content="Kinetrix is a free, open-source compiled programming language for robotics. Write once, deploy to Arduino, ESP32, Raspberry Pi, Pico, and ROS2. Human-readable syntax, no boilerplate, 48/48 tests passing. MIT licensed.">
-<meta name="keywords" content="Kinetrix, robotics programming language, Arduino language, ESP32 compiler, Raspberry Pi language, Pico language, ROS2 language, robotics DSL, embedded systems language, open source robotics, kcc compiler, kinetrix language">
+<meta name="description" content="Kinetrix is a free, open-source compiled programming language for robotics. Write once, deploy to Arduino, ESP32, Raspberry Pi, Pico, and ROS2. Native servo, motor, encoder, ESC, PID, NeoPixel, and LCD support. MIT licensed.">
+<meta name="keywords" content="Kinetrix, robotics programming language, Arduino language, ESP32 compiler, Raspberry Pi language, Pico language, ROS2 language, robotics DSL, embedded systems language, open source robotics, kcc compiler, stepper motor control, PID controller, DC motor driver, quadrature encoder, NeoPixel, servo motor, kinetrix language">
 <meta name="author" content="Soham Mulik">
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
 <link rel="canonical" href="https://m4dm0nk3y.github.io/Kinetrix/">
@@ -49,7 +49,7 @@
       "downloadUrl": "https://github.com/M4dM0nk3y/Kinetrix/archive/refs/heads/main.zip",
       "installUrl": "https://github.com/M4dM0nk3y/Kinetrix",
       "softwareVersion": "3.1.0",
-      "releaseNotes": "Library Wrappers V3.1: native servo, DHT11, ultrasonic, NeoPixel, and LCD support",
+      "releaseNotes": "Library Wrappers V3.1 Wave 2: stepper motors, DC motor drivers, quadrature encoders, ESCs, PID controllers",
       "operatingSystem": ["Windows", "macOS", "Linux"],
       "offers": {
         "@type": "Offer",
@@ -2053,6 +2053,85 @@ v3.1.0 ✓</pre>
           <span class="t-fn">play_alert</span>()<br>
           <span class="t-cm"># math.kx</span><br>
           <span class="t-fn">map_to_percent</span>(sensor)
+        </div>
+      </div>
+
+    </div>
+
+    <!-- WAVE 2 -->
+    <div class="chapter-label r" style="margin-top:4rem;">Wave 2 &nbsp;·&nbsp; Just Added</div>
+    <h3 class="r" style="font-family:var(--font-title);font-size:clamp(1.4rem,3vw,2.2rem);font-weight:700;letter-spacing:0.05em;margin:0.6rem 0 0.5rem;color:var(--white);">
+      Motion &amp; Motor <span style="color:var(--amber);">Control.</span>
+    </h3>
+    <p class="chapter-prose r" style="max-width:640px;">
+      Full closed-loop motor control baked into the language. Steppers, DC drivers, encoders, ESCs, PID — all cross-platform, all one syntax.
+    </p>
+    <div class="v31-status r" style="margin-bottom:0;">
+      <span class="dot-testing"></span>
+      Compiler support live &nbsp;·&nbsp; Hardware testing in progress
+    </div>
+
+    <div class="lib-grid r" style="margin-top:2rem;">
+
+      <div class="lib-card" style="--lib-color:var(--amber)">
+        <span class="lib-icon">🔩</span>
+        <div class="lib-name">Stepper Motors</div>
+        <span class="lib-tag">A4988 · DRV8825 · auto step/dir wiring</span>
+        <div class="lib-desc">Attach by step and direction pin. Set speed in steps/sec. Move exact step counts.</div>
+        <div class="lib-code">
+          <span class="t-kw">attach</span> stepper step <span class="t-num">2</span> dir <span class="t-num">3</span><br>
+          <span class="t-kw">set</span> stepper speed <span class="t-num">500</span><br>
+          <span class="t-kw">move</span> stepper <span class="t-num">200</span>&nbsp;&nbsp;<span class="t-cm"># steps</span>
+        </div>
+      </div>
+
+      <div class="lib-card" style="--lib-color:var(--ice)">
+        <span class="lib-icon">⚡</span>
+        <div class="lib-name">DC Motor Drivers</div>
+        <span class="lib-tag">L298N · TB6612 · enable/forward/reverse</span>
+        <div class="lib-desc">Forward, reverse, stop. Speed from 0–255. No manual PWM or H-bridge juggling.</div>
+        <div class="lib-code">
+          <span class="t-kw">attach</span> motor enable <span class="t-num">9</span> forward <span class="t-num">8</span> reverse <span class="t-num">7</span><br>
+          <span class="t-kw">move</span> motor forward at <span class="t-num">255</span><br>
+          <span class="t-kw">move</span> motor reverse at <span class="t-num">128</span><br>
+          <span class="t-kw">stop</span> motor
+        </div>
+      </div>
+
+      <div class="lib-card" style="--lib-color:var(--code-g)">
+        <span class="lib-icon">🔄</span>
+        <div class="lib-name">Quadrature Encoders</div>
+        <span class="lib-tag">A/B channel · interrupt-driven · position tracking</span>
+        <div class="lib-desc">Read absolute position as a float. Reset to zero at any point. Feeds directly into PID.</div>
+        <div class="lib-code">
+          <span class="t-kw">attach</span> encoder pin_a <span class="t-num">2</span> pin_b <span class="t-num">3</span><br>
+          <span class="t-kw">make</span> float pos = <span class="t-kw">read</span> encoder<br>
+          <span class="t-kw">reset</span> encoder
+        </div>
+      </div>
+
+      <div class="lib-card" style="--lib-color:#c792ea">
+        <span class="lib-icon">🚁</span>
+        <div class="lib-name">Brushless ESCs</div>
+        <span class="lib-tag">PWM throttle · 1000–2000µs · drone & rover</span>
+        <div class="lib-desc">Attach to any PWM pin. Set throttle in standard ESC microsecond values.</div>
+        <div class="lib-code">
+          <span class="t-kw">attach</span> esc pin <span class="t-num">10</span><br>
+          <span class="t-kw">set</span> esc throttle <span class="t-num">1000</span>&nbsp;<span class="t-cm"># armed/idle</span><br>
+          <span class="t-kw">set</span> esc throttle <span class="t-num">1500</span>&nbsp;<span class="t-cm"># half power</span>
+        </div>
+      </div>
+
+      <div class="lib-card" style="--lib-color:var(--blood)">
+        <span class="lib-icon">🎯</span>
+        <div class="lib-name">PID Controllers</div>
+        <span class="lib-tag">kp · ki · kd · closed-loop feedback</span>
+        <div class="lib-desc">Real closed-loop control in four lines. Pair with an encoder or sensor for position/speed regulation.</div>
+        <div class="lib-code">
+          <span class="t-kw">attach</span> pid kp <span class="t-num">2.0</span> ki <span class="t-num">0.5</span> kd <span class="t-num">1.0</span><br>
+          <span class="t-kw">set</span> pid target <span class="t-num">100</span><br>
+          <span class="t-kw">make</span> float out = <span class="t-kw">compute</span> pid pos<br>
+          <span class="t-kw">set</span> pin <span class="t-num">9</span> to out
         </div>
       </div>
 
