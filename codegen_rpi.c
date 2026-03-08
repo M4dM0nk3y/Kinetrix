@@ -244,9 +244,19 @@ static void rpi_expression(CodeGen *gen, ASTNode *node) {
     rpi_emit(gen, "(_uart.read(1) if '_uart' in globals() else 0)");
     break;
   case NODE_SPI_TRANSFER:
-    rpi_emit(gen, "(_spi_transfer(");
+    rpi_emit(gen, "_kx_spi.xfer2([");
     rpi_expression(gen, node->data.spi_transfer.data);
-    rpi_emit(gen, "))");
+    rpi_emit(gen, "])[0]");
+    break;
+
+  case NODE_ENCODER_READ:
+    rpi_emit(gen, "(_kx_encoder_pos if '_kx_encoder_pos' in globals() else 0)");
+    break;
+
+  case NODE_PID_COMPUTE:
+    rpi_emit(gen, "_kx_compute_pid(");
+    rpi_expression(gen, node->data.pid_compute.current_val);
+    rpi_emit(gen, ")");
     break;
   case NODE_PULSE_READ:
     rpi_emit(gen, "time_pulse_us(");
@@ -804,6 +814,157 @@ static void rpi_statement(CodeGen *gen, ASTNode *node) {
   case NODE_LCD_CLEAR:
     rpi_emit_line(gen, "_kx_lcd.clear()");
     break;
+
+  /* --- Wave 2 Wrappers --- */
+  case NODE_STEPPER_ATTACH:
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_stepper_step = int(");
+    rpi_expression(gen, node->data.stepper_attach.step_pin);
+    rpi_emit(gen, ")\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_stepper_dir = int(");
+    rpi_expression(gen, node->data.stepper_attach.dir_pin);
+    rpi_emit(gen, ")\n");
+    rpi_emit_line(gen, "GPIO.setup(_kx_stepper_step, GPIO.OUT)");
+    rpi_emit_line(gen, "GPIO.setup(_kx_stepper_dir, GPIO.OUT)");
+    rpi_emit_line(gen, "_kx_stepper_speed = 100");
+    break;
+  case NODE_STEPPER_SPEED:
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_stepper_speed = max(1, ");
+    rpi_expression(gen, node->data.unary.child);
+    rpi_emit(gen, ")\n");
+    break;
+  case NODE_STEPPER_MOVE:
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_steps = int(");
+    rpi_expression(gen, node->data.stepper_move.steps);
+    rpi_emit(gen, ")\n");
+    rpi_emit_line(gen, "GPIO.output(_kx_stepper_dir, GPIO.HIGH if _kx_steps > "
+                       "0 else GPIO.LOW)");
+    rpi_emit_line(gen, "_kx_delay = 60.0 / (200.0 * _kx_stepper_speed)");
+    rpi_emit_line(gen, "for _ in range(abs(_kx_steps)):");
+    gen->indent_level++;
+    rpi_emit_line(gen, "GPIO.output(_kx_stepper_step, GPIO.HIGH)");
+    rpi_emit_line(gen, "time.sleep(_kx_delay / 2)");
+    rpi_emit_line(gen, "GPIO.output(_kx_stepper_step, GPIO.LOW)");
+    rpi_emit_line(gen, "time.sleep(_kx_delay / 2)");
+    gen->indent_level--;
+    break;
+  case NODE_MOTOR_ATTACH:
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_motor_en = int(");
+    rpi_expression(gen, node->data.motor_attach.en_pin);
+    rpi_emit(gen, ")\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_motor_fwd = int(");
+    rpi_expression(gen, node->data.motor_attach.fwd_pin);
+    rpi_emit(gen, ")\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_motor_rev = int(");
+    rpi_expression(gen, node->data.motor_attach.rev_pin);
+    rpi_emit(gen, ")\n");
+    rpi_emit_line(gen, "GPIO.setup(_kx_motor_fwd, GPIO.OUT)");
+    rpi_emit_line(gen, "GPIO.setup(_kx_motor_rev, GPIO.OUT)");
+    rpi_emit_line(gen, "GPIO.setup(_kx_motor_en, GPIO.OUT)");
+    rpi_emit_line(gen, "_kx_motor_pwm = GPIO.PWM(_kx_motor_en, 1000)");
+    rpi_emit_line(gen, "_kx_motor_pwm.start(0)");
+    break;
+  case NODE_MOTOR_MOVE:
+    if (node->data.motor_move.direction > 0) {
+      rpi_emit_line(gen, "GPIO.output(_kx_motor_fwd, GPIO.HIGH)");
+      rpi_emit_line(gen, "GPIO.output(_kx_motor_rev, GPIO.LOW)");
+    } else {
+      rpi_emit_line(gen, "GPIO.output(_kx_motor_fwd, GPIO.LOW)");
+      rpi_emit_line(gen, "GPIO.output(_kx_motor_rev, GPIO.HIGH)");
+    }
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_motor_pwm.ChangeDutyCycle((");
+    rpi_expression(gen, node->data.motor_move.speed);
+    rpi_emit(gen, ") * 100.0 / 255.0)\n");
+    break;
+  case NODE_MOTOR_STOP:
+    rpi_emit_line(gen, "GPIO.output(_kx_motor_fwd, GPIO.LOW)");
+    rpi_emit_line(gen, "GPIO.output(_kx_motor_rev, GPIO.LOW)");
+    rpi_emit_line(gen, "_kx_motor_pwm.ChangeDutyCycle(0)");
+    break;
+  case NODE_ENCODER_ATTACH:
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_enc_a = int(");
+    rpi_expression(gen, node->data.encoder_attach.pin_a);
+    rpi_emit(gen, ")\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_enc_b = int(");
+    rpi_expression(gen, node->data.encoder_attach.pin_b);
+    rpi_emit(gen, ")\n");
+    rpi_emit_line(gen, "_kx_enc_count = 0");
+    rpi_emit_line(gen,
+                  "GPIO.setup(_kx_enc_a, GPIO.IN, pull_up_down=GPIO.PUD_UP)");
+    rpi_emit_line(gen,
+                  "GPIO.setup(_kx_enc_b, GPIO.IN, pull_up_down=GPIO.PUD_UP)");
+    rpi_emit_line(gen, "def _kx_enc_cb(channel):");
+    gen->indent_level++;
+    rpi_emit_line(gen, "global _kx_enc_count");
+    rpi_emit_line(gen, "if GPIO.input(_kx_enc_b): _kx_enc_count += 1");
+    rpi_emit_line(gen, "else: _kx_enc_count -= 1");
+    gen->indent_level--;
+    rpi_emit_line(
+        gen,
+        "GPIO.add_event_detect(_kx_enc_a, GPIO.RISING, callback=_kx_enc_cb)");
+    break;
+  case NODE_ENCODER_READ:
+    rpi_emit(gen, "_kx_enc_count");
+    break;
+  case NODE_ENCODER_RESET:
+    rpi_emit_line(gen, "global _kx_enc_count; _kx_enc_count = 0");
+    break;
+  case NODE_ESC_ATTACH:
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_esc_pin = int(");
+    rpi_expression(gen, node->data.esc_attach.pin);
+    rpi_emit(gen, ")\n");
+    rpi_emit_line(gen, "GPIO.setup(_kx_esc_pin, GPIO.OUT)");
+    rpi_emit_line(gen, "_kx_esc_pwm = GPIO.PWM(_kx_esc_pin, 50)");
+    rpi_emit_line(gen, "_kx_esc_pwm.start(5) # 1ms pulse (stopped)");
+    break;
+  case NODE_ESC_THROTTLE:
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_throttle_val = ");
+    rpi_expression(gen, node->data.unary.child);
+    rpi_emit(gen, "\n");
+    rpi_emit_line(gen, "_kx_esc_dc = 5.0 + (_kx_throttle_val / 180.0) * 5.0 # "
+                       "Map 0-180 to 5-10% DC (1ms-2ms pulse)");
+    rpi_emit_line(gen, "_kx_esc_pwm.ChangeDutyCycle(_kx_esc_dc)");
+    break;
+  case NODE_PID_ATTACH:
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_pid_kp = ");
+    rpi_expression(gen, node->data.pid_attach.kp);
+    rpi_emit(gen, "\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_pid_ki = ");
+    rpi_expression(gen, node->data.pid_attach.ki);
+    rpi_emit(gen, "\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_pid_kd = ");
+    rpi_expression(gen, node->data.pid_attach.kd);
+    rpi_emit(gen, "\n");
+    rpi_emit_line(gen, "_kx_pid_setpoint = 0.0");
+    rpi_emit_line(gen, "_kx_pid_last_err = 0.0");
+    rpi_emit_line(gen, "_kx_pid_integral = 0.0");
+    rpi_emit_line(gen, "_kx_pid_last_time = time.time()");
+    break;
+  case NODE_PID_TARGET:
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_pid_setpoint = ");
+    rpi_expression(gen, node->data.unary.child);
+    rpi_emit(gen, "\n");
+    break;
+  case NODE_PID_COMPUTE:
+    rpi_emit(gen, "_kx_compute_pid(");
+    rpi_expression(gen, node->data.pid_compute.current_val);
+    rpi_emit(gen, ")");
+    break;
   case NODE_TONE:
     // RPi PWM starts by verifying object doesn't exist yet, if not it registers
     // it globally, and changes its frequency using GPIO.ChangeFrequency. Wait,
@@ -895,6 +1056,43 @@ void codegen_generate_rpi(CodeGen *gen, ASTNode *program) {
   rpi_emit_line(gen, "    _cs  = digitalio.DigitalInOut(board.CE0)");
   rpi_emit_line(gen, "    mcp  = MCP.MCP3008(_spi, _cs)");
   rpi_emit_line(gen, "except: mcp = None  # No ADC connected\n");
+
+  rpi_emit_line(gen, "# Wave 2 Globals");
+  rpi_emit_line(gen, "_kx_stepper_step = -1");
+  rpi_emit_line(gen, "_kx_stepper_dir = -1");
+  rpi_emit_line(gen, "_kx_stepper_speed = 100");
+  rpi_emit_line(gen, "_kx_motor_en = -1");
+  rpi_emit_line(gen, "_kx_motor_fwd = -1");
+  rpi_emit_line(gen, "_kx_motor_rev = -1");
+  rpi_emit_line(gen, "_kx_enc_a = -1");
+  rpi_emit_line(gen, "_kx_enc_b = -1");
+  rpi_emit_line(gen, "_kx_enc_count = 0");
+  rpi_emit_line(gen, "_kx_esc_pin = -1");
+  rpi_emit_line(gen, "_kx_pid_kp = 0");
+  rpi_emit_line(gen, "_kx_pid_ki = 0");
+  rpi_emit_line(gen, "_kx_pid_kd = 0");
+  rpi_emit_line(gen, "_kx_pid_setpoint = 0");
+  rpi_emit_line(gen, "_kx_pid_last_err = 0");
+  rpi_emit_line(gen, "_kx_pid_integral = 0");
+  rpi_emit_line(gen, "_kx_pid_last_time = time.time()\n");
+
+  rpi_emit_line(gen, "def _kx_compute_pid(current_val):");
+  rpi_emit_line(
+      gen,
+      "    global _kx_pid_kp, _kx_pid_ki, _kx_pid_kd, _kx_pid_setpoint, \\");
+  rpi_emit_line(
+      gen, "           _kx_pid_last_err, _kx_pid_integral, _kx_pid_last_time");
+  rpi_emit_line(gen, "    now = time.time()");
+  rpi_emit_line(gen, "    dt = now - _kx_pid_last_time");
+  rpi_emit_line(gen, "    if dt <= 0.0: dt = 0.001");
+  rpi_emit_line(gen, "    err = _kx_pid_setpoint - current_val");
+  rpi_emit_line(gen, "    _kx_pid_integral += err * dt");
+  rpi_emit_line(gen, "    deriv = (err - _kx_pid_last_err) / dt");
+  rpi_emit_line(gen, "    out = (_kx_pid_kp * err) + (_kx_pid_ki * "
+                     "_kx_pid_integral) + (_kx_pid_kd * deriv)");
+  rpi_emit_line(gen, "    _kx_pid_last_err = err");
+  rpi_emit_line(gen, "    _kx_pid_last_time = now");
+  rpi_emit_line(gen, "    return out\n");
 
   rpi_emit_line(gen, "def _i2c_read(addr, reg):");
   rpi_emit_line(gen, "    if '_i2c' in globals():");

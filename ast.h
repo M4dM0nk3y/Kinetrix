@@ -181,7 +181,7 @@ typedef enum {
   NODE_TASK_START,  /* start task name */
   NODE_SHARED_DECL, /* shared make T name = expr */
 
-  /* Library wrappers */
+  /* Library wrappers - Wave 1 */
   NODE_SERVO_ATTACH,   /* attach servo pin N */
   NODE_SERVO_MOVE,     /* move servo to angle */
   NODE_SERVO_DETACH,   /* detach servo pin N */
@@ -196,6 +196,22 @@ typedef enum {
   NODE_LCD_INIT,       /* attach lcd columns C rows R */
   NODE_LCD_PRINT,      /* lcd print "text" line N */
   NODE_LCD_CLEAR,      /* lcd clear */
+
+  /* Library wrappers - Wave 2 (Motion & Motor) */
+  NODE_STEPPER_ATTACH, /* attach stepper step S dir D */
+  NODE_STEPPER_SPEED,  /* set stepper speed V */
+  NODE_STEPPER_MOVE,   /* move stepper steps */
+  NODE_MOTOR_ATTACH,   /* attach motor enable E forward F reverse R */
+  NODE_MOTOR_MOVE,     /* move motor <dir> at speed */
+  NODE_MOTOR_STOP,     /* stop motor */
+  NODE_ENCODER_ATTACH, /* attach encoder pin_a A pin_b B */
+  NODE_ENCODER_READ,   /* read encoder */
+  NODE_ENCODER_RESET,  /* reset encoder */
+  NODE_ESC_ATTACH,     /* attach esc pin N */
+  NODE_ESC_THROTTLE,   /* set esc throttle N */
+  NODE_PID_ATTACH,     /* attach pid kp P ki I kd D */
+  NODE_PID_TARGET,     /* set pid target N */
+  NODE_PID_COMPUTE,    /* compute pid current */
 
   /* Program root */
   NODE_PROGRAM
@@ -553,6 +569,47 @@ struct ASTNode {
       ASTNode *line;
     } lcd_print;
 
+    /* Stepper Motor */
+    struct {
+      ASTNode *step_pin;
+      ASTNode *dir_pin;
+    } stepper_attach;
+    struct {
+      ASTNode *steps;
+    } stepper_move;
+
+    /* DC Motor */
+    struct {
+      ASTNode *en_pin;
+      ASTNode *fwd_pin;
+      ASTNode *rev_pin;
+    } motor_attach;
+    struct {
+      int direction; /* 1=forward, -1=reverse */
+      ASTNode *speed;
+    } motor_move;
+
+    /* Encoder */
+    struct {
+      ASTNode *pin_a;
+      ASTNode *pin_b;
+    } encoder_attach;
+
+    /* BLDC ESC */
+    struct {
+      ASTNode *pin;
+    } esc_attach;
+
+    /* PID Controller */
+    struct {
+      ASTNode *kp;
+      ASTNode *ki;
+      ASTNode *kd;
+    } pid_attach;
+    struct {
+      ASTNode *current_val;
+    } pid_compute;
+
     /* Radio */
     struct {
       ASTNode *peer_id;
@@ -751,7 +808,7 @@ ASTNode *ast_radio_send(ASTNode *peer_id, ASTNode *data);
 ASTNode *ast_radio_available();
 ASTNode *ast_radio_read();
 
-/* --- Library Wrapper APIs --- */
+/* --- Library Wrapper APIs (Wave 1) --- */
 ASTNode *ast_servo_attach(ASTNode *pin);
 ASTNode *ast_servo_move(ASTNode *angle);
 ASTNode *ast_servo_detach(ASTNode *pin);
@@ -766,5 +823,25 @@ ASTNode *ast_neopixel_clear();
 ASTNode *ast_lcd_init(ASTNode *cols, ASTNode *rows);
 ASTNode *ast_lcd_print(ASTNode *text, ASTNode *line);
 ASTNode *ast_lcd_clear();
+
+/* --- Library Wrapper APIs (Wave 2 - Motion & Motor) --- */
+ASTNode *ast_stepper_attach(ASTNode *step_pin, ASTNode *dir_pin);
+ASTNode *ast_stepper_speed(ASTNode *speed);
+ASTNode *ast_stepper_move(ASTNode *steps);
+
+ASTNode *ast_motor_attach(ASTNode *en_pin, ASTNode *fwd_pin, ASTNode *rev_pin);
+ASTNode *ast_motor_move(int direction, ASTNode *speed);
+ASTNode *ast_motor_stop();
+
+ASTNode *ast_encoder_attach(ASTNode *pin_a, ASTNode *pin_b);
+ASTNode *ast_encoder_read();
+ASTNode *ast_encoder_reset();
+
+ASTNode *ast_esc_attach(ASTNode *pin);
+ASTNode *ast_esc_throttle(ASTNode *throttle);
+
+ASTNode *ast_pid_attach(ASTNode *kp, ASTNode *ki, ASTNode *kd);
+ASTNode *ast_pid_target(ASTNode *target);
+ASTNode *ast_pid_compute(ASTNode *current);
 
 #endif /* KINETRIX_AST_H */

@@ -1,0 +1,37 @@
+// Kinetrix Wave 2 Hardware Wrappers Test Script
+
+// 1. Initialize Components
+attach stepper step 5 dir 6
+attach motor enable 9 forward 10 reverse 11
+attach encoder pin_a 2 pin_b 3
+attach esc pin 4
+attach pid kp 2.0 ki 0.5 kd 1.2
+
+// 2. Control Motor and Stepper
+move stepper 200
+set stepper speed 120
+
+move motor forward at 255
+wait 1000
+move motor reverse at 128
+wait 1000
+stop motor
+
+// 3. Control ESC
+set esc throttle 90
+
+// 4. Closed-loop control example with Encoder + PID
+set pid target 100
+repeat 10 {
+  pos = read encoder
+  out = compute pid pos
+  
+  if out > 0 {
+    move motor forward at out
+  } else {
+    move motor reverse at (out * -1)
+  }
+  wait 100
+}
+
+reset encoder

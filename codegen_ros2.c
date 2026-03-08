@@ -5,378 +5,619 @@
  * Run with:   ros2 run <pkg> <node_name>
  */
 
-#include "codegen.h"
 #include "ast.h"
+#include "codegen.h"
+#include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
-#include <stdarg.h>
 
 static void ros2_expr(CodeGen *gen, ASTNode *node);
 static void ros2_stmt(CodeGen *gen, ASTNode *node);
 
 static void ros2_expr(CodeGen *gen, ASTNode *node) {
-    if (!node) return;
-    switch (node->type) {
-        case NODE_NUMBER:     codegen_emit(gen, "%g", node->data.number.value); break;
-        case NODE_STRING:     codegen_emit(gen, "std::string(\"%s\")", node->data.string.value); break;
-        case NODE_BOOL:       codegen_emit(gen, "%s", node->data.boolean.value ? "true" : "false"); break;
-        case NODE_IDENTIFIER: codegen_emit(gen, "%s_", node->data.identifier.name); break;
-        case NODE_BINARY_OP: {
-            const char *op = "+";
-            switch (node->data.binary_op.op) {
-                case OP_ADD: op="+"; break; case OP_SUB: op="-"; break;
-                case OP_MUL: op="*"; break; case OP_DIV: op="/"; break;
-                case OP_MOD: op="%"; break; case OP_EQ: op="=="; break;
-                case OP_NEQ: op="!="; break; case OP_LT: op="<"; break;
-                case OP_GT: op=">"; break; case OP_LTE: op="<="; break;
-                case OP_GTE: op=">="; break; case OP_AND: op="&&"; break;
-                case OP_OR:  op="||"; break; default: break;
-            }
-            if (node->data.binary_op.op == OP_ADD && 
-                ((node->data.binary_op.left->value_type && node->data.binary_op.left->value_type->kind == TYPE_STRING) || 
-                 (node->data.binary_op.right->value_type && node->data.binary_op.right->value_type->kind == TYPE_STRING))) {
-                
-                int r_string = (node->data.binary_op.right->value_type && node->data.binary_op.right->value_type->kind == TYPE_STRING) || node->data.binary_op.right->type == NODE_STRING;
-                int l_string = (node->data.binary_op.left->value_type && node->data.binary_op.left->value_type->kind == TYPE_STRING) || node->data.binary_op.left->type == NODE_STRING;
-
-                codegen_emit(gen, "(");
-                if (!l_string) codegen_emit(gen, "std::to_string(");
-                ros2_expr(gen, node->data.binary_op.left);
-                if (!l_string) codegen_emit(gen, ")");
-                
-                codegen_emit(gen, " + ");
-                
-                if (!r_string) codegen_emit(gen, "std::to_string(");
-                ros2_expr(gen, node->data.binary_op.right);
-                if (!r_string) codegen_emit(gen, ")");
-                codegen_emit(gen, ")");
-            } else {
-                codegen_emit(gen, "(");
-                ros2_expr(gen, node->data.binary_op.left);
-                codegen_emit(gen, " %s ", op);
-                ros2_expr(gen, node->data.binary_op.right);
-                codegen_emit(gen, ")");
-            }
-            break;
-        }
-        case NODE_UNARY_OP:
-            codegen_emit(gen, node->data.unary_op.op == OP_NOT ? "!(" : "-(");
-            ros2_expr(gen, node->data.unary_op.operand);
-            codegen_emit(gen, ")");
-            break;
-        case NODE_CALL: {
-            const char *nm = node->data.call.name;
-            if (strcmp(nm, "map") == 0 && node->data.call.arg_count == 5) {
-                codegen_emit(gen, "(int)((");
-                ros2_expr(gen, node->data.call.args[0]); codegen_emit(gen, " - ");
-                ros2_expr(gen, node->data.call.args[1]); codegen_emit(gen, ") * (");
-                ros2_expr(gen, node->data.call.args[4]); codegen_emit(gen, " - ");
-                ros2_expr(gen, node->data.call.args[3]); codegen_emit(gen, ") / (");
-                ros2_expr(gen, node->data.call.args[2]); codegen_emit(gen, " - ");
-                ros2_expr(gen, node->data.call.args[1]); codegen_emit(gen, ") + ");
-                ros2_expr(gen, node->data.call.args[3]); codegen_emit(gen, ")");
-            } else if (strcmp(nm, "constrain") == 0) {
-                codegen_emit(gen, "std::max(");
-                ros2_expr(gen, node->data.call.args[1]);
-                codegen_emit(gen, ", std::min(");
-                ros2_expr(gen, node->data.call.args[2]);
-                codegen_emit(gen, ", ");
-                ros2_expr(gen, node->data.call.args[0]);
-                codegen_emit(gen, "))");
-            } else {
-                codegen_emit(gen, "%s(", nm);
-                for (int i = 0; i < node->data.call.arg_count; i++) {
-                    if (i > 0) codegen_emit(gen, ", ");
-                    ros2_expr(gen, node->data.call.args[i]);
-                }
-                codegen_emit(gen, ")");
-            }
-            break;
-        }
-        case NODE_ANALOG_READ:
-            /* In ROS2, analog reads come from topic subscriptions */
-            codegen_emit(gen, "sensor_val_");
-            ros2_expr(gen, node->data.gpio.pin);
-            break;
-        case NODE_GPIO_READ:
-            codegen_emit(gen, "pin_state_");
-            ros2_expr(gen, node->data.gpio.pin);
-            break;
-        case NODE_RADIO_AVAILABLE:
-            /* Placeholder for ros2 topic subscription if implemented */
-            codegen_emit(gen, "0.0");
-            break;
-        case NODE_RADIO_READ:
-            codegen_emit(gen, "0.0");
-            break;
-        default: codegen_emit(gen, "0.0"); break;
+  if (!node)
+    return;
+  switch (node->type) {
+  case NODE_NUMBER:
+    codegen_emit(gen, "%g", node->data.number.value);
+    break;
+  case NODE_STRING:
+    codegen_emit(gen, "std::string(\"%s\")", node->data.string.value);
+    break;
+  case NODE_BOOL:
+    codegen_emit(gen, "%s", node->data.boolean.value ? "true" : "false");
+    break;
+  case NODE_IDENTIFIER:
+    codegen_emit(gen, "%s_", node->data.identifier.name);
+    break;
+  case NODE_BINARY_OP: {
+    const char *op = "+";
+    switch (node->data.binary_op.op) {
+    case OP_ADD:
+      op = "+";
+      break;
+    case OP_SUB:
+      op = "-";
+      break;
+    case OP_MUL:
+      op = "*";
+      break;
+    case OP_DIV:
+      op = "/";
+      break;
+    case OP_MOD:
+      op = "%";
+      break;
+    case OP_EQ:
+      op = "==";
+      break;
+    case OP_NEQ:
+      op = "!=";
+      break;
+    case OP_LT:
+      op = "<";
+      break;
+    case OP_GT:
+      op = ">";
+      break;
+    case OP_LTE:
+      op = "<=";
+      break;
+    case OP_GTE:
+      op = ">=";
+      break;
+    case OP_AND:
+      op = "&&";
+      break;
+    case OP_OR:
+      op = "||";
+      break;
+    default:
+      break;
     }
+    if (node->data.binary_op.op == OP_ADD &&
+        ((node->data.binary_op.left->value_type &&
+          node->data.binary_op.left->value_type->kind == TYPE_STRING) ||
+         (node->data.binary_op.right->value_type &&
+          node->data.binary_op.right->value_type->kind == TYPE_STRING))) {
+
+      int r_string =
+          (node->data.binary_op.right->value_type &&
+           node->data.binary_op.right->value_type->kind == TYPE_STRING) ||
+          node->data.binary_op.right->type == NODE_STRING;
+      int l_string =
+          (node->data.binary_op.left->value_type &&
+           node->data.binary_op.left->value_type->kind == TYPE_STRING) ||
+          node->data.binary_op.left->type == NODE_STRING;
+
+      codegen_emit(gen, "(");
+      if (!l_string)
+        codegen_emit(gen, "std::to_string(");
+      ros2_expr(gen, node->data.binary_op.left);
+      if (!l_string)
+        codegen_emit(gen, ")");
+
+      codegen_emit(gen, " + ");
+
+      if (!r_string)
+        codegen_emit(gen, "std::to_string(");
+      ros2_expr(gen, node->data.binary_op.right);
+      if (!r_string)
+        codegen_emit(gen, ")");
+      codegen_emit(gen, ")");
+    } else {
+      codegen_emit(gen, "(");
+      ros2_expr(gen, node->data.binary_op.left);
+      codegen_emit(gen, " %s ", op);
+      ros2_expr(gen, node->data.binary_op.right);
+      codegen_emit(gen, ")");
+    }
+    break;
+  }
+  case NODE_UNARY_OP:
+    codegen_emit(gen, node->data.unary_op.op == OP_NOT ? "!(" : "-(");
+    ros2_expr(gen, node->data.unary_op.operand);
+    codegen_emit(gen, ")");
+    break;
+  case NODE_CALL: {
+    const char *nm = node->data.call.name;
+    if (strcmp(nm, "map") == 0 && node->data.call.arg_count == 5) {
+      codegen_emit(gen, "(int)((");
+      ros2_expr(gen, node->data.call.args[0]);
+      codegen_emit(gen, " - ");
+      ros2_expr(gen, node->data.call.args[1]);
+      codegen_emit(gen, ") * (");
+      ros2_expr(gen, node->data.call.args[4]);
+      codegen_emit(gen, " - ");
+      ros2_expr(gen, node->data.call.args[3]);
+      codegen_emit(gen, ") / (");
+      ros2_expr(gen, node->data.call.args[2]);
+      codegen_emit(gen, " - ");
+      ros2_expr(gen, node->data.call.args[1]);
+      codegen_emit(gen, ") + ");
+      ros2_expr(gen, node->data.call.args[3]);
+      codegen_emit(gen, ")");
+    } else if (strcmp(nm, "constrain") == 0) {
+      codegen_emit(gen, "std::max(");
+      ros2_expr(gen, node->data.call.args[1]);
+      codegen_emit(gen, ", std::min(");
+      ros2_expr(gen, node->data.call.args[2]);
+      codegen_emit(gen, ", ");
+      ros2_expr(gen, node->data.call.args[0]);
+      codegen_emit(gen, "))");
+    } else {
+      codegen_emit(gen, "%s(", nm);
+      for (int i = 0; i < node->data.call.arg_count; i++) {
+        if (i > 0)
+          codegen_emit(gen, ", ");
+        ros2_expr(gen, node->data.call.args[i]);
+      }
+      codegen_emit(gen, ")");
+    }
+    break;
+  }
+  case NODE_ANALOG_READ:
+    /* In ROS2, analog reads come from topic subscriptions */
+    codegen_emit(gen, "sensor_val_");
+    ros2_expr(gen, node->data.gpio.pin);
+    break;
+  case NODE_GPIO_READ:
+    codegen_emit(gen, "pin_state_");
+    ros2_expr(gen, node->data.gpio.pin);
+    break;
+  case NODE_RADIO_AVAILABLE:
+    /* Placeholder for ros2 topic subscription if implemented */
+    codegen_emit(gen, "0.0");
+    break;
+  case NODE_RADIO_READ:
+    codegen_emit(gen, "0.0");
+    break;
+  case NODE_ENCODER_READ:
+    codegen_emit(gen, "_kx_encoder_pos");
+    break;
+  case NODE_PID_COMPUTE:
+    codegen_emit(gen, "_kx_compute_pid(");
+    ros2_expr(gen, node->data.pid_compute.current_val);
+    codegen_emit(gen, ")");
+    break;
+  default:
+    codegen_emit(gen, "0.0");
+    break;
+  }
 }
 
 static void ros2_stmt(CodeGen *gen, ASTNode *node) {
-    if (!node) return;
-    switch (node->type) {
-        case NODE_VAR_DECL:
-            codegen_emit_indent(gen);
-            if (node->data.var_decl.is_const) {
-                codegen_emit(gen, "const ");
-            }
-            codegen_emit(gen, "double %s_", node->data.var_decl.name);
-            if (node->data.var_decl.initializer) { codegen_emit(gen, " = "); ros2_expr(gen, node->data.var_decl.initializer); }
-            else codegen_emit(gen, " = 0.0");
-            codegen_emit(gen, ";\n");
-            break;
-        case NODE_ASSIGNMENT:
-            codegen_emit_indent(gen);
-            ros2_expr(gen, node->data.assignment.target);
-            codegen_emit(gen, " = ");
-            ros2_expr(gen, node->data.assignment.value);
-            codegen_emit(gen, ";\n");
-            break;
-        case NODE_IF:
-            codegen_emit_indent(gen);
-            codegen_emit(gen, "if (");
-            ros2_expr(gen, node->data.if_stmt.condition);
-            codegen_emit(gen, ") {\n");
-            gen->indent_level++;
-            ros2_stmt(gen, node->data.if_stmt.then_block);
-            gen->indent_level--;
-            codegen_emit_line(gen, "}");
-            if (node->data.if_stmt.else_block) {
-                codegen_emit(gen, " else {\n");
-                gen->indent_level++;
-                ros2_stmt(gen, node->data.if_stmt.else_block);
-                gen->indent_level--;
-                codegen_emit_line(gen, "}");
-            }
-            codegen_emit(gen, "\n");
-            break;
-        case NODE_WHILE:
-            codegen_emit_indent(gen);
-            codegen_emit(gen, "while (");
-            ros2_expr(gen, node->data.while_loop.condition);
-            codegen_emit(gen, ") {\n");
-            gen->indent_level++;
-            ros2_stmt(gen, node->data.while_loop.body);
-            gen->indent_level--;
-            codegen_emit_line(gen, "}\n");
-            break;
-        case NODE_REPEAT: {
-            int id = gen->loop_counter++;
-            codegen_emit_line(gen, "for (int _i%d = 0; _i%d < (int)(", id, id);
-            ros2_expr(gen, node->data.repeat_loop.count);
-            codegen_emit(gen, "); _i%d++) {\n", id);
-            gen->indent_level++;
-            ros2_stmt(gen, node->data.repeat_loop.body);
-            gen->indent_level--;
-            codegen_emit_line(gen, "}\n");
-            break;
-        }
-        case NODE_FOR: {
-            int loop_id = gen->loop_counter++;
-            codegen_emit_indent(gen);
-            codegen_emit(gen, "int _start_%d = (", loop_id);
-            ros2_expr(gen, node->data.for_loop.start_expr);
-            codegen_emit(gen, ");\n");
-            
-            codegen_emit_indent(gen);
-            codegen_emit(gen, "int _end_%d = (", loop_id);
-            ros2_expr(gen, node->data.for_loop.end_expr);
-            codegen_emit(gen, ");\n");
-            
-            codegen_emit_indent(gen);
-            if (node->data.for_loop.step_expr) {
-                codegen_emit(gen, "int _step_%d = (", loop_id);
-                ros2_expr(gen, node->data.for_loop.step_expr);
-                codegen_emit(gen, ");\n");
-            } else {
-                codegen_emit(gen, "int _step_%d = (_start_%d <= _end_%d) ? 1 : -1;\n", loop_id, loop_id, loop_id);
-            }
-            
-            codegen_emit_line(gen, "for (int %s_ = _start_%d; _step_%d > 0 ? %s_ <= _end_%d : %s_ >= _end_%d; %s_ += _step_%d) {\n",
-                node->data.for_loop.var_name, loop_id, loop_id,
-                node->data.for_loop.var_name, loop_id,
-                node->data.for_loop.var_name, loop_id,
-                node->data.for_loop.var_name, loop_id);
-            gen->indent_level++;
-            ros2_stmt(gen, node->data.for_loop.body);
-            gen->indent_level--;
-            codegen_emit_line(gen, "}\n");
-            break;
-        }
-        case NODE_FOREVER:
-            /* In ROS2, forever loops become timer callbacks */
-            codegen_emit_line(gen, "/* loop forever → ROS2 timer callback */\n");
-            ros2_stmt(gen, node->data.forever_loop.body);
-            break;
-        case NODE_BLOCK:
-            for (int i = 0; i < node->data.block.statement_count; i++)
-                ros2_stmt(gen, node->data.block.statements[i]);
-            break;
-        case NODE_DEVICE_DEF:
-            codegen_emit_indent(gen);
-            codegen_emit(gen, "const int %s = ", node->data.device_def.device_name);
-            ros2_expr(gen, node->data.device_def.address_or_baud);
-            codegen_emit(gen, ";\n");
-            break;
-        case NODE_BREAK:
-            codegen_emit_line(gen, "break;\n");
-            break;
-        case NODE_CONTINUE:
-            codegen_emit_line(gen, "continue;\n");
-            break;
-        case NODE_RETURN:
-            codegen_emit_indent(gen); codegen_emit(gen, "return");
-            if (node->data.return_stmt.value) { codegen_emit(gen, " "); ros2_expr(gen, node->data.return_stmt.value); }
-            codegen_emit(gen, ";\n");
-            break;
-        case NODE_DEVICE_WRITE:
-        case NODE_STRUCT_DEF:
-        case NODE_I2C_DEVICE_WRITE:
-        case NODE_I2C_DEVICE_READ_ARRAY:
-            /* Placeholders for ROS2 I2C expansion */
-            codegen_emit_indent(gen);
-            codegen_emit(gen, "/* I2C / Struct / Device operations unmapped in ros2 frontend */\n");
-            break;
-        case NODE_GPIO_WRITE: {
-            /* Publish HIGH/LOW to /gpio/pin_N topic */
-            codegen_emit_indent(gen);
-            codegen_emit(gen, "{ auto _m = std_msgs::msg::Bool(); _m.data = (bool)(");
-            ros2_expr(gen, node->data.gpio.value);
-            codegen_emit(gen, "); gpio_pub_->publish(_m); }\n");
-            break;
-        }
-        case NODE_ANALOG_WRITE: {
-            codegen_emit_indent(gen);
-            codegen_emit(gen, "{ auto _m = std_msgs::msg::Float64(); _m.data = ");
-            ros2_expr(gen, node->data.gpio.value);
-            codegen_emit(gen, "; pwm_pub_->publish(_m); }\n");
-            break;
-        }
-        case NODE_WAIT:
-            codegen_emit_indent(gen);
-            codegen_emit(gen, "rclcpp::sleep_for(std::chrono::milliseconds((int64_t)(");
-            ros2_expr(gen, node->data.unary.child);
-            codegen_emit(gen, ")));\n");
-            break;
-        case NODE_PRINT:
-            codegen_emit_indent(gen);
-            codegen_emit(gen, "RCLCPP_INFO(this->get_logger(), \"%%s\", std::to_string(");
-            ros2_expr(gen, node->data.unary.child);
-            codegen_emit(gen, ").c_str());\n");
-            break;
-            
-        case NODE_PRINTLN:
-            codegen_emit_indent(gen);
-            codegen_emit(gen, "RCLCPP_INFO(this->get_logger(), \"%%s\", std::to_string(");
-            ros2_expr(gen, node->data.unary.child);
-            codegen_emit(gen, ").c_str());\n");
-            break;
-        case NODE_CALL:
-            codegen_emit_indent(gen); ros2_expr(gen, node); codegen_emit(gen, ";\n");
-            break;
-        case NODE_FUNCTION_DEF:
-            if (node->data.function_def.is_extern) {
-                codegen_emit_line(gen, "/* Extern %s function: %s */", 
-                                  node->data.function_def.extern_lang, 
-                                  node->data.function_def.name);
-                break;
-            }
-            codegen_emit_line(gen, "double %s(", node->data.function_def.name);
-            for (int i = 0; i < node->data.function_def.param_count; i++) {
-                if (i > 0) codegen_emit(gen, ", ");
-                codegen_emit(gen, "double %s", node->data.function_def.param_names[i]);
-            }
-            codegen_emit(gen, ") {\n");
-            gen->indent_level++;
-            ros2_stmt(gen, node->data.function_def.body);
-            gen->indent_level--;
-            codegen_emit_line(gen, "}\n");
-            break;
-        case NODE_RADIO_SEND:
-            /* Expected to publish to a radio output topic for fleet comms */
-            codegen_emit_indent(gen);
-            codegen_emit(gen, "/* ROS2 Radio Send Placeholder */\n");
-            break;
-        default: break;
+  if (!node)
+    return;
+  switch (node->type) {
+  case NODE_VAR_DECL:
+    codegen_emit_indent(gen);
+    if (node->data.var_decl.is_const) {
+      codegen_emit(gen, "const ");
     }
+    codegen_emit(gen, "double %s_", node->data.var_decl.name);
+    if (node->data.var_decl.initializer) {
+      codegen_emit(gen, " = ");
+      ros2_expr(gen, node->data.var_decl.initializer);
+    } else
+      codegen_emit(gen, " = 0.0");
+    codegen_emit(gen, ";\n");
+    break;
+  case NODE_ASSIGNMENT:
+    codegen_emit_indent(gen);
+    ros2_expr(gen, node->data.assignment.target);
+    codegen_emit(gen, " = ");
+    ros2_expr(gen, node->data.assignment.value);
+    codegen_emit(gen, ";\n");
+    break;
+  case NODE_IF:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "if (");
+    ros2_expr(gen, node->data.if_stmt.condition);
+    codegen_emit(gen, ") {\n");
+    gen->indent_level++;
+    ros2_stmt(gen, node->data.if_stmt.then_block);
+    gen->indent_level--;
+    codegen_emit_line(gen, "}");
+    if (node->data.if_stmt.else_block) {
+      codegen_emit(gen, " else {\n");
+      gen->indent_level++;
+      ros2_stmt(gen, node->data.if_stmt.else_block);
+      gen->indent_level--;
+      codegen_emit_line(gen, "}");
+    }
+    codegen_emit(gen, "\n");
+    break;
+  case NODE_WHILE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "while (");
+    ros2_expr(gen, node->data.while_loop.condition);
+    codegen_emit(gen, ") {\n");
+    gen->indent_level++;
+    ros2_stmt(gen, node->data.while_loop.body);
+    gen->indent_level--;
+    codegen_emit_line(gen, "}\n");
+    break;
+  case NODE_REPEAT: {
+    int id = gen->loop_counter++;
+    codegen_emit_line(gen, "for (int _i%d = 0; _i%d < (int)(", id, id);
+    ros2_expr(gen, node->data.repeat_loop.count);
+    codegen_emit(gen, "); _i%d++) {\n", id);
+    gen->indent_level++;
+    ros2_stmt(gen, node->data.repeat_loop.body);
+    gen->indent_level--;
+    codegen_emit_line(gen, "}\n");
+    break;
+  }
+  case NODE_FOR: {
+    int loop_id = gen->loop_counter++;
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "int _start_%d = (", loop_id);
+    ros2_expr(gen, node->data.for_loop.start_expr);
+    codegen_emit(gen, ");\n");
+
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "int _end_%d = (", loop_id);
+    ros2_expr(gen, node->data.for_loop.end_expr);
+    codegen_emit(gen, ");\n");
+
+    codegen_emit_indent(gen);
+    if (node->data.for_loop.step_expr) {
+      codegen_emit(gen, "int _step_%d = (", loop_id);
+      ros2_expr(gen, node->data.for_loop.step_expr);
+      codegen_emit(gen, ");\n");
+    } else {
+      codegen_emit(gen, "int _step_%d = (_start_%d <= _end_%d) ? 1 : -1;\n",
+                   loop_id, loop_id, loop_id);
+    }
+
+    codegen_emit_line(gen,
+                      "for (int %s_ = _start_%d; _step_%d > 0 ? %s_ <= _end_%d "
+                      ": %s_ >= _end_%d; %s_ += _step_%d) {\n",
+                      node->data.for_loop.var_name, loop_id, loop_id,
+                      node->data.for_loop.var_name, loop_id,
+                      node->data.for_loop.var_name, loop_id,
+                      node->data.for_loop.var_name, loop_id);
+    gen->indent_level++;
+    ros2_stmt(gen, node->data.for_loop.body);
+    gen->indent_level--;
+    codegen_emit_line(gen, "}\n");
+    break;
+  }
+  case NODE_FOREVER:
+    /* In ROS2, forever loops become timer callbacks */
+    codegen_emit_line(gen, "/* loop forever → ROS2 timer callback */\n");
+    ros2_stmt(gen, node->data.forever_loop.body);
+    break;
+  case NODE_BLOCK:
+    for (int i = 0; i < node->data.block.statement_count; i++)
+      ros2_stmt(gen, node->data.block.statements[i]);
+    break;
+  case NODE_DEVICE_DEF:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "const int %s = ", node->data.device_def.device_name);
+    ros2_expr(gen, node->data.device_def.address_or_baud);
+    codegen_emit(gen, ";\n");
+    break;
+  case NODE_BREAK:
+    codegen_emit_line(gen, "break;\n");
+    break;
+  case NODE_CONTINUE:
+    codegen_emit_line(gen, "continue;\n");
+    break;
+  case NODE_RETURN:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "return");
+    if (node->data.return_stmt.value) {
+      codegen_emit(gen, " ");
+      ros2_expr(gen, node->data.return_stmt.value);
+    }
+    codegen_emit(gen, ";\n");
+    break;
+  case NODE_DEVICE_WRITE:
+  case NODE_STRUCT_DEF:
+  case NODE_I2C_DEVICE_WRITE:
+  case NODE_I2C_DEVICE_READ_ARRAY:
+    /* Placeholders for ROS2 I2C expansion */
+    codegen_emit_indent(gen);
+    codegen_emit(
+        gen,
+        "/* I2C / Struct / Device operations unmapped in ros2 frontend */\n");
+    break;
+  case NODE_GPIO_WRITE: {
+    /* Publish HIGH/LOW to /gpio/pin_N topic */
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "{ auto _m = std_msgs::msg::Bool(); _m.data = (bool)(");
+    ros2_expr(gen, node->data.gpio.value);
+    codegen_emit(gen, "); gpio_pub_->publish(_m); }\n");
+    break;
+  }
+  case NODE_ANALOG_WRITE: {
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "{ auto _m = std_msgs::msg::Float64(); _m.data = ");
+    ros2_expr(gen, node->data.gpio.value);
+    codegen_emit(gen, "; pwm_pub_->publish(_m); }\n");
+    break;
+  }
+  case NODE_WAIT:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "rclcpp::sleep_for(std::chrono::milliseconds((int64_t)(");
+    ros2_expr(gen, node->data.unary.child);
+    codegen_emit(gen, ")));\n");
+    break;
+  case NODE_PRINT:
+    codegen_emit_indent(gen);
+    codegen_emit(gen,
+                 "RCLCPP_INFO(this->get_logger(), \"%%s\", std::to_string(");
+    ros2_expr(gen, node->data.unary.child);
+    codegen_emit(gen, ").c_str());\n");
+    break;
+
+  case NODE_PRINTLN:
+    codegen_emit_indent(gen);
+    codegen_emit(gen,
+                 "RCLCPP_INFO(this->get_logger(), \"%%s\", std::to_string(");
+    ros2_expr(gen, node->data.unary.child);
+    codegen_emit(gen, ").c_str());\n");
+    break;
+  case NODE_CALL:
+    codegen_emit_indent(gen);
+    ros2_expr(gen, node);
+    codegen_emit(gen, ";\n");
+    break;
+  case NODE_FUNCTION_DEF:
+    if (node->data.function_def.is_extern) {
+      codegen_emit_line(gen, "/* Extern %s function: %s */",
+                        node->data.function_def.extern_lang,
+                        node->data.function_def.name);
+      break;
+    }
+    codegen_emit_line(gen, "double %s(", node->data.function_def.name);
+    for (int i = 0; i < node->data.function_def.param_count; i++) {
+      if (i > 0)
+        codegen_emit(gen, ", ");
+      codegen_emit(gen, "double %s", node->data.function_def.param_names[i]);
+    }
+    codegen_emit(gen, ") {\n");
+    gen->indent_level++;
+    ros2_stmt(gen, node->data.function_def.body);
+    gen->indent_level--;
+    codegen_emit_line(gen, "}\n");
+    break;
+  case NODE_RADIO_SEND:
+    /* Expected to publish to a radio output topic for fleet comms */
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "/* ROS2 Radio Send Placeholder */\n");
+    break;
+
+  /* --- Wave 2 Wrappers --- */
+  case NODE_STEPPER_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "// Stepper attach (Step: ");
+    ros2_expr(gen, node->data.stepper_attach.step_pin);
+    codegen_emit(gen, ", Dir: ");
+    ros2_expr(gen, node->data.stepper_attach.dir_pin);
+    codegen_emit(gen, ")\n");
+    break;
+  case NODE_STEPPER_SPEED:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "stepper_speed_ = std::max(1.0, (double)(");
+    ros2_expr(gen, node->data.unary.child);
+    codegen_emit(gen, "));\n");
+    break;
+  case NODE_STEPPER_MOVE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "{ auto _m = std_msgs::msg::Float64(); _m.data = ");
+    ros2_expr(gen, node->data.stepper_move.steps);
+    codegen_emit(gen, "; stepper_pub_->publish(_m); }\n");
+    break;
+  case NODE_MOTOR_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "// Motor attach (En: ");
+    ros2_expr(gen, node->data.motor_attach.en_pin);
+    codegen_emit(gen, ", Fwd: ");
+    ros2_expr(gen, node->data.motor_attach.fwd_pin);
+    codegen_emit(gen, ")\n");
+    break;
+  case NODE_MOTOR_MOVE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "{ auto _m = std_msgs::msg::Float64(); _m.data = ");
+    ros2_expr(gen, node->data.motor_move.speed);
+    codegen_emit(gen, " * %d; motor_pub_->publish(_m); }\n",
+                 node->data.motor_move.direction);
+    break;
+  case NODE_MOTOR_STOP:
+    codegen_emit_line(gen, "{ auto _m = std_msgs::msg::Float64(); _m.data = "
+                           "0.0; motor_pub_->publish(_m); }");
+    break;
+  case NODE_ENCODER_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "// Encoder attach (A: ");
+    ros2_expr(gen, node->data.encoder_attach.pin_a);
+    codegen_emit(gen, ", B: ");
+    ros2_expr(gen, node->data.encoder_attach.pin_b);
+    codegen_emit(gen, ")\n");
+    break;
+  case NODE_ENCODER_READ:
+    codegen_emit(gen, "encoder_count_"); // Assuming a subscriber updates this
+    break;
+  case NODE_ENCODER_RESET:
+    codegen_emit_line(gen, "encoder_count_ = 0.0;");
+    break;
+  case NODE_ESC_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "// ESC attach (Pin: ");
+    ros2_expr(gen, node->data.esc_attach.pin);
+    codegen_emit(gen, ")\n");
+    break;
+  case NODE_ESC_THROTTLE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "{ auto _m = std_msgs::msg::Float64(); _m.data = ");
+    ros2_expr(gen, node->data.unary.child);
+    codegen_emit(gen, "; esc_pub_->publish(_m); }\n");
+    break;
+  case NODE_PID_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "pid_kp_ = ");
+    ros2_expr(gen, node->data.pid_attach.kp);
+    codegen_emit(gen, "; ");
+    codegen_emit(gen, "pid_ki_ = ");
+    ros2_expr(gen, node->data.pid_attach.ki);
+    codegen_emit(gen, "; ");
+    codegen_emit(gen, "pid_kd_ = ");
+    ros2_expr(gen, node->data.pid_attach.kd);
+    codegen_emit(gen, ";\n");
+    codegen_emit_line(gen, "pid_integral_ = 0.0; pid_last_err_ = 0.0;");
+    codegen_emit_line(gen, "pid_last_time_ = this->now();");
+    break;
+  case NODE_PID_TARGET:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "pid_setpoint_ = ");
+    ros2_expr(gen, node->data.unary.child);
+    codegen_emit(gen, ";\n");
+    break;
+  case NODE_PID_COMPUTE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "compute_pid(");
+    ros2_expr(gen, node->data.pid_compute.current_val);
+    codegen_emit(gen, ")");
+    break;
+  default:
+    break;
+  }
 }
 
 void codegen_generate_ros2(CodeGen *gen, ASTNode *program) {
-    if (!program || program->type != NODE_PROGRAM) return;
+  if (!program || program->type != NODE_PROGRAM)
+    return;
 
-    codegen_emit_line(gen, "// Generated by Kinetrix Compiler (Target: ROS2)");
-    codegen_emit_line(gen, "// Build: Place in a ROS2 package src/ and run: colcon build");
-    codegen_emit_line(gen, "// Run:   ros2 run <your_pkg> kinetrix_node\n");
-    codegen_emit_line(gen, "#include <rclcpp/rclcpp.hpp>");
-    codegen_emit_line(gen, "#include <std_msgs/msg/bool.hpp>");
-    codegen_emit_line(gen, "#include <std_msgs/msg/float64.hpp>");
-    codegen_emit_line(gen, "#include <std_msgs/msg/string.hpp>");
-    codegen_emit_line(gen, "#include <chrono>");
-    codegen_emit_line(gen, "#include <algorithm>  // std::min, std::max");
-    codegen_emit_line(gen, "#include <cmath>\n");
-    codegen_emit_line(gen, "using namespace std::chrono_literals;\n");
+  codegen_emit_line(gen, "// Generated by Kinetrix Compiler (Target: ROS2)");
+  codegen_emit_line(
+      gen, "// Build: Place in a ROS2 package src/ and run: colcon build");
+  codegen_emit_line(gen, "// Run:   ros2 run <your_pkg> kinetrix_node\n");
+  codegen_emit_line(gen, "#include <rclcpp/rclcpp.hpp>");
+  codegen_emit_line(gen, "#include <std_msgs/msg/bool.hpp>");
+  codegen_emit_line(gen, "#include <std_msgs/msg/float64.hpp>");
+  codegen_emit_line(gen, "#include <std_msgs/msg/string.hpp>");
+  codegen_emit_line(gen, "#include <chrono>");
+  codegen_emit_line(gen, "#include <algorithm>  // std::min, std::max");
+  codegen_emit_line(gen, "#include <cmath>\n");
+  codegen_emit_line(gen, "using namespace std::chrono_literals;\n");
 
-    /* Standalone helper functions before the class */
-    ASTNode *block = program->data.program.main_block;
-    if (block && block->type == NODE_BLOCK) {
-        for (int i = 0; i < block->data.block.statement_count; i++) {
-            ASTNode *s = block->data.block.statements[i];
-            if (s && s->type == NODE_FUNCTION_DEF) {
-                if (s->data.function_def.is_extern) {
-                    codegen_emit_line(gen, "extern double %s(", s->data.function_def.name);
-                    for (int j = 0; j < s->data.function_def.param_count; j++) {
-                        if (j > 0) codegen_emit(gen, ", ");
-                        codegen_emit(gen, "double %s", s->data.function_def.param_names[j]);
-                    }
-                    codegen_emit(gen, ");\n\n");
-                    continue;
-                }
-                ros2_stmt(gen, s);
-            }
+  /* Standalone helper functions before the class */
+  ASTNode *block = program->data.program.main_block;
+  if (block && block->type == NODE_BLOCK) {
+    for (int i = 0; i < block->data.block.statement_count; i++) {
+      ASTNode *s = block->data.block.statements[i];
+      if (s && s->type == NODE_FUNCTION_DEF) {
+        if (s->data.function_def.is_extern) {
+          codegen_emit_line(gen, "extern double %s(",
+                            s->data.function_def.name);
+          for (int j = 0; j < s->data.function_def.param_count; j++) {
+            if (j > 0)
+              codegen_emit(gen, ", ");
+            codegen_emit(gen, "double %s", s->data.function_def.param_names[j]);
+          }
+          codegen_emit(gen, ");\n\n");
+          continue;
         }
+        ros2_stmt(gen, s);
+      }
     }
+  }
 
-    /* ROS2 Node class */
-    codegen_emit_line(gen, "class KinetrixNode : public rclcpp::Node {");
-    codegen_emit_line(gen, "public:");
-    gen->indent_level++;
-    codegen_emit_line(gen, "KinetrixNode() : Node(\"kinetrix_node\") {");
-    gen->indent_level++;
-    codegen_emit_line(gen, "gpio_pub_ = create_publisher<std_msgs::msg::Bool>(\"/gpio/out\", 10);");
-    codegen_emit_line(gen, "pwm_pub_  = create_publisher<std_msgs::msg::Float64>(\"/pwm/out\", 10);");
-    codegen_emit_line(gen, "// Timer drives the main robot loop");
-    codegen_emit_line(gen, "timer_ = create_wall_timer(10ms, std::bind(&KinetrixNode::loop, this));");
-    gen->indent_level--;
-    codegen_emit_line(gen, "}\n");
+  /* ROS2 Node class */
+  codegen_emit_line(gen, "class KinetrixNode : public rclcpp::Node {");
+  codegen_emit_line(gen, "public:");
+  gen->indent_level++;
+  codegen_emit_line(gen, "KinetrixNode() : Node(\"kinetrix_node\") {");
+  gen->indent_level++;
+  codegen_emit_line(
+      gen,
+      "gpio_pub_ = create_publisher<std_msgs::msg::Bool>(\"/gpio/out\", 10);");
+  codegen_emit_line(
+      gen, "pwm_pub_  = create_publisher<std_msgs::msg::Float64>(\"/pwm/out\", "
+           "10);");
+  codegen_emit_line(
+      gen,
+      "stepper_pub_ = "
+      "create_publisher<std_msgs::msg::Float64>(\"/kinetrix/stepper\", 10);");
+  codegen_emit_line(
+      gen,
+      "motor_pub_ = "
+      "create_publisher<std_msgs::msg::Float64>(\"/kinetrix/motor\", 10);");
+  codegen_emit_line(
+      gen, "esc_pub_ = "
+           "create_publisher<std_msgs::msg::Float64>(\"/kinetrix/esc\", 10);");
+  codegen_emit_line(gen, "// Timer drives the main robot loop");
+  codegen_emit_line(gen, "timer_ = create_wall_timer(10ms, "
+                         "std::bind(&KinetrixNode::loop, this));");
+  gen->indent_level--;
+  codegen_emit_line(gen, "}\n");
 
-    /* Declare member variables for pins */
-    codegen_emit_line(gen, "private:");
-    codegen_emit_line(gen, "  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr gpio_pub_;");
-    codegen_emit_line(gen, "  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pwm_pub_;");
-    codegen_emit_line(gen, "  rclcpp::TimerBase::SharedPtr timer_;");
-    codegen_emit_line(gen, "  double sensor_val_0_ = 0.0, pin_state_0_ = 0.0;\n");
+  /* Declare member variables for pins */
+  codegen_emit_line(gen, "private:");
+  codegen_emit_line(
+      gen, "  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr gpio_pub_;");
+  codegen_emit_line(
+      gen, "  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pwm_pub_;");
+  codegen_emit_line(
+      gen,
+      "  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr stepper_pub_;");
+  codegen_emit_line(
+      gen,
+      "  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr motor_pub_;");
+  codegen_emit_line(
+      gen, "  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr esc_pub_;");
+  codegen_emit_line(gen, "  rclcpp::TimerBase::SharedPtr timer_;");
+  codegen_emit_line(gen, "  double sensor_val_0_ = 0.0, pin_state_0_ = 0.0;");
 
-    codegen_emit_line(gen, "  void loop() {");
-    gen->indent_level++;
-    if (block && block->type == NODE_BLOCK) {
-        for (int i = 0; i < block->data.block.statement_count; i++) {
-            ASTNode *s = block->data.block.statements[i];
-            if (s && s->type != NODE_FUNCTION_DEF) ros2_stmt(gen, s);
-        }
-    } else if (block) {
-        ros2_stmt(gen, block);
+  /* Wave 2 Globals */
+  codegen_emit_line(gen, "  double stepper_speed_ = 100.0;");
+  codegen_emit_line(gen, "  double encoder_count_ = 0.0;");
+  codegen_emit_line(gen,
+                    "  double pid_kp_ = 0.0, pid_ki_ = 0.0, pid_kd_ = 0.0;");
+  codegen_emit_line(gen, "  double pid_setpoint_ = 0.0, pid_last_err_ = 0.0, "
+                         "pid_integral_ = 0.0;");
+  codegen_emit_line(gen, "  rclcpp::Time pid_last_time_;");
+
+  /* PID Helper Function */
+  codegen_emit_line(gen, "  void compute_pid(double current_val) {");
+  codegen_emit_line(gen, "    auto now = this->now();");
+  codegen_emit_line(gen, "    double dt = (now - pid_last_time_).seconds();");
+  codegen_emit_line(gen, "    if (dt <= 0.0) dt = 0.001;");
+  codegen_emit_line(gen, "    double err = pid_setpoint_ - current_val;");
+  codegen_emit_line(gen, "    pid_integral_ += err * dt;");
+  codegen_emit_line(gen, "    double deriv = (err - pid_last_err_) / dt;");
+  codegen_emit_line(gen, "    double out = (pid_kp_ * err) + (pid_ki_ * "
+                         "pid_integral_) + (pid_kd_ * deriv);");
+  codegen_emit_line(gen, "    pid_last_err_ = err;");
+  codegen_emit_line(gen, "    pid_last_time_ = now;");
+  codegen_emit_line(gen, "    // Output handling requires user application to "
+                         "subscribe/route Kinetrix state");
+  codegen_emit_line(gen, "  }\n");
+
+  codegen_emit_line(gen, "  void loop() {");
+  gen->indent_level++;
+  if (block && block->type == NODE_BLOCK) {
+    for (int i = 0; i < block->data.block.statement_count; i++) {
+      ASTNode *s = block->data.block.statements[i];
+      if (s && s->type != NODE_FUNCTION_DEF)
+        ros2_stmt(gen, s);
     }
-    gen->indent_level--;
-    codegen_emit_line(gen, "  }");
-    gen->indent_level--;
-    codegen_emit_line(gen, "};\n");
+  } else if (block) {
+    ros2_stmt(gen, block);
+  }
+  gen->indent_level--;
+  codegen_emit_line(gen, "  }");
+  gen->indent_level--;
+  codegen_emit_line(gen, "};\n");
 
-    codegen_emit_line(gen, "int main(int argc, char **argv) {");
-    codegen_emit_line(gen, "  rclcpp::init(argc, argv);");
-    codegen_emit_line(gen, "  rclcpp::spin(std::make_shared<KinetrixNode>());");
-    codegen_emit_line(gen, "  rclcpp::shutdown();");
-    codegen_emit_line(gen, "  return 0;");
-    codegen_emit_line(gen, "}");
+  codegen_emit_line(gen, "int main(int argc, char **argv) {");
+  codegen_emit_line(gen, "  rclcpp::init(argc, argv);");
+  codegen_emit_line(gen, "  rclcpp::spin(std::make_shared<KinetrixNode>());");
+  codegen_emit_line(gen, "  rclcpp::shutdown();");
+  codegen_emit_line(gen, "  return 0;");
+  codegen_emit_line(gen, "}");
 }

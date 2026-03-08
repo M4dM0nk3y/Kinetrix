@@ -581,6 +581,17 @@ void lexer_next_token(Lexer *lexer) {
       lexer->current_token.type = TOK_RADIO_AVAILABLE;
     else if (!strcmp(v, "radio_read"))
       lexer->current_token.type = TOK_RADIO_READ;
+    /* Wave 2 Wrappers */
+    else if (!strcmp(v, "stepper"))
+      lexer->current_token.type = TOK_STEPPER;
+    else if (!strcmp(v, "motor"))
+      lexer->current_token.type = TOK_MOTOR;
+    else if (!strcmp(v, "encoder"))
+      lexer->current_token.type = TOK_ENCODER;
+    else if (!strcmp(v, "esc"))
+      lexer->current_token.type = TOK_ESC;
+    else if (!strcmp(v, "pid"))
+      lexer->current_token.type = TOK_PID;
     /* V3.0 handled as TOK_ID in parser */
     else if (!strcmp(v, "not"))
       lexer->current_token.type = TOK_NOT;
@@ -985,10 +996,106 @@ static ASTNode *parse_primary(Parser *parser) {
     return ast_bool(0);
   }
 
-  // Identifier or function call
+  // Identifier or built-in pseudo-functions
   if (parser_match(parser, TOK_ID)) {
     char *name = strdup(tok.value);
     lexer_next_token(parser->lexer);
+
+    // compute pid <expr>
+    if (strcmp(name, "compute") == 0) {
+      if (!parser_match(parser, TOK_PID)) {
+        error_report(parser->errors, ERROR_SYNTAX,
+                     parser->lexer->current_token.line,
+                     parser->lexer->current_token.column,
+                     "Expected 'pid' after 'compute'");
+      } else {
+        lexer_next_token(parser->lexer);
+      }
+      ASTNode *expr = parse_expression(parser);
+      free(name);
+      return ast_pid_compute(expr);
+    }
+
+    // map(value, fromLow, fromHigh, toLow, toHigh)
+    if (strcmp(name, "map") == 0) {
+      parser_expect(parser, TOK_LPAREN);
+      ASTNode *v = parse_expression(parser);
+      parser_expect(parser, TOK_COMMA);
+      ASTNode *fl = parse_expression(parser);
+      parser_expect(parser, TOK_COMMA);
+      ASTNode *fh = parse_expression(parser);
+      parser_expect(parser, TOK_COMMA);
+      ASTNode *tl = parse_expression(parser);
+      parser_expect(parser, TOK_COMMA);
+      ASTNode *th = parse_expression(parser);
+      parser_expect(parser, TOK_RPAREN);
+      ASTNode **args = malloc(sizeof(ASTNode *) * 5);
+      args[0] = v;
+      args[1] = fl;
+      args[2] = fh;
+      args[3] = tl;
+      args[4] = th;
+      free(name);
+      return ast_call("map", args, 5);
+    }
+
+    // constrain(value, min, max)
+    if (strcmp(name, "constrain") == 0) {
+      parser_expect(parser, TOK_LPAREN);
+      ASTNode *v = parse_expression(parser);
+      parser_expect(parser, TOK_COMMA);
+      ASTNode *mn = parse_expression(parser);
+      parser_expect(parser, TOK_COMMA);
+      ASTNode *mx = parse_expression(parser);
+      parser_expect(parser, TOK_RPAREN);
+      ASTNode **args = malloc(sizeof(ASTNode *) * 3);
+      args[0] = v;
+      args[1] = mn;
+      args[2] = mx;
+      free(name);
+      return ast_call("constrain", args, 3);
+    }
+
+    // abs(value)
+    if (strcmp(name, "abs") == 0) {
+      parser_expect(parser, TOK_LPAREN);
+      ASTNode *v = parse_expression(parser);
+      parser_expect(parser, TOK_RPAREN);
+      ASTNode **args = malloc(sizeof(ASTNode *) * 1);
+      args[0] = v;
+      free(name);
+      return ast_call("abs", args, 1);
+    }
+
+    // random(min, max)
+    if (strcmp(name, "random") == 0) {
+      parser_expect(parser, TOK_LPAREN);
+      ASTNode *mn = parse_expression(parser);
+      parser_expect(parser, TOK_COMMA);
+      ASTNode *mx = parse_expression(parser);
+      parser_expect(parser, TOK_RPAREN);
+      ASTNode **args = malloc(sizeof(ASTNode *) * 2);
+      args[0] = mn;
+      args[1] = mx;
+      free(name);
+      return ast_call("random", args, 2);
+    }
+
+    // min(a, b) and max(a, b)
+    if (strcmp(name, "min") == 0 || strcmp(name, "max") == 0) {
+      char fname[8];
+      strcpy(fname, name);
+      parser_expect(parser, TOK_LPAREN);
+      ASTNode *a = parse_expression(parser);
+      parser_expect(parser, TOK_COMMA);
+      ASTNode *b = parse_expression(parser);
+      parser_expect(parser, TOK_RPAREN);
+      ASTNode **args = malloc(sizeof(ASTNode *) * 2);
+      args[0] = a;
+      args[1] = b;
+      free(name);
+      return ast_call(fname, args, 2);
+    }
 
     // Function call
     if (parser_match(parser, TOK_LPAREN)) {
@@ -1186,6 +1293,11 @@ static ASTNode *parse_primary(Parser *parser) {
       return ast_dht_read_humid();
     }
 
+    /* read encoder (Wave 2) */
+    if (parser_match(parser, TOK_ENCODER)) {
+      lexer_next_token(parser->lexer);
+      return ast_encoder_read();
+    }
     /* receive spi becomes an error; transfer spi handled below */
     if (parser_match(parser, TOK_ID)) {
       /* read <devicename>  OR  read <devicename> register <reg> */
@@ -1240,98 +1352,11 @@ static ASTNode *parse_primary(Parser *parser) {
     return ast_cast(t, operand);
   }
 
-  // Special built-in functions: map, constrain, abs, not
-  if (parser_match(parser, TOK_ID)) {
-    const char *name = parser->lexer->current_token.value;
-
-    // map(value, fromLow, fromHigh, toLow, toHigh)
-    if (strcmp(name, "map") == 0) {
-      lexer_next_token(parser->lexer);
-      parser_expect(parser, TOK_LPAREN);
-      ASTNode *v = parse_expression(parser);
-      parser_expect(parser, TOK_COMMA);
-      ASTNode *fl = parse_expression(parser);
-      parser_expect(parser, TOK_COMMA);
-      ASTNode *fh = parse_expression(parser);
-      parser_expect(parser, TOK_COMMA);
-      ASTNode *tl = parse_expression(parser);
-      parser_expect(parser, TOK_COMMA);
-      ASTNode *th = parse_expression(parser);
-      parser_expect(parser, TOK_RPAREN);
-      // map(v, fl, fh, tl, th) → generate as call node
-      ASTNode **args = malloc(sizeof(ASTNode *) * 5);
-      args[0] = v;
-      args[1] = fl;
-      args[2] = fh;
-      args[3] = tl;
-      args[4] = th;
-      return ast_call("map", args, 5);
-    }
-
-    // constrain(value, min, max)
-    if (strcmp(name, "constrain") == 0) {
-      lexer_next_token(parser->lexer);
-      parser_expect(parser, TOK_LPAREN);
-      ASTNode *v = parse_expression(parser);
-      parser_expect(parser, TOK_COMMA);
-      ASTNode *mn = parse_expression(parser);
-      parser_expect(parser, TOK_COMMA);
-      ASTNode *mx = parse_expression(parser);
-      parser_expect(parser, TOK_RPAREN);
-      ASTNode **args = malloc(sizeof(ASTNode *) * 3);
-      args[0] = v;
-      args[1] = mn;
-      args[2] = mx;
-      return ast_call("constrain", args, 3);
-    }
-
-    // abs(value)
-    if (strcmp(name, "abs") == 0) {
-      lexer_next_token(parser->lexer);
-      parser_expect(parser, TOK_LPAREN);
-      ASTNode *v = parse_expression(parser);
-      parser_expect(parser, TOK_RPAREN);
-      ASTNode **args = malloc(sizeof(ASTNode *) * 1);
-      args[0] = v;
-      return ast_call("abs", args, 1);
-    }
-
-    // not expr
-    if (parser_match(parser, TOK_NOT)) {
-      lexer_next_token(parser->lexer);
-      ASTNode *operand = parse_primary(parser);
-      return ast_unary_op(OP_NOT, operand);
-    }
-
-    // random(min, max)
-    if (strcmp(name, "random") == 0) {
-      lexer_next_token(parser->lexer);
-      parser_expect(parser, TOK_LPAREN);
-      ASTNode *mn = parse_expression(parser);
-      parser_expect(parser, TOK_COMMA);
-      ASTNode *mx = parse_expression(parser);
-      parser_expect(parser, TOK_RPAREN);
-      ASTNode **args = malloc(sizeof(ASTNode *) * 2);
-      args[0] = mn;
-      args[1] = mx;
-      return ast_call("random", args, 2);
-    }
-
-    // min(a, b) and max(a, b)
-    if (strcmp(name, "min") == 0 || strcmp(name, "max") == 0) {
-      char fname[8];
-      strcpy(fname, name);
-      lexer_next_token(parser->lexer);
-      parser_expect(parser, TOK_LPAREN);
-      ASTNode *a = parse_expression(parser);
-      parser_expect(parser, TOK_COMMA);
-      ASTNode *b = parse_expression(parser);
-      parser_expect(parser, TOK_RPAREN);
-      ASTNode **args = malloc(sizeof(ASTNode *) * 2);
-      args[0] = a;
-      args[1] = b;
-      return ast_call(fname, args, 2);
-    }
+  // not expr (Standalone, TOK_NOT is its own token type)
+  if (parser_match(parser, TOK_NOT)) {
+    lexer_next_token(parser->lexer);
+    ASTNode *operand = parse_primary(parser);
+    return ast_unary_op(OP_NOT, operand);
   }
 
   error_report(parser->errors, ERROR_SYNTAX, tok.line, tok.column,
@@ -1615,6 +1640,42 @@ static ASTNode *parse_statement(Parser *parser) {
       ASTNode *b = parse_expression(parser);
       return ast_neopixel_set(index, r, g, b);
     }
+
+    /* --- Wave 2 Wrappers --- */
+    if (parser_match(parser, TOK_STEPPER)) {
+      lexer_next_token(parser->lexer);
+      if (!parser_match_id(parser, "speed")) {
+        error_report(parser->errors, ERROR_SYNTAX,
+                     parser->lexer->current_token.line,
+                     parser->lexer->current_token.column, "Expected 'speed'");
+      } else
+        lexer_next_token(parser->lexer);
+      ASTNode *speed = parse_expression(parser);
+      return ast_stepper_speed(speed);
+    }
+    if (parser_match(parser, TOK_ESC)) {
+      lexer_next_token(parser->lexer);
+      if (!parser_match_id(parser, "throttle")) {
+        error_report(
+            parser->errors, ERROR_SYNTAX, parser->lexer->current_token.line,
+            parser->lexer->current_token.column, "Expected 'throttle'");
+      } else
+        lexer_next_token(parser->lexer);
+      ASTNode *throttle = parse_expression(parser);
+      return ast_esc_throttle(throttle);
+    }
+    if (parser_match(parser, TOK_PID)) {
+      lexer_next_token(parser->lexer);
+      if (!parser_match_id(parser, "target")) {
+        error_report(parser->errors, ERROR_SYNTAX,
+                     parser->lexer->current_token.line,
+                     parser->lexer->current_token.column, "Expected 'target'");
+      } else
+        lexer_next_token(parser->lexer);
+      ASTNode *t = parse_expression(parser);
+      return ast_pid_target(t);
+    }
+
     if (parser_match(parser, TOK_PIN)) {
       lexer_next_token(parser->lexer);
       ASTNode *pin = parse_expression(parser);
@@ -2092,59 +2153,191 @@ static ASTNode *parse_statement(Parser *parser) {
   /* attach lcd columns C rows R */
   if (parser_match_id(parser, "attach")) {
     lexer_next_token(parser->lexer);
-    const char *what = parser->lexer->current_token.value;
 
-    if (strcmp(what, "servo") == 0) {
+    /* --- Wave 1 Wrappers --- */
+    if (parser_match(parser, TOK_SERVO)) {
       lexer_next_token(parser->lexer);
-      if (parser_match(parser, TOK_PIN))
-        lexer_next_token(parser->lexer);
+      parser_expect(parser, TOK_PIN);
       ASTNode *pin = parse_expression(parser);
       return ast_servo_attach(pin);
     }
-    if (strcmp(what, "dht11") == 0) {
+    if (parser_match_id(parser, "dht11") || parser_match_id(parser, "dht22")) {
+      int type = parser_match_id(parser, "dht11") ? 11 : 22;
       lexer_next_token(parser->lexer);
-      if (parser_match(parser, TOK_PIN))
-        lexer_next_token(parser->lexer);
+      parser_expect(parser, TOK_PIN);
       ASTNode *pin = parse_expression(parser);
-      return ast_dht_attach(pin, 11);
+      return ast_dht_attach(pin, type);
     }
-    if (strcmp(what, "dht22") == 0) {
+    if (parser_match_id(parser, "strip")) {
       lexer_next_token(parser->lexer);
-      if (parser_match(parser, TOK_PIN))
-        lexer_next_token(parser->lexer);
+      parser_expect(parser, TOK_PIN);
       ASTNode *pin = parse_expression(parser);
-      return ast_dht_attach(pin, 22);
-    }
-    if (strcmp(what, "strip") == 0) {
-      lexer_next_token(parser->lexer);
-      if (parser_match(parser, TOK_PIN))
+      if (!parser_match_id(parser, "count")) {
+        error_report(parser->errors, ERROR_SYNTAX,
+                     parser->lexer->current_token.line,
+                     parser->lexer->current_token.column, "Expected 'count'");
+      } else {
         lexer_next_token(parser->lexer);
-      ASTNode *pin = parse_expression(parser);
-      if (parser_match_id(parser, "count"))
-        lexer_next_token(parser->lexer);
+      }
       ASTNode *count = parse_expression(parser);
       return ast_neopixel_init(pin, count);
     }
-    if (strcmp(what, "lcd") == 0) {
+    if (parser_match_id(parser, "lcd")) {
       lexer_next_token(parser->lexer);
-      if (parser_match_id(parser, "columns"))
+      if (!parser_match_id(parser, "columns")) {
+        error_report(parser->errors, ERROR_SYNTAX,
+                     parser->lexer->current_token.line,
+                     parser->lexer->current_token.column, "Expected 'columns'");
+      } else {
         lexer_next_token(parser->lexer);
+      }
       ASTNode *cols = parse_expression(parser);
-      if (parser_match_id(parser, "rows"))
+      if (!parser_match_id(parser, "rows")) {
+        error_report(parser->errors, ERROR_SYNTAX,
+                     parser->lexer->current_token.line,
+                     parser->lexer->current_token.column, "Expected 'rows'");
+      } else {
         lexer_next_token(parser->lexer);
+      }
       ASTNode *rows = parse_expression(parser);
       return ast_lcd_init(cols, rows);
     }
+
+    /* --- Wave 2 Wrappers --- */
+    if (parser_match(parser, TOK_STEPPER)) {
+      lexer_next_token(parser->lexer);
+      if (!parser_match_id(parser, "step")) {
+        error_report(parser->errors, ERROR_SYNTAX,
+                     parser->lexer->current_token.line,
+                     parser->lexer->current_token.column, "Expected 'step'");
+      } else {
+        lexer_next_token(parser->lexer);
+      }
+      ASTNode *step_pin = parse_expression(parser);
+      if (!parser_match_id(parser, "dir")) {
+        error_report(parser->errors, ERROR_SYNTAX,
+                     parser->lexer->current_token.line,
+                     parser->lexer->current_token.column, "Expected 'dir'");
+      } else {
+        lexer_next_token(parser->lexer);
+      }
+      ASTNode *dir_pin = parse_expression(parser);
+      return ast_stepper_attach(step_pin, dir_pin);
+    }
+    if (parser_match(parser, TOK_MOTOR)) {
+      lexer_next_token(parser->lexer);
+      if (!parser_match_id(parser, "enable") &&
+          !parser_match(parser, TOK_ENABLE)) {
+        error_report(parser->errors, ERROR_SYNTAX,
+                     parser->lexer->current_token.line,
+                     parser->lexer->current_token.column, "Expected 'enable'");
+      } else {
+        lexer_next_token(parser->lexer);
+      }
+      ASTNode *en_pin = parse_expression(parser);
+      if (!parser_match_id(parser, "forward")) {
+        error_report(parser->errors, ERROR_SYNTAX,
+                     parser->lexer->current_token.line,
+                     parser->lexer->current_token.column, "Expected 'forward'");
+      } else {
+        lexer_next_token(parser->lexer);
+      }
+      ASTNode *fwd_pin = parse_expression(parser);
+      if (!parser_match_id(parser, "reverse")) {
+        error_report(parser->errors, ERROR_SYNTAX,
+                     parser->lexer->current_token.line,
+                     parser->lexer->current_token.column, "Expected 'reverse'");
+      } else {
+        lexer_next_token(parser->lexer);
+      }
+      ASTNode *rev_pin = parse_expression(parser);
+      return ast_motor_attach(en_pin, fwd_pin, rev_pin);
+    }
+    if (parser_match(parser, TOK_ENCODER)) {
+      lexer_next_token(parser->lexer);
+      if (!parser_match_id(parser, "pin_a")) {
+        error_report(parser->errors, ERROR_SYNTAX,
+                     parser->lexer->current_token.line,
+                     parser->lexer->current_token.column, "Expected 'pin_a'");
+      } else {
+        lexer_next_token(parser->lexer);
+      }
+      ASTNode *pin_a = parse_expression(parser);
+      if (!parser_match_id(parser, "pin_b")) {
+        error_report(parser->errors, ERROR_SYNTAX,
+                     parser->lexer->current_token.line,
+                     parser->lexer->current_token.column, "Expected 'pin_b'");
+      } else {
+        lexer_next_token(parser->lexer);
+      }
+      ASTNode *pin_b = parse_expression(parser);
+      return ast_encoder_attach(pin_a, pin_b);
+    }
+    if (parser_match(parser, TOK_ESC)) {
+      lexer_next_token(parser->lexer);
+      parser_expect(parser, TOK_PIN);
+      ASTNode *pin = parse_expression(parser);
+      return ast_esc_attach(pin);
+    }
+    if (parser_match(parser, TOK_PID)) {
+      lexer_next_token(parser->lexer);
+      if (!parser_match_id(parser, "kp")) {
+        error_report(parser->errors, ERROR_SYNTAX,
+                     parser->lexer->current_token.line,
+                     parser->lexer->current_token.column, "Expected 'kp'");
+      } else {
+        lexer_next_token(parser->lexer);
+      }
+      ASTNode *kp = parse_expression(parser);
+      if (!parser_match_id(parser, "ki")) {
+        error_report(parser->errors, ERROR_SYNTAX,
+                     parser->lexer->current_token.line,
+                     parser->lexer->current_token.column, "Expected 'ki'");
+      } else {
+        lexer_next_token(parser->lexer);
+      }
+      ASTNode *ki = parse_expression(parser);
+      if (!parser_match_id(parser, "kd")) {
+        error_report(parser->errors, ERROR_SYNTAX,
+                     parser->lexer->current_token.line,
+                     parser->lexer->current_token.column, "Expected 'kd'");
+      } else {
+        lexer_next_token(parser->lexer);
+      }
+      ASTNode *kd = parse_expression(parser);
+      return ast_pid_attach(kp, ki, kd);
+    }
   }
 
-  /* move servo to N */
+  /* move servo/stepper/motor */
   if (parser_match_id(parser, "move")) {
     lexer_next_token(parser->lexer);
-    if (parser_match(parser, TOK_SERVO) || parser_match_id(parser, "servo")) {
+    if (parser_match(parser, TOK_SERVO)) {
       lexer_next_token(parser->lexer);
       parser_expect(parser, TOK_TO);
       ASTNode *angle = parse_expression(parser);
       return ast_servo_move(angle);
+    }
+    if (parser_match(parser, TOK_STEPPER)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *steps = parse_expression(parser);
+      return ast_stepper_move(steps);
+    }
+    if (parser_match(parser, TOK_MOTOR)) {
+      lexer_next_token(parser->lexer);
+      int dir = 1; /* Default forward */
+      if (parser_match_id(parser, "forward")) {
+        dir = 1;
+        lexer_next_token(parser->lexer);
+      } else if (parser_match_id(parser, "reverse")) {
+        dir = -1;
+        lexer_next_token(parser->lexer);
+      }
+      if (parser_match_id(parser, "at")) {
+        lexer_next_token(parser->lexer);
+      }
+      ASTNode *speed = parse_expression(parser);
+      return ast_motor_move(dir, speed);
     }
   }
 
@@ -2157,6 +2350,19 @@ static ASTNode *parse_statement(Parser *parser) {
         lexer_next_token(parser->lexer);
       ASTNode *pin = parse_expression(parser);
       return ast_servo_detach(pin);
+    }
+  }
+
+  /* stop motor */
+  if (parser_match(parser, TOK_STOP)) {
+    lexer_next_token(parser->lexer);
+    if (parser_match(parser, TOK_I2C)) {
+      lexer_next_token(parser->lexer);
+      return ast_i2c_stop();
+    }
+    if (parser_match(parser, TOK_MOTOR)) {
+      lexer_next_token(parser->lexer);
+      return ast_motor_stop();
     }
   }
 
@@ -2176,6 +2382,19 @@ static ASTNode *parse_statement(Parser *parser) {
       lexer_next_token(parser->lexer);
       return ast_neopixel_clear();
     }
+  }
+
+  /* reset encoder */
+  if (parser_match_id(parser, "reset")) {
+    lexer_next_token(parser->lexer);
+    if (!parser_match(parser, TOK_ENCODER)) {
+      error_report(parser->errors, ERROR_SYNTAX,
+                   parser->lexer->current_token.line,
+                   parser->lexer->current_token.column, "Expected 'encoder'");
+    } else {
+      lexer_next_token(parser->lexer);
+    }
+    return ast_encoder_reset();
   }
 
   /* lcd print "text" line N  /  lcd clear */
@@ -2743,9 +2962,13 @@ static ASTNode *parse_block(Parser *parser) {
     } else {
       // CRITICAL FIX: If statement is NULL, we must advance to avoid infinite
       // loop This happens when we encounter an unexpected token
-      error_report(
-          parser->errors, ERROR_SYNTAX, parser->lexer->current_token.line,
-          parser->lexer->current_token.column, "Unexpected token, skipping");
+      error_report(parser->errors, ERROR_SYNTAX,
+                   parser->lexer->current_token.line,
+                   parser->lexer->current_token.column,
+                   "Unexpected token '%s', skipping",
+                   parser->lexer->current_token.value
+                       ? parser->lexer->current_token.value
+                       : "NULL");
       lexer_next_token(parser->lexer); // Advance to prevent infinite loop
     }
   }

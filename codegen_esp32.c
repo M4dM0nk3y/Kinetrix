@@ -250,6 +250,17 @@ static void esp32_expression(CodeGen *gen, ASTNode *node) {
     codegen_emit(gen, ")");
     break;
 
+  case NODE_ENCODER_READ:
+    codegen_emit(gen, "(_kx_encoder ? _kx_encoder->read() : 0)");
+    break;
+
+  case NODE_PID_COMPUTE:
+    codegen_emit(gen, "(_kx_pid_input = (double)(");
+    esp32_expression(gen, node->data.pid_compute.current_val);
+    codegen_emit(gen,
+                 "), (_kx_pid ? _kx_pid->Compute() : false), _kx_pid_output)");
+    break;
+
   case NODE_I2C_DEVICE_READ:
     codegen_emit(gen, "(Wire.beginTransmission(");
     esp32_expression(gen, node->data.i2c_device_read.device_addr);
@@ -650,6 +661,130 @@ static void esp32_statement(CodeGen *gen, ASTNode *node) {
     break;
   }
 
+  /* --- Wave 2 Wrappers --- */
+  case NODE_STEPPER_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_stepper = new Stepper(200, ");
+    esp32_expression(gen, node->data.stepper_attach.step_pin);
+    codegen_emit(gen, ", ");
+    esp32_expression(gen, node->data.stepper_attach.dir_pin);
+    codegen_emit(gen, ");\n");
+    break;
+  case NODE_STEPPER_SPEED:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "if (_kx_stepper) _kx_stepper->setSpeed(");
+    esp32_expression(gen, node->data.unary.child);
+    codegen_emit(gen, ");\n");
+    break;
+  case NODE_STEPPER_MOVE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "if (_kx_stepper) _kx_stepper->step(");
+    esp32_expression(gen, node->data.stepper_move.steps);
+    codegen_emit(gen, ");\n");
+    break;
+  case NODE_MOTOR_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_motor_en = ");
+    esp32_expression(gen, node->data.motor_attach.en_pin);
+    codegen_emit(gen, ";\n");
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_motor_fwd = ");
+    esp32_expression(gen, node->data.motor_attach.fwd_pin);
+    codegen_emit(gen, ";\n");
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_motor_rev = ");
+    esp32_expression(gen, node->data.motor_attach.rev_pin);
+    codegen_emit(gen, ";\n");
+    codegen_emit_line(gen, "pinMode(_kx_motor_en, OUTPUT);\n");
+    codegen_emit_line(gen, "pinMode(_kx_motor_fwd, OUTPUT);\n");
+    codegen_emit_line(gen, "pinMode(_kx_motor_rev, OUTPUT);\n");
+    break;
+  case NODE_MOTOR_MOVE:
+    codegen_emit_line(gen, "if (_kx_motor_en != -1) {\n");
+    gen->indent_level++;
+    if (node->data.motor_move.direction > 0) {
+      codegen_emit_line(gen, "digitalWrite(_kx_motor_fwd, HIGH);\n");
+      codegen_emit_line(gen, "digitalWrite(_kx_motor_rev, LOW);\n");
+    } else {
+      codegen_emit_line(gen, "digitalWrite(_kx_motor_fwd, LOW);\n");
+      codegen_emit_line(gen, "digitalWrite(_kx_motor_rev, HIGH);\n");
+    }
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_ledc_analogWrite(_kx_motor_en, ");
+    esp32_expression(gen, node->data.motor_move.speed);
+    codegen_emit(gen, ");\n");
+    gen->indent_level--;
+    codegen_emit_line(gen, "}\n");
+    break;
+  case NODE_MOTOR_STOP:
+    codegen_emit_line(gen, "if (_kx_motor_en != -1) {\n");
+    gen->indent_level++;
+    codegen_emit_line(gen, "digitalWrite(_kx_motor_fwd, LOW);\n");
+    codegen_emit_line(gen, "digitalWrite(_kx_motor_rev, LOW);\n");
+    codegen_emit_line(gen, "_ledc_analogWrite(_kx_motor_en, 0);\n");
+    gen->indent_level--;
+    codegen_emit_line(gen, "}\n");
+    break;
+  case NODE_ENCODER_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_encoder = new Encoder(");
+    esp32_expression(gen, node->data.encoder_attach.pin_a);
+    codegen_emit(gen, ", ");
+    esp32_expression(gen, node->data.encoder_attach.pin_b);
+    codegen_emit(gen, ");\n");
+    break;
+  case NODE_ENCODER_READ:
+    codegen_emit(gen, "(_kx_encoder ? _kx_encoder->read() : 0)");
+    break;
+  case NODE_ENCODER_RESET:
+    codegen_emit_line(gen, "if (_kx_encoder) _kx_encoder->write(0);\n");
+    break;
+  case NODE_ESC_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_esc.attach(");
+    esp32_expression(gen, node->data.esc_attach.pin);
+    codegen_emit(gen, ", 1000, 2000);\n");
+    break;
+  case NODE_ESC_THROTTLE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_esc.write(");
+    esp32_expression(gen, node->data.unary.child);
+    codegen_emit(gen, ");\n");
+    break;
+  case NODE_PID_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "if (_kx_pid) delete _kx_pid;\n");
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_pid = new PID(&_kx_pid_input, &_kx_pid_output, "
+                      "&_kx_pid_setpoint, ");
+    esp32_expression(gen, node->data.pid_attach.kp);
+    codegen_emit(gen, ", ");
+    esp32_expression(gen, node->data.pid_attach.ki);
+    codegen_emit(gen, ", ");
+    esp32_expression(gen, node->data.pid_attach.kd);
+    codegen_emit(gen, ", DIRECT);\n");
+    codegen_emit_line(gen, "if (_kx_pid) _kx_pid->SetMode(AUTOMATIC);\n");
+    break;
+  case NODE_PID_TARGET:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_pid_setpoint = ");
+    esp32_expression(gen, node->data.unary.child);
+    codegen_emit(gen, ";\n");
+    break;
+  case NODE_PID_COMPUTE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "[&]() -> double {\n");
+    gen->indent_level++;
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_pid_input = ");
+    esp32_expression(gen, node->data.pid_compute.current_val);
+    codegen_emit(gen, ";\n");
+    codegen_emit_line(gen, "if (_kx_pid) _kx_pid->Compute();\n");
+    codegen_emit_line(gen, "return _kx_pid_output;\n");
+    gen->indent_level--;
+    codegen_emit_line(gen, "}()");
+    break;
+
   case NODE_FOR: {
     int loop_id = gen->loop_counter++;
     codegen_emit_indent(gen);
@@ -930,7 +1065,32 @@ void codegen_generate_esp32(CodeGen *gen, ASTNode *program) {
   codegen_emit_line(gen, "#include <esp_now.h>");
   codegen_emit_line(gen, "#include <esp_task_wdt.h>");
   codegen_emit_line(gen, "#include <esp32-hal-ledc.h>");
+  codegen_emit_line(gen, "#include <ESP32Servo.h>");
+  codegen_emit_line(gen, "#include <DHT.h>");
+  codegen_emit_line(gen, "#include <Adafruit_NeoPixel.h>");
+  codegen_emit_line(gen, "#include <LiquidCrystal_I2C.h>");
+  /* Wave 2 Includes */
+  codegen_emit_line(gen, "#include <Stepper.h>");
+  codegen_emit_line(gen, "#include <Encoder.h>");
+  codegen_emit_line(gen, "#include <PID_v1.h>");
   codegen_emit_line(gen, "\n/* ESP32-specific declarations */");
+
+  /* Wave 1 Globals */
+  codegen_emit_line(gen, "Servo _kx_servo;\n");
+  codegen_emit_line(gen, "DHT *_kx_dht = NULL;\n");
+  codegen_emit_line(gen, "Adafruit_NeoPixel *_kx_strip = NULL;\n");
+  codegen_emit_line(gen, "LiquidCrystal_I2C *_kx_lcd = NULL;\n");
+
+  /* Wave 2 Globals */
+  codegen_emit_line(gen, "Stepper *_kx_stepper = NULL;\n");
+  codegen_emit_line(
+      gen, "int _kx_motor_en = -1, _kx_motor_fwd = -1, _kx_motor_rev = -1;\n");
+  codegen_emit_line(gen, "Encoder *_kx_encoder = NULL;\n");
+  codegen_emit_line(gen, "Servo _kx_esc;\n");
+  codegen_emit_line(
+      gen,
+      "double _kx_pid_setpoint = 0, _kx_pid_input = 0, _kx_pid_output = 0;\n");
+  codegen_emit_line(gen, "PID *_kx_pid = NULL;\n");
 
   /* PWM Tracker map for dynamic LEDC channels */
   codegen_emit_line(gen, "int _esp32_pwm_channels[40] = {0};");

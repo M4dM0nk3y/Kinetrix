@@ -210,9 +210,20 @@ static void pico_expr(CodeGen *gen, ASTNode *node) {
     pico_emit(gen, "(_uart.read(1) if '_uart' in globals() else 0)");
     break;
   case NODE_SPI_TRANSFER:
-    pico_emit(gen, "(int.from_bytes(_spi.read(1, ");
+    pico_emit(gen, "(_kx_spi.read(1, ");
     pico_expr(gen, node->data.spi_transfer.data);
-    pico_emit(gen, "), 'big') if '_spi' in globals() else 0)");
+    pico_emit(gen, ")[0])");
+    break;
+
+  case NODE_ENCODER_READ:
+    pico_emit(gen,
+              "(_kx_encoder_pos if '_kx_encoder_pos' in globals() else 0)");
+    break;
+
+  case NODE_PID_COMPUTE:
+    pico_emit(gen, "_kx_compute_pid(");
+    pico_expr(gen, node->data.pid_compute.current_val);
+    pico_emit(gen, ")");
     break;
   case NODE_PULSE_READ:
     pico_emit(gen, "machine.time_pulse_us(Pin(");
@@ -721,6 +732,144 @@ static void pico_stmt(CodeGen *gen, ASTNode *node) {
   case NODE_LCD_CLEAR:
     pico_emit_line(gen, "_kx_lcd.clear()");
     break;
+
+  /* --- Wave 2 Wrappers --- */
+  case NODE_STEPPER_ATTACH:
+    pico_indent(gen);
+    pico_emit(gen, "_kx_stepper_step = Pin(int(");
+    pico_expr(gen, node->data.stepper_attach.step_pin);
+    pico_emit(gen, "), Pin.OUT)\n");
+    pico_indent(gen);
+    pico_emit(gen, "_kx_stepper_dir = Pin(int(");
+    pico_expr(gen, node->data.stepper_attach.dir_pin);
+    pico_emit(gen, "), Pin.OUT)\n");
+    pico_emit_line(gen, "_kx_stepper_speed = 100");
+    break;
+  case NODE_STEPPER_SPEED:
+    pico_indent(gen);
+    pico_emit(gen, "_kx_stepper_speed = max(1, ");
+    pico_expr(gen, node->data.unary.child);
+    pico_emit(gen, ")\n");
+    break;
+  case NODE_STEPPER_MOVE:
+    pico_indent(gen);
+    pico_emit(gen, "_kx_steps = int(");
+    pico_expr(gen, node->data.stepper_move.steps);
+    pico_emit(gen, ")\n");
+    pico_emit_line(gen, "_kx_stepper_dir.value(1 if _kx_steps > 0 else 0)");
+    pico_emit_line(gen, "_kx_delay = 60.0 / (200.0 * _kx_stepper_speed)");
+    pico_emit_line(gen, "for _ in range(abs(_kx_steps)):");
+    gen->indent_level++;
+    pico_emit_line(gen, "_kx_stepper_step.value(1)");
+    pico_emit_line(gen, "utime.sleep(_kx_delay / 2)");
+    pico_emit_line(gen, "_kx_stepper_step.value(0)");
+    pico_emit_line(gen, "utime.sleep(_kx_delay / 2)");
+    gen->indent_level--;
+    break;
+  case NODE_MOTOR_ATTACH:
+    pico_indent(gen);
+    pico_emit(gen, "_kx_motor_fwd = Pin(int(");
+    pico_expr(gen, node->data.motor_attach.fwd_pin);
+    pico_emit(gen, "), Pin.OUT)\n");
+    pico_indent(gen);
+    pico_emit(gen, "_kx_motor_rev = Pin(int(");
+    pico_expr(gen, node->data.motor_attach.rev_pin);
+    pico_emit(gen, "), Pin.OUT)\n");
+    pico_indent(gen);
+    pico_emit(gen, "_kx_motor_pwm = PWM(Pin(int(");
+    pico_expr(gen, node->data.motor_attach.en_pin);
+    pico_emit(gen,
+              "))); _kx_motor_pwm.freq(1000); _kx_motor_pwm.duty_u16(0)\n");
+    break;
+  case NODE_MOTOR_MOVE:
+    if (node->data.motor_move.direction > 0) {
+      pico_emit_line(gen, "_kx_motor_fwd.value(1)");
+      pico_emit_line(gen, "_kx_motor_rev.value(0)");
+    } else {
+      pico_emit_line(gen, "_kx_motor_fwd.value(0)");
+      pico_emit_line(gen, "_kx_motor_rev.value(1)");
+    }
+    pico_indent(gen);
+    pico_emit(gen, "_kx_motor_pwm.duty_u16(int((");
+    pico_expr(gen, node->data.motor_move.speed);
+    pico_emit(gen, ") * 65535 / 255))\n");
+    break;
+  case NODE_MOTOR_STOP:
+    pico_emit_line(gen, "_kx_motor_fwd.value(0)");
+    pico_emit_line(gen, "_kx_motor_rev.value(0)");
+    pico_emit_line(gen, "_kx_motor_pwm.duty_u16(0)");
+    break;
+  case NODE_ENCODER_ATTACH:
+    pico_indent(gen);
+    pico_emit(gen, "_kx_enc_a = Pin(int(");
+    pico_expr(gen, node->data.encoder_attach.pin_a);
+    pico_emit(gen, "), Pin.IN, Pin.PULL_UP)\n");
+    pico_indent(gen);
+    pico_emit(gen, "_kx_enc_b = Pin(int(");
+    pico_expr(gen, node->data.encoder_attach.pin_b);
+    pico_emit(gen, "), Pin.IN, Pin.PULL_UP)\n");
+    pico_emit_line(gen, "_kx_enc_count = 0");
+    pico_emit_line(gen, "def _kx_enc_cb(pin):");
+    gen->indent_level++;
+    pico_emit_line(gen, "global _kx_enc_count");
+    pico_emit_line(gen, "if _kx_enc_b.value(): _kx_enc_count += 1");
+    pico_emit_line(gen, "else: _kx_enc_count -= 1");
+    gen->indent_level--;
+    pico_emit_line(gen,
+                   "_kx_enc_a.irq(trigger=Pin.IRQ_RISING, handler=_kx_enc_cb)");
+    break;
+  case NODE_ENCODER_READ:
+    pico_emit(gen, "_kx_enc_count");
+    break;
+  case NODE_ENCODER_RESET:
+    pico_emit_line(gen, "global _kx_enc_count; _kx_enc_count = 0");
+    break;
+  case NODE_ESC_ATTACH:
+    pico_indent(gen);
+    pico_emit(gen, "_kx_esc_pwm = PWM(Pin(int(");
+    pico_expr(gen, node->data.esc_attach.pin);
+    pico_emit(gen, "))); _kx_esc_pwm.freq(50)\n");
+    pico_emit_line(gen,
+                   "_kx_esc_pwm.duty_u16(3277) # 5% / 1ms pulse (stopped)");
+    break;
+  case NODE_ESC_THROTTLE:
+    pico_indent(gen);
+    pico_emit(gen, "_kx_throttle_val = ");
+    pico_expr(gen, node->data.unary.child);
+    pico_emit(gen, "\n");
+    pico_emit_line(
+        gen, "_kx_esc_dc = 3277 + int((_kx_throttle_val / 180.0) * 3277)");
+    pico_emit_line(gen, "_kx_esc_pwm.duty_u16(_kx_esc_dc)");
+    break;
+  case NODE_PID_ATTACH:
+    pico_indent(gen);
+    pico_emit(gen, "_kx_pid_kp = ");
+    pico_expr(gen, node->data.pid_attach.kp);
+    pico_emit(gen, "\n");
+    pico_indent(gen);
+    pico_emit(gen, "_kx_pid_ki = ");
+    pico_expr(gen, node->data.pid_attach.ki);
+    pico_emit(gen, "\n");
+    pico_indent(gen);
+    pico_emit(gen, "_kx_pid_kd = ");
+    pico_expr(gen, node->data.pid_attach.kd);
+    pico_emit(gen, "\n");
+    pico_emit_line(gen, "_kx_pid_setpoint = 0.0");
+    pico_emit_line(gen, "_kx_pid_last_err = 0.0");
+    pico_emit_line(gen, "_kx_pid_integral = 0.0");
+    pico_emit_line(gen, "_kx_pid_last_time = utime.ticks_ms() / 1000.0");
+    break;
+  case NODE_PID_TARGET:
+    pico_indent(gen);
+    pico_emit(gen, "_kx_pid_setpoint = ");
+    pico_expr(gen, node->data.unary.child);
+    pico_emit(gen, "\n");
+    break;
+  case NODE_PID_COMPUTE:
+    pico_emit(gen, "_kx_compute_pid(");
+    pico_expr(gen, node->data.pid_compute.current_val);
+    pico_emit(gen, ")");
+    break;
   case NODE_TONE:
     pico_indent(gen);
     pico_emit(gen, "_pwm = PWM(Pin(");
@@ -774,6 +923,36 @@ void codegen_generate_pico(CodeGen *gen, ASTNode *program) {
   pico_emit_line(gen, "def _safe_adc(pin):");
   pico_emit_line(gen, "    if pin not in (26, 27, 28, 29): return 0");
   pico_emit_line(gen, "    return ADC(Pin(pin)).read_u16() >> 6\n");
+
+  pico_emit_line(gen, "# Wave 2 Globals");
+  pico_emit_line(gen, "_kx_stepper_step, _kx_stepper_dir = None, None");
+  pico_emit_line(gen, "_kx_stepper_speed = 100");
+  pico_emit_line(
+      gen, "_kx_motor_pwm, _kx_motor_fwd, _kx_motor_rev = None, None, None");
+  pico_emit_line(gen, "_kx_enc_a, _kx_enc_b, _kx_enc_count = None, None, 0");
+  pico_emit_line(gen, "_kx_esc_pwm = None");
+  pico_emit_line(gen, "_kx_pid_kp, _kx_pid_ki, _kx_pid_kd = 0, 0, 0");
+  pico_emit_line(
+      gen, "_kx_pid_setpoint, _kx_pid_last_err, _kx_pid_integral = 0, 0, 0");
+  pico_emit_line(gen, "_kx_pid_last_time = utime.ticks_ms() / 1000.0\n");
+
+  pico_emit_line(gen, "def _kx_compute_pid(current_val):");
+  pico_emit_line(
+      gen,
+      "    global _kx_pid_kp, _kx_pid_ki, _kx_pid_kd, _kx_pid_setpoint, \\");
+  pico_emit_line(
+      gen, "           _kx_pid_last_err, _kx_pid_integral, _kx_pid_last_time");
+  pico_emit_line(gen, "    now = utime.ticks_ms() / 1000.0");
+  pico_emit_line(gen, "    dt = now - _kx_pid_last_time");
+  pico_emit_line(gen, "    if dt <= 0.0: dt = 0.001");
+  pico_emit_line(gen, "    err = _kx_pid_setpoint - current_val");
+  pico_emit_line(gen, "    _kx_pid_integral += err * dt");
+  pico_emit_line(gen, "    deriv = (err - _kx_pid_last_err) / dt");
+  pico_emit_line(gen, "    out = (_kx_pid_kp * err) + (_kx_pid_ki * "
+                      "_kx_pid_integral) + (_kx_pid_kd * deriv)");
+  pico_emit_line(gen, "    _kx_pid_last_err = err");
+  pico_emit_line(gen, "    _kx_pid_last_time = now");
+  pico_emit_line(gen, "    return out\n");
 
   // Add lightweight radio function stubs to Pico MicroPython output
   pico_emit_line(gen, "def _radio_send(peer, data):");

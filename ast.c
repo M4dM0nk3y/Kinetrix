@@ -1105,3 +1105,84 @@ ASTNode *ast_lcd_print(ASTNode *text, ASTNode *line) {
 }
 
 ASTNode *ast_lcd_clear() { return ast_create(NODE_LCD_CLEAR); }
+
+/* --- Library Wrapper APIs (Wave 2 - Motion & Motor) --- */
+
+ASTNode *ast_stepper_attach(ASTNode *step_pin, ASTNode *dir_pin) {
+  ASTNode *node = ast_create(NODE_STEPPER_ATTACH);
+  node->data.stepper_attach.step_pin = step_pin;
+  node->data.stepper_attach.dir_pin = dir_pin;
+  return node;
+}
+
+ASTNode *ast_stepper_speed(ASTNode *speed) {
+  ASTNode *node = ast_create(NODE_STEPPER_SPEED);
+  node->data.unary.child = speed;
+  return node;
+}
+
+ASTNode *ast_stepper_move(ASTNode *steps) {
+  ASTNode *node = ast_create(NODE_STEPPER_MOVE);
+  node->data.stepper_move.steps = steps;
+  return node;
+}
+
+ASTNode *ast_motor_attach(ASTNode *en_pin, ASTNode *fwd_pin, ASTNode *rev_pin) {
+  ASTNode *node = ast_create(NODE_MOTOR_ATTACH);
+  node->data.motor_attach.en_pin = en_pin;
+  node->data.motor_attach.fwd_pin = fwd_pin;
+  node->data.motor_attach.rev_pin = rev_pin;
+  return node;
+}
+
+ASTNode *ast_motor_move(int direction, ASTNode *speed) {
+  ASTNode *node = ast_create(NODE_MOTOR_MOVE);
+  node->data.motor_move.direction = direction;
+  node->data.motor_move.speed = speed;
+  return node;
+}
+
+ASTNode *ast_motor_stop() { return ast_create(NODE_MOTOR_STOP); }
+
+ASTNode *ast_encoder_attach(ASTNode *pin_a, ASTNode *pin_b) {
+  ASTNode *node = ast_create(NODE_ENCODER_ATTACH);
+  node->data.encoder_attach.pin_a = pin_a;
+  node->data.encoder_attach.pin_b = pin_b;
+  return node;
+}
+
+ASTNode *ast_encoder_read() { return ast_create(NODE_ENCODER_READ); }
+
+ASTNode *ast_encoder_reset() { return ast_create(NODE_ENCODER_RESET); }
+
+ASTNode *ast_esc_attach(ASTNode *pin) {
+  ASTNode *node = ast_create(NODE_ESC_ATTACH);
+  node->data.esc_attach.pin = pin;
+  return node;
+}
+
+ASTNode *ast_esc_throttle(ASTNode *throttle) {
+  ASTNode *node = ast_create(NODE_ESC_THROTTLE);
+  node->data.unary.child = throttle;
+  return node;
+}
+
+ASTNode *ast_pid_attach(ASTNode *kp, ASTNode *ki, ASTNode *kd) {
+  ASTNode *node = ast_create(NODE_PID_ATTACH);
+  node->data.pid_attach.kp = kp;
+  node->data.pid_attach.ki = ki;
+  node->data.pid_attach.kd = kd;
+  return node;
+}
+
+ASTNode *ast_pid_target(ASTNode *target) {
+  ASTNode *node = ast_create(NODE_PID_TARGET);
+  node->data.unary.child = target;
+  return node;
+}
+
+ASTNode *ast_pid_compute(ASTNode *current) {
+  ASTNode *node = ast_create(NODE_PID_COMPUTE);
+  node->data.pid_compute.current_val = current;
+  return node;
+}

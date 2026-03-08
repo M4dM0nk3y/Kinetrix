@@ -229,6 +229,32 @@ show pixels
 # LCD Displays
 attach lcd columns 16 rows 2
 lcd print "Hello" line 0
+
+# Stepper Motors
+attach stepper step 2 dir 3
+set stepper speed 500
+move stepper 200
+move stepper -200
+
+# DC Motors
+attach motor enable 9 forward 8 reverse 7
+move motor forward at 255
+move motor reverse at 128
+stop motor
+
+# Quadrature Encoders
+attach encoder pin_a 2 pin_b 3
+make float pos = read encoder
+reset encoder
+
+# Brushless ESCs
+attach esc pin 10
+set esc throttle 1500
+
+# PID Controllers
+attach pid kp 2.0 ki 0.5 kd 1.0
+set pid target 100
+make float out = compute pid pos
 ```
 
 ### Safety Features

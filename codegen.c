@@ -353,6 +353,17 @@ static void codegen_expression(CodeGen *gen, ASTNode *node) {
     codegen_emit(gen, ")");
     break;
 
+  case NODE_ENCODER_READ:
+    codegen_emit(gen, "(_kx_encoder ? _kx_encoder->read() : 0)");
+    break;
+
+  case NODE_PID_COMPUTE:
+    codegen_emit(gen, "(_kx_pid_input = (double)(");
+    codegen_expression(gen, node->data.pid_compute.current_val);
+    codegen_emit(gen,
+                 "), (_kx_pid ? _kx_pid->Compute() : false), _kx_pid_output)");
+    break;
+
   case NODE_I2C_DEVICE_READ:
     codegen_emit(gen, "(Wire.beginTransmission(");
     codegen_expression(gen, node->data.i2c_device_read.device_addr);
@@ -645,6 +656,130 @@ static void codegen_statement(CodeGen *gen, ASTNode *node) {
     break;
   case NODE_LCD_CLEAR:
     codegen_emit_line(gen, "_kx_lcd->clear();\n");
+    break;
+
+  /* --- Wave 2 Wrappers --- */
+  case NODE_STEPPER_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_stepper = new Stepper(200, ");
+    codegen_expression(gen, node->data.stepper_attach.step_pin);
+    codegen_emit(gen, ", ");
+    codegen_expression(gen, node->data.stepper_attach.dir_pin);
+    codegen_emit(gen, ");\n");
+    break;
+  case NODE_STEPPER_SPEED:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "if (_kx_stepper) _kx_stepper->setSpeed(");
+    codegen_expression(gen, node->data.unary.child);
+    codegen_emit(gen, ");\n");
+    break;
+  case NODE_STEPPER_MOVE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "if (_kx_stepper) _kx_stepper->step(");
+    codegen_expression(gen, node->data.stepper_move.steps);
+    codegen_emit(gen, ");\n");
+    break;
+  case NODE_MOTOR_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_motor_en = ");
+    codegen_expression(gen, node->data.motor_attach.en_pin);
+    codegen_emit(gen, ";\n");
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_motor_fwd = ");
+    codegen_expression(gen, node->data.motor_attach.fwd_pin);
+    codegen_emit(gen, ";\n");
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_motor_rev = ");
+    codegen_expression(gen, node->data.motor_attach.rev_pin);
+    codegen_emit(gen, ";\n");
+    codegen_emit_line(gen, "pinMode(_kx_motor_en, OUTPUT);\n");
+    codegen_emit_line(gen, "pinMode(_kx_motor_fwd, OUTPUT);\n");
+    codegen_emit_line(gen, "pinMode(_kx_motor_rev, OUTPUT);\n");
+    break;
+  case NODE_MOTOR_MOVE:
+    codegen_emit_line(gen, "if (_kx_motor_en != -1) {\n");
+    gen->indent_level++;
+    if (node->data.motor_move.direction > 0) {
+      codegen_emit_line(gen, "digitalWrite(_kx_motor_fwd, HIGH);\n");
+      codegen_emit_line(gen, "digitalWrite(_kx_motor_rev, LOW);\n");
+    } else {
+      codegen_emit_line(gen, "digitalWrite(_kx_motor_fwd, LOW);\n");
+      codegen_emit_line(gen, "digitalWrite(_kx_motor_rev, HIGH);\n");
+    }
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "analogWrite(_kx_motor_en, ");
+    codegen_expression(gen, node->data.motor_move.speed);
+    codegen_emit(gen, ");\n");
+    gen->indent_level--;
+    codegen_emit_line(gen, "}\n");
+    break;
+  case NODE_MOTOR_STOP:
+    codegen_emit_line(gen, "if (_kx_motor_en != -1) {\n");
+    gen->indent_level++;
+    codegen_emit_line(gen, "digitalWrite(_kx_motor_fwd, LOW);\n");
+    codegen_emit_line(gen, "digitalWrite(_kx_motor_rev, LOW);\n");
+    codegen_emit_line(gen, "analogWrite(_kx_motor_en, 0);\n");
+    gen->indent_level--;
+    codegen_emit_line(gen, "}\n");
+    break;
+  case NODE_ENCODER_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_encoder = new Encoder(");
+    codegen_expression(gen, node->data.encoder_attach.pin_a);
+    codegen_emit(gen, ", ");
+    codegen_expression(gen, node->data.encoder_attach.pin_b);
+    codegen_emit(gen, ");\n");
+    break;
+  case NODE_ENCODER_READ:
+    codegen_emit(gen, "(_kx_encoder ? _kx_encoder->read() : 0)");
+    break;
+  case NODE_ENCODER_RESET:
+    codegen_emit_line(gen, "if (_kx_encoder) _kx_encoder->write(0);\n");
+    break;
+  case NODE_ESC_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_esc.attach(");
+    codegen_expression(gen, node->data.esc_attach.pin);
+    codegen_emit(gen, ", 1000, 2000);\n");
+    break;
+  case NODE_ESC_THROTTLE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_esc.write(");
+    codegen_expression(gen, node->data.unary.child);
+    codegen_emit(gen, ");\n");
+    break;
+  case NODE_PID_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "if (_kx_pid) delete _kx_pid;\n");
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_pid = new PID(&_kx_pid_input, &_kx_pid_output, "
+                      "&_kx_pid_setpoint, ");
+    codegen_expression(gen, node->data.pid_attach.kp);
+    codegen_emit(gen, ", ");
+    codegen_expression(gen, node->data.pid_attach.ki);
+    codegen_emit(gen, ", ");
+    codegen_expression(gen, node->data.pid_attach.kd);
+    codegen_emit(gen, ", DIRECT);\n");
+    codegen_emit_line(gen, "if (_kx_pid) _kx_pid->SetMode(AUTOMATIC);\n");
+    break;
+  case NODE_PID_TARGET:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_pid_setpoint = ");
+    codegen_expression(gen, node->data.unary.child);
+    codegen_emit(gen, ";\n");
+    break;
+  case NODE_PID_COMPUTE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "[&]() -> double {\n");
+    gen->indent_level++;
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_pid_input = ");
+    codegen_expression(gen, node->data.pid_compute.current_val);
+    codegen_emit(gen, ";\n");
+    codegen_emit_line(gen, "if (_kx_pid) _kx_pid->Compute();\n");
+    codegen_emit_line(gen, "return _kx_pid_output;\n");
+    gen->indent_level--;
+    codegen_emit_line(gen, "}()");
     break;
 
   case NODE_WATCHDOG_FEED:
@@ -1108,11 +1243,27 @@ void codegen_generate_arduino(CodeGen *gen, ASTNode *program) {
   codegen_emit_line(gen, "#include <DHT.h>\n");
   codegen_emit_line(gen, "#include <Adafruit_NeoPixel.h>\n");
   codegen_emit_line(gen, "#include <LiquidCrystal_I2C.h>\n");
+  /* Wave 2 Includes */
+  codegen_emit_line(gen, "#include <Stepper.h>\n");
+  codegen_emit_line(gen, "#include <Encoder.h>\n");
+  codegen_emit_line(gen, "#include <PID_v1.h>\n");
   codegen_emit_line(gen, "\n");
   codegen_emit_line(gen, "Servo _kx_servo;\n");
   codegen_emit_line(gen, "DHT *_kx_dht = NULL;\n");
   codegen_emit_line(gen, "Adafruit_NeoPixel *_kx_strip = NULL;\n");
   codegen_emit_line(gen, "LiquidCrystal_I2C *_kx_lcd = NULL;\n");
+  /* Wave 2 Globals */
+  codegen_emit_line(gen, "Stepper *_kx_stepper = NULL;\n");
+  /* DC Motor uses raw pins */
+  codegen_emit_line(
+      gen, "int _kx_motor_en = -1, _kx_motor_fwd = -1, _kx_motor_rev = -1;\n");
+  codegen_emit_line(gen, "Encoder *_kx_encoder = NULL;\n");
+  codegen_emit_line(gen, "Servo _kx_esc;\n"); // ESC uses Servo protocol
+  /* PID globals */
+  codegen_emit_line(
+      gen,
+      "double _kx_pid_setpoint = 0, _kx_pid_input = 0, _kx_pid_output = 0;\n");
+  codegen_emit_line(gen, "PID *_kx_pid = NULL;\n");
   codegen_emit_line(gen, "\n");
 
   /* --- Hoist struct definitions --- */
