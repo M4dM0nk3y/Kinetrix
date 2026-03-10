@@ -2435,6 +2435,76 @@ v3.1.0 ✓</pre>
       </div>
 
     </div>
+
+    <!-- WAVE 4 -->
+    <div class="chapter-label r" style="margin-top:4rem;">Wave 4 &nbsp;·&nbsp; Just Added</div>
+    <h3 class="r" style="font-family:var(--font-title);font-size:clamp(1.4rem,3vw,2.2rem);font-weight:700;letter-spacing:0.05em;margin:0.6rem 0 0.5rem;color:var(--white);">
+      Advanced Robotics &amp; <span style="color:var(--code-g);">Storage.</span>
+    </h3>
+    <p class="chapter-prose r" style="max-width:640px;">
+      IMUs, GPS, LIDAR, and SD card file systems — the sensors that separate hobbyist robots from serious ones. Codegen is live for all 5 targets.
+    </p>
+    <div class="v31-status r" style="margin-bottom:0;">
+      <span class="dot-testing" style="background:var(--code-g);"></span>
+      Codegen live for all 5 targets &nbsp;·&nbsp; Hardware testing in progress
+    </div>
+
+    <div class="lib-grid r" style="margin-top:2rem;">
+
+      <div class="lib-card" style="--lib-color:var(--code-g)">
+        <span class="lib-icon">🧭</span>
+        <div class="lib-name">IMU — 9-DOF Inertial</div>
+        <span class="lib-tag" style="color:var(--code-g);">BNO080 · BNO055 · I2C · accel · gyro · heading</span>
+        <div class="lib-desc">Read acceleration, gyroscope, and orientation from a 9-DOF IMU. The foundation of self-balancing robots, drones, and arm control.</div>
+        <div class="lib-code">
+          <span class="t-kw">attach</span> imu i2c<br>
+          <span class="t-kw">make</span> float ax &nbsp;= <span class="t-kw">read</span> accel x<br>
+          <span class="t-kw">make</span> float gy &nbsp;= <span class="t-kw">read</span> gyro y<br>
+          <span class="t-kw">make</span> float head = <span class="t-kw">read</span> orientation
+        </div>
+      </div>
+
+      <div class="lib-card" style="--lib-color:var(--code-g)">
+        <span class="lib-icon">🛰️</span>
+        <div class="lib-name">GPS</div>
+        <span class="lib-tag" style="color:var(--code-g);">NMEA · serial · lat · lon · altitude · speed</span>
+        <div class="lib-desc">Read position, altitude, and ground speed from any NMEA GPS module. Autonomous outdoor navigation in plain English.</div>
+        <div class="lib-code">
+          <span class="t-kw">attach</span> gps serial <span class="t-num">9600</span><br>
+          <span class="t-kw">make</span> float lat = <span class="t-kw">read</span> latitude<br>
+          <span class="t-kw">make</span> float lon = <span class="t-kw">read</span> longitude<br>
+          <span class="t-kw">make</span> float kph = <span class="t-kw">read</span> speed
+        </div>
+      </div>
+
+      <div class="lib-card" style="--lib-color:var(--code-g)">
+        <span class="lib-icon">🔭</span>
+        <div class="lib-name">LIDAR / Time-of-Flight</div>
+        <span class="lib-tag" style="color:var(--code-g);">VL53L0X · I2C · precise distance · mm accuracy</span>
+        <div class="lib-desc">Millimetre-accurate distance measurement. More precise than ultrasonic. Used in obstacle avoidance, drone landing, and arm positioning.</div>
+        <div class="lib-code">
+          <span class="t-kw">attach</span> lidar i2c<br>
+          <span class="t-kw">make</span> float dist = <span class="t-kw">read</span> distance precise<br>
+          <span class="t-kw">if</span> dist &lt; <span class="t-num">50</span> {<br>
+          &nbsp;&nbsp;<span class="t-kw">stop</span> motor<br>
+          }
+        </div>
+      </div>
+
+      <div class="lib-card" style="--lib-color:var(--code-g)">
+        <span class="lib-icon">💾</span>
+        <div class="lib-name">SD Card — File System</div>
+        <span class="lib-tag" style="color:var(--code-g);">FAT32 · read · write · data logging · CSV</span>
+        <div class="lib-desc">Mount an SD card and log sensor data to files. Store configs, replay missions. Persistent storage for robots that remember.</div>
+        <div class="lib-code">
+          <span class="t-kw">mount</span> sd pin <span class="t-num">5</span><br>
+          <span class="t-kw">open</span> file <span class="t-str">"sensor_log.csv"</span><br>
+          <span class="t-kw">write</span> file <span class="t-str">"1024, 25.4"</span><br>
+          <span class="t-kw">close</span> file
+        </div>
+      </div>
+
+    </div>
   </div>
 </section>
 
@@ -2514,7 +2584,7 @@ v3.1.0 ✓</pre>
     <div class="coming-soon-box" id="ep-cs">
       <div class="roadmap-item">
         <span class="rm-status building">IN PROGRESS</span>
-        <div class="rm-text"><strong>V3.1 Hardware Validation</strong>: library wrappers (servo, DHT11, ultrasonic, NeoPixel, LCD, motors, encoders, PID, BLE, WiFi, MQTT) are compiler-complete — real-world hardware testing underway</div>
+        <div class="rm-text"><strong>Waves 1–4 Hardware Validation</strong>: servo, DHT11, ultrasonic, NeoPixel, LCD, motors, encoders, PID, BLE, WiFi, MQTT, IMU, GPS, LIDAR, SD card — all compiler-complete across 5 targets, hardware testing underway</div>
       </div>
       <div class="roadmap-item">
         <span class="rm-status building">LIVE</span>
