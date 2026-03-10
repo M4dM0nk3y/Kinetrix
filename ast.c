@@ -1186,3 +1186,87 @@ ASTNode *ast_pid_compute(ASTNode *current) {
   node->data.pid_compute.current_val = current;
   return node;
 }
+
+/* ============================================================
+ * Wave 3: Communication & Networking
+ * ============================================================ */
+
+ASTNode *ast_ble_enable(ASTNode *name) {
+  ASTNode *node = ast_create(NODE_BLE_ENABLE);
+  node->data.ble_enable.name = name;
+  return node;
+}
+
+ASTNode *ast_ble_advertise(ASTNode *data) {
+  ASTNode *node = ast_create(NODE_BLE_ADVERTISE);
+  node->data.ble_advertise.data = data;
+  return node;
+}
+
+ASTNode *ast_ble_send(ASTNode *data) {
+  ASTNode *node = ast_create(NODE_BLE_SEND);
+  node->data.ble_send.data = data;
+  return node;
+}
+
+ASTNode *ast_ble_receive(void) { return ast_create(NODE_BLE_RECEIVE); }
+
+ASTNode *ast_wifi_connect(ASTNode *ssid, ASTNode *password) {
+  ASTNode *node = ast_create(NODE_WIFI_CONNECT);
+  node->data.wifi_connect.ssid = ssid;
+  node->data.wifi_connect.password = password;
+  return node;
+}
+
+ASTNode *ast_wifi_ip(void) { return ast_create(NODE_WIFI_IP); }
+
+ASTNode *ast_mqtt_connect(ASTNode *broker, ASTNode *port) {
+  ASTNode *node = ast_create(NODE_MQTT_CONNECT);
+  node->data.mqtt_connect.broker = broker;
+  node->data.mqtt_connect.port = port;
+  return node;
+}
+
+ASTNode *ast_mqtt_subscribe(ASTNode *topic) {
+  ASTNode *node = ast_create(NODE_MQTT_SUBSCRIBE);
+  node->data.mqtt_subscribe.topic = topic;
+  return node;
+}
+
+ASTNode *ast_mqtt_publish(ASTNode *topic, ASTNode *payload) {
+  ASTNode *node = ast_create(NODE_MQTT_PUBLISH);
+  node->data.mqtt_publish.topic = topic;
+  node->data.mqtt_publish.payload = payload;
+  return node;
+}
+
+ASTNode *ast_mqtt_read(void) { return ast_create(NODE_MQTT_READ); }
+
+ASTNode *ast_http_get(ASTNode *url) {
+  ASTNode *node = ast_create(NODE_HTTP_GET);
+  node->data.http_get.url = url;
+  return node;
+}
+
+ASTNode *ast_http_post(ASTNode *url, ASTNode *body) {
+  ASTNode *node = ast_create(NODE_HTTP_POST);
+  node->data.http_post.url = url;
+  node->data.http_post.body = body;
+  return node;
+}
+
+ASTNode *ast_ws_connect(ASTNode *url) {
+  ASTNode *node = ast_create(NODE_WS_CONNECT);
+  node->data.ws_connect.url = url;
+  return node;
+}
+
+ASTNode *ast_ws_send(ASTNode *data) {
+  ASTNode *node = ast_create(NODE_WS_SEND);
+  node->data.ws_send.data = data;
+  return node;
+}
+
+ASTNode *ast_ws_receive(void) { return ast_create(NODE_WS_RECEIVE); }
+
+ASTNode *ast_ws_close(void) { return ast_create(NODE_WS_CLOSE); }

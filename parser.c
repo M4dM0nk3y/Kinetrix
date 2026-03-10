@@ -592,6 +592,23 @@ void lexer_next_token(Lexer *lexer) {
       lexer->current_token.type = TOK_ESC;
     else if (!strcmp(v, "pid"))
       lexer->current_token.type = TOK_PID;
+    /* Wave 3 Wrappers */
+    else if (!strcmp(v, "connect"))
+      lexer->current_token.type = TOK_CONNECT;
+    else if (!strcmp(v, "ble"))
+      lexer->current_token.type = TOK_BLE;
+    else if (!strcmp(v, "wifi"))
+      lexer->current_token.type = TOK_WIFI;
+    else if (!strcmp(v, "mqtt"))
+      lexer->current_token.type = TOK_MQTT;
+    else if (!strcmp(v, "http"))
+      lexer->current_token.type = TOK_HTTP;
+    else if (!strcmp(v, "websocket") || !strcmp(v, "ws"))
+      lexer->current_token.type = TOK_WEBSOCKET;
+    else if (!strcmp(v, "subscribe"))
+      lexer->current_token.type = TOK_SUBSCRIBE;
+    else if (!strcmp(v, "publish"))
+      lexer->current_token.type = TOK_PUBLISH;
     /* V3.0 handled as TOK_ID in parser */
     else if (!strcmp(v, "not"))
       lexer->current_token.type = TOK_NOT;
@@ -948,6 +965,21 @@ int parser_expect(Parser *parser, TokenType type) {
 
   error_report(parser->errors, ERROR_SYNTAX, parser->lexer->current_token.line,
                parser->lexer->current_token.column, "%s", msg);
+  return 0;
+}
+
+int parser_expect_id(Parser *parser, const char *id) {
+  if (parser_match_id(parser, id)) {
+    lexer_next_token(parser->lexer);
+    return 1;
+  }
+
+  error_report(parser->errors, ERROR_SYNTAX, parser->lexer->current_token.line,
+               parser->lexer->current_token.column,
+               "Expected identifier '%s', got '%s'", id,
+               parser->lexer->current_token.value
+                   ? parser->lexer->current_token.value
+                   : token_type_to_string(parser->lexer->current_token.type));
   return 0;
 }
 
@@ -1350,6 +1382,56 @@ static ASTNode *parse_primary(Parser *parser) {
     }
     ASTNode *operand = parse_primary(parser);
     return ast_cast(t, operand);
+  }
+
+  /* ============================================================
+   * Wave 3: Communication Expression Handlers
+   * ============================================================ */
+
+  /* ble receive */
+  if (parser_match(parser, TOK_BLE)) {
+    lexer_next_token(parser->lexer);
+    if (parser_match(parser, TOK_RECEIVE)) {
+      lexer_next_token(parser->lexer);
+      return ast_ble_receive();
+    }
+  }
+
+  /* wifi ip */
+  if (parser_match(parser, TOK_WIFI)) {
+    lexer_next_token(parser->lexer);
+    if (parser_match_id(parser, "ip")) {
+      lexer_next_token(parser->lexer);
+      return ast_wifi_ip();
+    }
+  }
+
+  /* mqtt read */
+  if (parser_match(parser, TOK_MQTT)) {
+    lexer_next_token(parser->lexer);
+    if (parser_match(parser, TOK_READ)) {
+      lexer_next_token(parser->lexer);
+      return ast_mqtt_read();
+    }
+  }
+
+  /* http get "url" */
+  if (parser_match(parser, TOK_HTTP)) {
+    lexer_next_token(parser->lexer);
+    if (parser_match_id(parser, "get")) {
+      lexer_next_token(parser->lexer);
+      ASTNode *url = parse_expression(parser);
+      return ast_http_get(url);
+    }
+  }
+
+  /* ws receive */
+  if (parser_match(parser, TOK_WEBSOCKET)) {
+    lexer_next_token(parser->lexer);
+    if (parser_match(parser, TOK_RECEIVE)) {
+      lexer_next_token(parser->lexer);
+      return ast_ws_receive();
+    }
   }
 
   // not expr (Standalone, TOK_NOT is its own token type)
@@ -2758,6 +2840,14 @@ static ASTNode *parse_statement(Parser *parser) {
     } else if (parser_match(parser, TOK_INTERRUPTS)) {
       lexer_next_token(parser->lexer);
       return ast_enable_interrupts();
+    } else if (parser_match(parser, TOK_BLE)) {
+      lexer_next_token(parser->lexer);
+      Token name_tok = parser->lexer->current_token;
+      name_tok.value = strdup(name_tok.value);
+      parser_expect(parser, TOK_STRING_LIT);
+      ASTNode *name = ast_string(name_tok.value);
+      free(name_tok.value);
+      return ast_ble_enable(name);
     }
   }
 
@@ -2766,6 +2856,87 @@ static ASTNode *parse_statement(Parser *parser) {
     if (parser_match(parser, TOK_INTERRUPTS)) {
       lexer_next_token(parser->lexer);
       return ast_disable_interrupts();
+    }
+  }
+
+  /* ============================================================
+   * Wave 3: Communication Statement Handlers
+   * ============================================================ */
+
+  /* connect wifi "ssid" password "pass" | connect mqtt "url" port N | connect
+   * websocket "url" */
+  if (parser_match(parser, TOK_CONNECT)) {
+    lexer_next_token(parser->lexer);
+    if (parser_match(parser, TOK_WIFI)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *ssid = parse_expression(parser);
+      parser_expect_id(parser, "password");
+      ASTNode *password = parse_expression(parser);
+      return ast_wifi_connect(ssid, password);
+    } else if (parser_match(parser, TOK_MQTT)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *broker = parse_expression(parser);
+      parser_expect_id(parser, "port");
+      ASTNode *port = parse_expression(parser);
+      return ast_mqtt_connect(broker, port);
+    } else if (parser_match(parser, TOK_WEBSOCKET)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *url = parse_expression(parser);
+      return ast_ws_connect(url);
+    }
+  }
+
+  /* ble advertise "data" | ble send expr */
+  if (parser_match(parser, TOK_BLE)) {
+    lexer_next_token(parser->lexer);
+    if (parser_match_id(parser, "advertise")) {
+      lexer_next_token(parser->lexer);
+      ASTNode *data = parse_expression(parser);
+      return ast_ble_advertise(data);
+    } else if (parser_match(parser, TOK_SEND)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *data = parse_expression(parser);
+      return ast_ble_send(data);
+    }
+  }
+
+  /* mqtt subscribe "topic" | mqtt publish "topic" expr */
+  if (parser_match(parser, TOK_MQTT)) {
+    lexer_next_token(parser->lexer);
+    if (parser_match(parser, TOK_SUBSCRIBE)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *topic = parse_expression(parser);
+      return ast_mqtt_subscribe(topic);
+    } else if (parser_match(parser, TOK_PUBLISH)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *topic = parse_expression(parser);
+      ASTNode *payload = parse_expression(parser);
+      return ast_mqtt_publish(topic, payload);
+    }
+  }
+
+  /* http post "url" body expr */
+  if (parser_match(parser, TOK_HTTP)) {
+    lexer_next_token(parser->lexer);
+    if (parser_match_id(parser, "post")) {
+      lexer_next_token(parser->lexer);
+      ASTNode *url = parse_expression(parser);
+      parser_expect_id(parser, "body");
+      ASTNode *body = parse_expression(parser);
+      return ast_http_post(url, body);
+    }
+  }
+
+  /* ws send expr | ws close */
+  if (parser_match(parser, TOK_WEBSOCKET)) {
+    lexer_next_token(parser->lexer);
+    if (parser_match(parser, TOK_SEND)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *data = parse_expression(parser);
+      return ast_ws_send(data);
+    } else if (parser_match_id(parser, "close")) {
+      lexer_next_token(parser->lexer);
+      return ast_ws_close();
     }
   }
 

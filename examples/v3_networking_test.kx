@@ -1,0 +1,40 @@
+# wave3_test.kx
+# Tests all Kinetrix Wave 3 communication features.
+
+program {
+    println "Starting Wave 3 Test..."
+    
+    # BLE Configuration
+    enable ble "KinetrixRobot"
+    ble advertise "sensor_data"
+    
+    # WiFi Configuration
+    connect wifi "MyNetwork" password "12345678"
+    
+    # MQTT Configuration
+    connect mqtt "broker.hivemq.com" port 1883
+    mqtt subscribe "kinetrix/test"
+    
+    # WebSocket
+    connect websocket "ws://echo.websocket.org"
+
+    # BLE
+    make var b_msg = ble receive
+    ble send "hello ble"
+    
+    # WiFi
+    make var ip = wifi ip
+    
+    # MQTT
+    make var m_msg = mqtt read
+    mqtt publish "kinetrix/test" "online"
+    
+    # HTTP
+    make var res = http get "http://api.kinetrix.com/status"
+    http post "http://api.kinetrix.com/data" body "{'test': 1}"
+    
+    # WebSocket
+    make var w_msg = ws receive
+    ws send "hello ws"
+    ws close
+}

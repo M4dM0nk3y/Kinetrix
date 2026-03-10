@@ -262,6 +262,38 @@ set pid target 100
 make float out = compute pid pos
 ```
 
+### Library Wrappers — Wave 3: Communication & Networking (V3.1) 🆕
+
+Full stack networking features across all target platforms.
+
+```kinetrix
+# BLE
+enable ble "KinetrixRobot"
+ble advertise "sensor_data"
+make var b_msg = ble receive
+ble send "hello ble"
+
+# WiFi
+connect wifi "MyNetwork" password "12345678"
+make var ip = wifi ip
+
+# MQTT
+connect mqtt "broker.hivemq.com" port 1883
+mqtt subscribe "kinetrix/test"
+make var m_msg = mqtt read
+mqtt publish "kinetrix/test" "online"
+
+# HTTP/REST
+make var res = http get "http://api.kinetrix.com/status"
+http post "http://api.kinetrix.com/data" body "{'status': 'ok'}"
+
+# WebSockets
+connect websocket "ws://echo.websocket.org"
+make var w_msg = ws receive
+ws send "hello ws"
+ws close
+```
+
 ### Safety Features
 
 ```kinetrix

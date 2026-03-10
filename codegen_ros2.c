@@ -181,6 +181,23 @@ static void ros2_expr(CodeGen *gen, ASTNode *node) {
     ros2_expr(gen, node->data.pid_compute.current_val);
     codegen_emit(gen, ")");
     break;
+
+  /* Wave 3: Communication Expressions */
+  case NODE_BLE_RECEIVE:
+    codegen_emit(gen, "ble_msg_");
+    break;
+  case NODE_WIFI_IP:
+    codegen_emit(gen, "wifi_ip_");
+    break;
+  case NODE_MQTT_READ:
+    codegen_emit(gen, "mqtt_msg_");
+    break;
+  case NODE_HTTP_GET:
+    codegen_emit(gen, "std::string(\"\") /* HTTP GET stub */");
+    break;
+  case NODE_WS_RECEIVE:
+    codegen_emit(gen, "ws_msg_");
+    break;
   default:
     codegen_emit(gen, "0.0");
     break;
@@ -481,7 +498,94 @@ static void ros2_stmt(CodeGen *gen, ASTNode *node) {
     codegen_emit_indent(gen);
     codegen_emit(gen, "compute_pid(");
     ros2_expr(gen, node->data.pid_compute.current_val);
-    codegen_emit(gen, ")");
+    codegen_emit(gen, ");\n");
+    break;
+
+  /* Wave 3: Communication Statements */
+  case NODE_BLE_ENABLE:
+    codegen_emit_indent(gen);
+    codegen_emit(
+        gen,
+        "RCLCPP_INFO(this->get_logger(), \"BLE Enable: %%s\", std::string(");
+    ros2_expr(gen, node->data.ble_enable.name);
+    codegen_emit(gen, ").c_str());\n");
+    break;
+  case NODE_BLE_ADVERTISE:
+    codegen_emit_indent(gen);
+    codegen_emit(
+        gen,
+        "RCLCPP_INFO(this->get_logger(), \"BLE Advertise: %%s\", std::string(");
+    ros2_expr(gen, node->data.ble_advertise.data);
+    codegen_emit(gen, ").c_str());\n");
+    break;
+  case NODE_BLE_SEND:
+    codegen_emit_indent(gen);
+    codegen_emit(
+        gen, "RCLCPP_INFO(this->get_logger(), \"BLE Send: %%s\", std::string(");
+    ros2_expr(gen, node->data.ble_send.data);
+    codegen_emit(gen, ").c_str());\n");
+    break;
+  case NODE_WIFI_CONNECT:
+    codegen_emit_indent(gen);
+    codegen_emit(
+        gen,
+        "RCLCPP_INFO(this->get_logger(), \"WiFi Connect: %%s\", std::string(");
+    ros2_expr(gen, node->data.wifi_connect.ssid);
+    codegen_emit(gen, ").c_str());\n");
+    codegen_emit_line(gen, "wifi_ip_ = \"127.0.0.1\";");
+    break;
+  case NODE_MQTT_CONNECT:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "RCLCPP_INFO(this->get_logger(), \"MQTT Connect to: "
+                      "%%s:%%d\", std::string(");
+    ros2_expr(gen, node->data.mqtt_connect.broker);
+    codegen_emit(gen, ").c_str(), (int)(");
+    ros2_expr(gen, node->data.mqtt_connect.port);
+    codegen_emit(gen, "));\n");
+    break;
+  case NODE_MQTT_SUBSCRIBE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "RCLCPP_INFO(this->get_logger(), \"MQTT Subscribe: "
+                      "%%s\", std::string(");
+    ros2_expr(gen, node->data.mqtt_subscribe.topic);
+    codegen_emit(gen, ").c_str());\n");
+    break;
+  case NODE_MQTT_PUBLISH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "RCLCPP_INFO(this->get_logger(), \"MQTT Publish to %%s: "
+                      "%%s\", std::string(");
+    ros2_expr(gen, node->data.mqtt_publish.topic);
+    codegen_emit(gen, ").c_str(), std::string(");
+    ros2_expr(gen, node->data.mqtt_publish.payload);
+    codegen_emit(gen, ").c_str());\n");
+    break;
+  case NODE_HTTP_POST:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "RCLCPP_INFO(this->get_logger(), \"HTTP POST to %%s: "
+                      "%%s\", std::string(");
+    ros2_expr(gen, node->data.http_post.url);
+    codegen_emit(gen, ").c_str(), std::string(");
+    ros2_expr(gen, node->data.http_post.body);
+    codegen_emit(gen, ").c_str());\n");
+    break;
+  case NODE_WS_CONNECT:
+    codegen_emit_indent(gen);
+    codegen_emit(
+        gen,
+        "RCLCPP_INFO(this->get_logger(), \"WS Connect to %%s\", std::string(");
+    ros2_expr(gen, node->data.ws_connect.url);
+    codegen_emit(gen, ").c_str());\n");
+    break;
+  case NODE_WS_SEND:
+    codegen_emit_indent(gen);
+    codegen_emit(
+        gen, "RCLCPP_INFO(this->get_logger(), \"WS Send: %%s\", std::string(");
+    ros2_expr(gen, node->data.ws_send.data);
+    codegen_emit(gen, ").c_str());\n");
+    break;
+  case NODE_WS_CLOSE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "RCLCPP_INFO(this->get_logger(), \"WS Close\");\n");
     break;
   default:
     break;
@@ -582,6 +686,11 @@ void codegen_generate_ros2(CodeGen *gen, ASTNode *program) {
                          "pid_integral_ = 0.0;");
   codegen_emit_line(gen, "  rclcpp::Time pid_last_time_;");
 
+  /* Wave 3 Globals */
+  codegen_emit_line(gen, "  std::string ble_msg_ = \"\";");
+  codegen_emit_line(gen, "  std::string mqtt_msg_ = \"\";");
+  codegen_emit_line(gen, "  std::string ws_msg_ = \"\";");
+  codegen_emit_line(gen, "  std::string wifi_ip_ = \"\";\n");
   /* PID Helper Function */
   codegen_emit_line(gen, "  void compute_pid(double current_val) {");
   codegen_emit_line(gen, "    auto now = this->now();");

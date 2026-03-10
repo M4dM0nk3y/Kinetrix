@@ -213,6 +213,24 @@ typedef enum {
   NODE_PID_TARGET,     /* set pid target N */
   NODE_PID_COMPUTE,    /* compute pid current */
 
+  /* Library wrappers - Wave 3 (Communication & Networking) */
+  NODE_BLE_ENABLE,     /* enable ble "name" */
+  NODE_BLE_ADVERTISE,  /* ble advertise "data" */
+  NODE_BLE_SEND,       /* ble send expr */
+  NODE_BLE_RECEIVE,    /* ble receive (expression) */
+  NODE_WIFI_CONNECT,   /* connect wifi "ssid" password "pass" */
+  NODE_WIFI_IP,        /* wifi ip (expression) */
+  NODE_MQTT_CONNECT,   /* connect mqtt "broker" port N */
+  NODE_MQTT_SUBSCRIBE, /* mqtt subscribe "topic" */
+  NODE_MQTT_PUBLISH,   /* mqtt publish "topic" expr */
+  NODE_MQTT_READ,      /* mqtt read (expression) */
+  NODE_HTTP_GET,       /* http get "url" (expression) */
+  NODE_HTTP_POST,      /* http post "url" body expr */
+  NODE_WS_CONNECT,     /* connect websocket "url" */
+  NODE_WS_SEND,        /* ws send expr */
+  NODE_WS_RECEIVE,     /* ws receive (expression) */
+  NODE_WS_CLOSE,       /* ws close */
+
   /* Program root */
   NODE_PROGRAM
 } NodeType;
@@ -610,6 +628,57 @@ struct ASTNode {
       ASTNode *current_val;
     } pid_compute;
 
+    /* Wave 3: BLE */
+    struct {
+      ASTNode *name;
+    } ble_enable;
+    struct {
+      ASTNode *data;
+    } ble_advertise;
+    struct {
+      ASTNode *data;
+    } ble_send;
+    /* ble_receive has no data fields */
+
+    /* Wave 3: WiFi */
+    struct {
+      ASTNode *ssid;
+      ASTNode *password;
+    } wifi_connect;
+    /* wifi_ip has no data fields */
+
+    /* Wave 3: MQTT */
+    struct {
+      ASTNode *broker;
+      ASTNode *port;
+    } mqtt_connect;
+    struct {
+      ASTNode *topic;
+    } mqtt_subscribe;
+    struct {
+      ASTNode *topic;
+      ASTNode *payload;
+    } mqtt_publish;
+    /* mqtt_read has no data fields */
+
+    /* Wave 3: HTTP */
+    struct {
+      ASTNode *url;
+    } http_get;
+    struct {
+      ASTNode *url;
+      ASTNode *body;
+    } http_post;
+
+    /* Wave 3: WebSocket */
+    struct {
+      ASTNode *url;
+    } ws_connect;
+    struct {
+      ASTNode *data;
+    } ws_send;
+    /* ws_receive and ws_close have no data fields */
+
     /* Radio */
     struct {
       ASTNode *peer_id;
@@ -843,5 +912,23 @@ ASTNode *ast_esc_throttle(ASTNode *throttle);
 ASTNode *ast_pid_attach(ASTNode *kp, ASTNode *ki, ASTNode *kd);
 ASTNode *ast_pid_target(ASTNode *target);
 ASTNode *ast_pid_compute(ASTNode *current);
+
+/* Wave 3: Communication & Networking */
+ASTNode *ast_ble_enable(ASTNode *name);
+ASTNode *ast_ble_advertise(ASTNode *data);
+ASTNode *ast_ble_send(ASTNode *data);
+ASTNode *ast_ble_receive(void);
+ASTNode *ast_wifi_connect(ASTNode *ssid, ASTNode *password);
+ASTNode *ast_wifi_ip(void);
+ASTNode *ast_mqtt_connect(ASTNode *broker, ASTNode *port);
+ASTNode *ast_mqtt_subscribe(ASTNode *topic);
+ASTNode *ast_mqtt_publish(ASTNode *topic, ASTNode *payload);
+ASTNode *ast_mqtt_read(void);
+ASTNode *ast_http_get(ASTNode *url);
+ASTNode *ast_http_post(ASTNode *url, ASTNode *body);
+ASTNode *ast_ws_connect(ASTNode *url);
+ASTNode *ast_ws_send(ASTNode *data);
+ASTNode *ast_ws_receive(void);
+ASTNode *ast_ws_close(void);
 
 #endif /* KINETRIX_AST_H */

@@ -253,6 +253,25 @@ static void rpi_expression(CodeGen *gen, ASTNode *node) {
     rpi_emit(gen, "(_kx_encoder_pos if '_kx_encoder_pos' in globals() else 0)");
     break;
 
+  /* Wave 3: Communication Expressions */
+  case NODE_BLE_RECEIVE:
+    rpi_emit(gen, "_kx_ble_msg");
+    break;
+  case NODE_WIFI_IP:
+    rpi_emit(gen, "_kx_wifi_ip");
+    break;
+  case NODE_MQTT_READ:
+    rpi_emit(gen, "_kx_mqtt_msg");
+    break;
+  case NODE_HTTP_GET:
+    rpi_emit(gen, "requests.get(");
+    rpi_expression(gen, node->data.unary.child);
+    rpi_emit(gen, ").text");
+    break;
+  case NODE_WS_RECEIVE:
+    rpi_emit(gen, "_kx_ws_msg");
+    break;
+
   case NODE_PID_COMPUTE:
     rpi_emit(gen, "_kx_compute_pid(");
     rpi_expression(gen, node->data.pid_compute.current_val);
@@ -960,6 +979,101 @@ static void rpi_statement(CodeGen *gen, ASTNode *node) {
     rpi_expression(gen, node->data.unary.child);
     rpi_emit(gen, "\n");
     break;
+
+  /* Wave 3: Communication Statements */
+  case NODE_BLE_ENABLE:
+    rpi_indent(gen);
+    rpi_emit(gen, "global _kx_ble_msg\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_ble_msg = ''\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "print('BLE enabled: ', ");
+    rpi_expression(gen, node->data.ble_enable.name);
+    rpi_emit(gen, ")\n");
+    break;
+  case NODE_BLE_ADVERTISE:
+    rpi_indent(gen);
+    rpi_emit(gen, "print('BLE advertise: ', ");
+    rpi_expression(gen, node->data.ble_advertise.data);
+    rpi_emit(gen, ")\n");
+    break;
+  case NODE_BLE_SEND:
+    rpi_indent(gen);
+    rpi_emit(gen, "print('BLE send: ', ");
+    rpi_expression(gen, node->data.ble_send.data);
+    rpi_emit(gen, ")\n");
+    break;
+  case NODE_WIFI_CONNECT:
+    rpi_indent(gen);
+    rpi_emit(gen, "global _kx_wifi_ip\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_wifi_ip = socket.gethostbyname(socket.gethostname())\n");
+    break;
+  case NODE_MQTT_CONNECT:
+    rpi_indent(gen);
+    rpi_emit(gen, "global _kx_mqtt_client\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_mqtt_client = mqtt.Client()\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "def _on_message(client, userdata, message):\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "    global _kx_mqtt_msg\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "    _kx_mqtt_msg = str(message.payload.decode('utf-8'))\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_mqtt_client.on_message = _on_message\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_mqtt_client.connect(str(");
+    rpi_expression(gen, node->data.mqtt_connect.broker);
+    rpi_emit(gen, "), int(");
+    rpi_expression(gen, node->data.mqtt_connect.port);
+    rpi_emit(gen, "))\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_mqtt_client.loop_start()\n");
+    break;
+  case NODE_MQTT_SUBSCRIBE:
+    rpi_indent(gen);
+    rpi_emit(gen, "if _kx_mqtt_client: _kx_mqtt_client.subscribe(str(");
+    rpi_expression(gen, node->data.mqtt_subscribe.topic);
+    rpi_emit(gen, "))\n");
+    break;
+  case NODE_MQTT_PUBLISH:
+    rpi_indent(gen);
+    rpi_emit(gen, "if _kx_mqtt_client: _kx_mqtt_client.publish(str(");
+    rpi_expression(gen, node->data.mqtt_publish.topic);
+    rpi_emit(gen, "), str(");
+    rpi_expression(gen, node->data.mqtt_publish.payload);
+    rpi_emit(gen, "))\n");
+    break;
+  case NODE_HTTP_POST:
+    rpi_indent(gen);
+    rpi_emit(gen, "requests.post(");
+    rpi_expression(gen, node->data.http_post.url);
+    rpi_emit(gen, ", data=");
+    rpi_expression(gen, node->data.http_post.body);
+    rpi_emit(gen, ")\n");
+    break;
+  case NODE_WS_CONNECT:
+    rpi_indent(gen);
+    rpi_emit(gen,
+             "global _kx_ws_client; _kx_ws_client = websocket.WebSocket()\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_ws_client.connect(");
+    rpi_expression(gen, node->data.ws_connect.url);
+    rpi_emit(gen, ")\n");
+    break;
+  case NODE_WS_SEND:
+    rpi_indent(gen);
+    rpi_emit(gen, "if _kx_ws_client: _kx_ws_client.send(str(");
+    rpi_expression(gen, node->data.ws_send.data);
+    rpi_emit(gen, "))\n");
+    break;
+  case NODE_WS_CLOSE:
+    rpi_indent(gen);
+    rpi_emit(gen,
+             "if _kx_ws_client: _kx_ws_client.close(); _kx_ws_client = None\n");
+    break;
+
   case NODE_PID_COMPUTE:
     rpi_emit(gen, "_kx_compute_pid(");
     rpi_expression(gen, node->data.pid_compute.current_val);
@@ -1044,7 +1158,15 @@ void codegen_generate_rpi(CodeGen *gen, ASTNode *program) {
   rpi_emit_line(gen, "import digitalio");
   rpi_emit_line(gen, "import board");
   rpi_emit_line(gen, "import adafruit_mcp3xxx.mcp3008 as MCP");
-  rpi_emit_line(gen, "from adafruit_mcp3xxx.analog_in import AnalogIn\n");
+  rpi_emit_line(gen, "from adafruit_mcp3xxx.analog_in import AnalogIn");
+
+  /* Wave 3 Imports */
+  rpi_emit_line(gen, "import socket");
+  rpi_emit_line(gen, "try:");
+  rpi_emit_line(gen, "    import requests");
+  rpi_emit_line(gen, "    import paho.mqtt.client as mqtt");
+  rpi_emit_line(gen, "    import websocket");
+  rpi_emit_line(gen, "except ImportError: pass\n");
   rpi_emit_line(gen, "# GPIO setup");
   rpi_emit_line(gen, "GPIO.setmode(GPIO.BCM)");
   rpi_emit_line(gen, "GPIO.setwarnings(False)");
@@ -1074,7 +1196,15 @@ void codegen_generate_rpi(CodeGen *gen, ASTNode *program) {
   rpi_emit_line(gen, "_kx_pid_setpoint = 0");
   rpi_emit_line(gen, "_kx_pid_last_err = 0");
   rpi_emit_line(gen, "_kx_pid_integral = 0");
-  rpi_emit_line(gen, "_kx_pid_last_time = time.time()\n");
+  rpi_emit_line(gen, "_kx_pid_last_time = time.time()");
+
+  /* Wave 3 Globals */
+  rpi_emit_line(gen, "_kx_mqtt_client = None");
+  rpi_emit_line(gen, "_kx_mqtt_msg = ''");
+  rpi_emit_line(gen, "_kx_ws_client = None");
+  rpi_emit_line(gen, "_kx_ws_msg = ''");
+  rpi_emit_line(gen, "_kx_ble_msg = ''");
+  rpi_emit_line(gen, "_kx_wifi_ip = ''\n");
 
   rpi_emit_line(gen, "def _kx_compute_pid(current_val):");
   rpi_emit_line(

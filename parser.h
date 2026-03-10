@@ -173,6 +173,16 @@ typedef enum {
   TOK_ESC,     /* esc     */
   TOK_PID,     /* pid     */
 
+  /* Wave 3 Communication & Networking */
+  TOK_CONNECT,   /* connect   */
+  TOK_BLE,       /* ble       */
+  TOK_WIFI,      /* wifi      */
+  TOK_MQTT,      /* mqtt      */
+  TOK_HTTP,      /* http      */
+  TOK_WEBSOCKET, /* websocket */
+  TOK_SUBSCRIBE, /* subscribe */
+  TOK_PUBLISH,   /* publish   */
+
   /* FFI */
   TOK_COLON, /* : */
   TOK_ARROW, /* -> */
@@ -227,6 +237,7 @@ ASTNode *parser_parse(Parser *parser);
 
 /* Helper functions */
 int parser_expect(Parser *parser, TokenType type);
+int parser_expect_id(Parser *parser, const char *id);
 int parser_match(Parser *parser, TokenType type);
 
 #endif /* KINETRIX_PARSER_H */

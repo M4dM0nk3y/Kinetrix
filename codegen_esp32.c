@@ -271,6 +271,25 @@ static void esp32_expression(CodeGen *gen, ASTNode *node) {
     codegen_emit(gen, ", 1), Wire.read())");
     break;
 
+  case NODE_BLE_RECEIVE:
+    codegen_emit(gen, "_kx_ble_msg");
+    break;
+  case NODE_WIFI_IP:
+    codegen_emit(gen, "WiFi.localIP().toString()");
+    break;
+  case NODE_MQTT_READ:
+    codegen_emit(gen, "_kx_mqtt_msg");
+    break;
+  case NODE_HTTP_GET:
+    codegen_emit(gen, "[&]() -> String { HTTPClient http; http.begin(");
+    esp32_expression(gen, node->data.unary.child);
+    codegen_emit(gen, "); int code = http.GET(); String res = (code > 0) ? "
+                      "http.getString() : \"\"; http.end(); return res; }() ");
+    break;
+  case NODE_WS_RECEIVE:
+    codegen_emit(gen, "_kx_ws_msg");
+    break;
+
   default:
     codegen_emit(gen, "0 /* unsupported expr */");
     break;
@@ -938,6 +957,119 @@ static void esp32_statement(CodeGen *gen, ASTNode *node) {
     codegen_emit_line(gen, "}\n");
     break;
 
+  case NODE_BLE_ENABLE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "BLEDevice::init((String(");
+    esp32_expression(gen, node->data.ble_enable.name);
+    codegen_emit_line(gen, ")).c_str());");
+    codegen_emit_line(gen, "  BLEServer *pServer = BLEDevice::createServer();");
+    codegen_emit_line(
+        gen,
+        "  BLEService *pService = "
+        "pServer->createService(\"4fafc201-1fb5-459e-8fcc-c5c9c331914b\");");
+    codegen_emit_line(gen,
+                      "  _kx_ble_char = "
+                      "pService->createCharacteristic(\"beb5483e-36e1-4688-"
+                      "b7f5-ea07361b26a8\", BLECharacteristic::PROPERTY_READ | "
+                      "BLECharacteristic::PROPERTY_WRITE | "
+                      "BLECharacteristic::PROPERTY_NOTIFY);");
+    codegen_emit_line(gen,
+                      "  _kx_ble_char->setCallbacks(new _kx_BLECallbacks());");
+    codegen_emit_line(gen, "  pService->start();");
+    codegen_emit_line(
+        gen, "  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();");
+    codegen_emit_line(gen, "  "
+                           "pAdvertising->addServiceUUID(\"4fafc201-1fb5-459e-"
+                           "8fcc-c5c9c331914b\");");
+    codegen_emit_line(gen, "  pAdvertising->setScanResponse(true);");
+    codegen_emit_line(gen, "  pAdvertising->setMinPreferred(0x06);");
+    codegen_emit_line(gen, "  pAdvertising->setMinPreferred(0x12);");
+    codegen_emit_line(gen, "  BLEDevice::startAdvertising();");
+    break;
+  case NODE_BLE_ADVERTISE:
+    /* handled loosely by startAdvertising in enable */
+    break;
+  case NODE_BLE_SEND:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "if (_kx_ble_char) _kx_ble_char->setValue(String(");
+    esp32_expression(gen, node->data.ble_send.data);
+    codegen_emit_line(gen, ").c_str());");
+    codegen_emit_line(gen, "if (_kx_ble_char) _kx_ble_char->notify();");
+    break;
+  case NODE_WIFI_CONNECT:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "WiFi.begin(String(");
+    esp32_expression(gen, node->data.wifi_connect.ssid);
+    codegen_emit(gen, ").c_str(), String(");
+    esp32_expression(gen, node->data.wifi_connect.password);
+    codegen_emit_line(gen, ").c_str());");
+    codegen_emit_line(
+        gen, "  while (WiFi.status() != WL_CONNECTED) { delay(500); }");
+    break;
+  case NODE_MQTT_CONNECT:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_mqttClient.setServer(String(");
+    esp32_expression(gen, node->data.mqtt_connect.broker);
+    codegen_emit(gen, ").c_str(), ");
+    esp32_expression(gen, node->data.mqtt_connect.port);
+    codegen_emit_line(gen, ");");
+    codegen_emit_line(gen, "  while (!_kx_mqttClient.connected()) { if "
+                           "(_kx_mqttClient.connect(\"KinetrixClient\")) { "
+                           "break; } delay(1000); }");
+    break;
+  case NODE_MQTT_SUBSCRIBE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_mqttClient.subscribe(String(");
+    esp32_expression(gen, node->data.mqtt_subscribe.topic);
+    codegen_emit_line(gen, ").c_str());");
+    codegen_emit_line(
+        gen, "  _kx_mqttClient.setCallback([](char* topic, byte* payload, "
+             "unsigned int length) { _kx_mqtt_msg = \"\"; for(int "
+             "i=0;i<length;i++) _kx_mqtt_msg += (char)payload[i]; });");
+    break;
+  case NODE_MQTT_PUBLISH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_mqttClient.publish(String(");
+    esp32_expression(gen, node->data.mqtt_publish.topic);
+    codegen_emit(gen, ").c_str(), String(");
+    esp32_expression(gen, node->data.mqtt_publish.payload);
+    codegen_emit_line(gen, ").c_str());");
+    break;
+  case NODE_HTTP_POST:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "{ HTTPClient http; http.begin(");
+    esp32_expression(gen, node->data.http_post.url);
+    codegen_emit_line(gen, ");");
+    codegen_emit_line(
+        gen, "  http.addHeader(\"Content-Type\", \"application/json\");");
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "  http.POST(String(");
+    esp32_expression(gen, node->data.http_post.body);
+    codegen_emit_line(gen, ")); http.end(); }");
+    break;
+  case NODE_WS_CONNECT:
+    codegen_emit_indent(gen);
+    /* In a real scenario we parse URL into host, port, path */
+    codegen_emit(gen, "/* Connect WebSocket to: ");
+    esp32_expression(gen, node->data.ws_connect.url);
+    codegen_emit_line(gen, " (WebSocketsClient simplified stub) */");
+    codegen_emit_line(
+        gen, "  _kx_wsClient.begin(\"echo.websocket.org\", 80, \"/\");");
+    codegen_emit_line(
+        gen,
+        "  _kx_wsClient.onEvent([](WStype_t type, uint8_t * payload, size_t "
+        "length) { if(type == WStype_TEXT) _kx_ws_msg = (char*)payload; });");
+    break;
+  case NODE_WS_SEND:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_wsClient.sendTXT(String(");
+    esp32_expression(gen, node->data.ws_send.data);
+    codegen_emit_line(gen, "));");
+    break;
+  case NODE_WS_CLOSE:
+    codegen_emit_line(gen, "_kx_wsClient.disconnect();");
+    break;
+
   default:
     break;
   }
@@ -1073,6 +1205,15 @@ void codegen_generate_esp32(CodeGen *gen, ASTNode *program) {
   codegen_emit_line(gen, "#include <Stepper.h>");
   codegen_emit_line(gen, "#include <Encoder.h>");
   codegen_emit_line(gen, "#include <PID_v1.h>");
+
+  /* Wave 3 Includes */
+  codegen_emit_line(gen, "#include <BLEDevice.h>");
+  codegen_emit_line(gen, "#include <BLEServer.h>");
+  codegen_emit_line(gen, "#include <BLEUtils.h>");
+  codegen_emit_line(gen, "#include <PubSubClient.h>");
+  codegen_emit_line(gen, "#include <HTTPClient.h>");
+  codegen_emit_line(gen, "#include <WebSocketsClient.h>");
+
   codegen_emit_line(gen, "\n/* ESP32-specific declarations */");
 
   /* Wave 1 Globals */
@@ -1091,6 +1232,23 @@ void codegen_generate_esp32(CodeGen *gen, ASTNode *program) {
       gen,
       "double _kx_pid_setpoint = 0, _kx_pid_input = 0, _kx_pid_output = 0;\n");
   codegen_emit_line(gen, "PID *_kx_pid = NULL;\n");
+
+  /* Wave 3 Globals */
+  codegen_emit_line(gen, "WiFiClient _kx_wifiClient;");
+  codegen_emit_line(gen, "PubSubClient _kx_mqttClient(_kx_wifiClient);");
+  codegen_emit_line(gen, "WebSocketsClient _kx_wsClient;");
+  codegen_emit_line(gen, "String _kx_ble_msg = \"\";");
+  codegen_emit_line(gen, "String _kx_mqtt_msg = \"\";");
+  codegen_emit_line(gen, "String _kx_ws_msg = \"\";");
+  codegen_emit_line(
+      gen, "class _kx_BLECallbacks: public BLECharacteristicCallbacks {");
+  codegen_emit_line(gen,
+                    "  void onWrite(BLECharacteristic *pCharacteristic) {");
+  codegen_emit_line(gen,
+                    "    _kx_ble_msg = pCharacteristic->getValue().c_str();");
+  codegen_emit_line(gen, "  }");
+  codegen_emit_line(gen, "};");
+  codegen_emit_line(gen, "BLECharacteristic *_kx_ble_char = NULL;\n");
 
   /* PWM Tracker map for dynamic LEDC channels */
   codegen_emit_line(gen, "int _esp32_pwm_channels[40] = {0};");

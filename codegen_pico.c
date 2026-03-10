@@ -220,6 +220,25 @@ static void pico_expr(CodeGen *gen, ASTNode *node) {
               "(_kx_encoder_pos if '_kx_encoder_pos' in globals() else 0)");
     break;
 
+  /* Wave 3: Communication Expressions */
+  case NODE_BLE_RECEIVE:
+    pico_emit(gen, "_kx_ble_msg");
+    break;
+  case NODE_WIFI_IP:
+    pico_emit(gen, "_kx_wifi_ip");
+    break;
+  case NODE_MQTT_READ:
+    pico_emit(gen, "_kx_mqtt_msg");
+    break;
+  case NODE_HTTP_GET:
+    pico_emit(gen, "(urequests.get(");
+    pico_expr(gen, node->data.unary.child);
+    pico_emit(gen, ").text if 'urequests' in globals() else '')");
+    break;
+  case NODE_WS_RECEIVE:
+    pico_emit(gen, "_kx_ws_msg");
+    break;
+
   case NODE_PID_COMPUTE:
     pico_emit(gen, "_kx_compute_pid(");
     pico_expr(gen, node->data.pid_compute.current_val);
@@ -865,6 +884,112 @@ static void pico_stmt(CodeGen *gen, ASTNode *node) {
     pico_expr(gen, node->data.unary.child);
     pico_emit(gen, "\n");
     break;
+
+  /* Wave 3: Communication Statements */
+  case NODE_BLE_ENABLE:
+    pico_indent(gen);
+    pico_emit(gen, "global _kx_ble_msg\n");
+    pico_indent(gen);
+    pico_emit(gen, "print('BLE enable (stub): ', ");
+    pico_expr(gen, node->data.ble_enable.name);
+    pico_emit(gen, ")\n");
+    break;
+  case NODE_BLE_ADVERTISE:
+    pico_indent(gen);
+    pico_emit(gen, "print('BLE advertise (stub): ', ");
+    pico_expr(gen, node->data.ble_advertise.data);
+    pico_emit(gen, ")\n");
+    break;
+  case NODE_BLE_SEND:
+    pico_indent(gen);
+    pico_emit(gen, "print('BLE send (stub): ', ");
+    pico_expr(gen, node->data.ble_send.data);
+    pico_emit(gen, ")\n");
+    break;
+  case NODE_WIFI_CONNECT:
+    pico_indent(gen);
+    pico_emit(gen, "global _kx_wifi_ip\n");
+    pico_indent(gen);
+    pico_emit(gen, "try:\n");
+    gen->indent_level++;
+    pico_indent(gen);
+    pico_emit(gen, "_sta = network.WLAN(network.STA_IF); _sta.active(True)\n");
+    pico_indent(gen);
+    pico_emit(gen, "_sta.connect(str(");
+    pico_expr(gen, node->data.wifi_connect.ssid);
+    pico_emit(gen, "), str(");
+    pico_expr(gen, node->data.wifi_connect.password);
+    pico_emit(gen, "))\n");
+    pico_indent(gen);
+    pico_emit(gen, "while not _sta.isconnected(): utime.sleep(0.5)\n");
+    pico_indent(gen);
+    pico_emit(gen, "_kx_wifi_ip = _sta.ifconfig()[0]\n");
+    gen->indent_level--;
+    pico_indent(gen);
+    pico_emit(gen, "except: pass\n");
+    break;
+  case NODE_MQTT_CONNECT:
+    pico_indent(gen);
+    pico_emit(gen, "global _kx_mqtt_client\n");
+    pico_indent(gen);
+    pico_emit(gen, "try:\n");
+    gen->indent_level++;
+    pico_indent(gen);
+    pico_emit(gen, "_kx_mqtt_client = MQTTClient('KinetrixPico', str(");
+    pico_expr(gen, node->data.mqtt_connect.broker);
+    pico_emit(gen, "), port=int(");
+    pico_expr(gen, node->data.mqtt_connect.port);
+    pico_emit(gen, "))\n");
+    pico_indent(gen);
+    pico_emit(gen, "def _mq_cb(t, p): global _kx_mqtt_msg; _kx_mqtt_msg = "
+                   "p.decode('utf-8')\n");
+    pico_indent(gen);
+    pico_emit(gen, "_kx_mqtt_client.set_callback(_mq_cb)\n");
+    pico_indent(gen);
+    pico_emit(gen, "_kx_mqtt_client.connect()\n");
+    gen->indent_level--;
+    pico_indent(gen);
+    pico_emit(gen, "except: pass\n");
+    break;
+  case NODE_MQTT_SUBSCRIBE:
+    pico_indent(gen);
+    pico_emit(gen, "if _kx_mqtt_client: _kx_mqtt_client.subscribe(str(");
+    pico_expr(gen, node->data.mqtt_subscribe.topic);
+    pico_emit(gen, "))\n");
+    break;
+  case NODE_MQTT_PUBLISH:
+    pico_indent(gen);
+    pico_emit(gen, "if _kx_mqtt_client: _kx_mqtt_client.publish(str(");
+    pico_expr(gen, node->data.mqtt_publish.topic);
+    pico_emit(gen, "), str(");
+    pico_expr(gen, node->data.mqtt_publish.payload);
+    pico_emit(gen, "))\n");
+    break;
+  case NODE_HTTP_POST:
+    pico_indent(gen);
+    pico_emit(gen, "if 'urequests' in globals(): urequests.post(str(");
+    pico_expr(gen, node->data.http_post.url);
+    pico_emit(gen, "), data=str(");
+    pico_expr(gen, node->data.http_post.body);
+    pico_emit(gen, "))\n");
+    break;
+  case NODE_WS_CONNECT:
+    pico_indent(gen);
+    pico_emit(gen, "print('WS Connect (stub): ', ");
+    pico_expr(gen, node->data.ws_connect.url);
+    pico_emit(gen, ")\n");
+    break;
+  case NODE_WS_SEND:
+    pico_indent(gen);
+    pico_emit(gen, "print('WS Send (stub): ', ");
+    pico_expr(gen, node->data.ws_send.data);
+    pico_emit(gen, ")\n");
+    break;
+  case NODE_WS_CLOSE:
+    pico_indent(gen);
+    pico_emit(gen, "pass\n");
+    break;
+
   case NODE_PID_COMPUTE:
     pico_emit(gen, "_kx_compute_pid(");
     pico_expr(gen, node->data.pid_compute.current_val);
@@ -918,7 +1043,15 @@ void codegen_generate_pico(CodeGen *gen, ASTNode *program) {
   pico_emit_line(gen,
                  "# Flash: Thonny IDE  OR  mpremote copy robot.py :main.py\n");
   pico_emit_line(gen, "from machine import Pin, ADC, PWM, I2C, UART");
-  pico_emit_line(gen, "import utime, math\n");
+  pico_emit_line(gen, "import utime, math");
+
+  /* Wave 3 Imports */
+  pico_emit_line(gen, "try: import network");
+  pico_emit_line(gen, "except: pass");
+  pico_emit_line(gen, "try: import urequests");
+  pico_emit_line(gen, "except: pass");
+  pico_emit_line(gen, "try: from umqtt.simple import MQTTClient");
+  pico_emit_line(gen, "except: pass\n");
 
   pico_emit_line(gen, "def _safe_adc(pin):");
   pico_emit_line(gen, "    if pin not in (26, 27, 28, 29): return 0");
@@ -934,7 +1067,15 @@ void codegen_generate_pico(CodeGen *gen, ASTNode *program) {
   pico_emit_line(gen, "_kx_pid_kp, _kx_pid_ki, _kx_pid_kd = 0, 0, 0");
   pico_emit_line(
       gen, "_kx_pid_setpoint, _kx_pid_last_err, _kx_pid_integral = 0, 0, 0");
-  pico_emit_line(gen, "_kx_pid_last_time = utime.ticks_ms() / 1000.0\n");
+  pico_emit_line(gen, "_kx_pid_last_time = utime.ticks_ms() / 1000.0");
+
+  /* Wave 3 Globals */
+  pico_emit_line(gen, "_kx_mqtt_client = None");
+  pico_emit_line(gen, "_kx_mqtt_msg = ''");
+  pico_emit_line(gen, "_kx_ws_client = None");
+  pico_emit_line(gen, "_kx_ws_msg = ''");
+  pico_emit_line(gen, "_kx_ble_msg = ''");
+  pico_emit_line(gen, "_kx_wifi_ip = ''\n");
 
   pico_emit_line(gen, "def _kx_compute_pid(current_val):");
   pico_emit_line(

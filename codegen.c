@@ -357,6 +357,15 @@ static void codegen_expression(CodeGen *gen, ASTNode *node) {
     codegen_emit(gen, "(_kx_encoder ? _kx_encoder->read() : 0)");
     break;
 
+  /* Wave 3: Communication Expressions (Unsupported on Arduino Uno) */
+  case NODE_BLE_RECEIVE:
+  case NODE_WIFI_IP:
+  case NODE_MQTT_READ:
+  case NODE_HTTP_GET:
+  case NODE_WS_RECEIVE:
+    codegen_emit(gen, "(0.0 /* Unsupported on Arduino */)");
+    break;
+
   case NODE_PID_COMPUTE:
     codegen_emit(gen, "(_kx_pid_input = (double)(");
     codegen_expression(gen, node->data.pid_compute.current_val);
@@ -768,6 +777,23 @@ static void codegen_statement(CodeGen *gen, ASTNode *node) {
     codegen_expression(gen, node->data.unary.child);
     codegen_emit(gen, ";\n");
     break;
+
+  /* Wave 3: Communication Statements (Unsupported on Arduino Uno) */
+  case NODE_BLE_ENABLE:
+  case NODE_BLE_ADVERTISE:
+  case NODE_BLE_SEND:
+  case NODE_WIFI_CONNECT:
+  case NODE_MQTT_CONNECT:
+  case NODE_MQTT_SUBSCRIBE:
+  case NODE_MQTT_PUBLISH:
+  case NODE_HTTP_POST:
+  case NODE_WS_CONNECT:
+  case NODE_WS_SEND:
+  case NODE_WS_CLOSE:
+    codegen_emit_line(gen,
+                      "/* Networking unsupported on standard Arduino AVR */\n");
+    break;
+
   case NODE_PID_COMPUTE:
     codegen_emit_indent(gen);
     codegen_emit(gen, "[&]() -> double {\n");
