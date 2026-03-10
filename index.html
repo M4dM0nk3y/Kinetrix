@@ -203,7 +203,7 @@ body::before{
 ───────────────────────────────────────────── */
 nav{
   position:fixed;top:0;left:0;right:0;z-index:1000;
-  padding:1.2rem 3rem;
+  padding:1.2rem clamp(1.2rem,4vw,3rem);
   display:flex;align-items:center;justify-content:space-between;
   background:linear-gradient(180deg,rgba(5,2,9,0.95) 0%,transparent 100%);
   transition:background 0.4s;
@@ -350,7 +350,7 @@ nav{
 
 .chapter-inner{
   max-width:1200px;margin:0 auto;
-  padding:8rem 4rem;
+  padding:clamp(3rem,8vw,8rem) clamp(1.2rem,5vw,4rem);
   position:relative;z-index:2;
 }
 
@@ -783,7 +783,7 @@ nav{
   pointer-events:none;
 }
 .reckoning-inner{
-  padding:8rem 2rem;
+  padding:clamp(4rem,8vw,8rem) clamp(1.2rem,3vw,2rem);
   position:relative;z-index:2;
   max-width:800px;margin:0 auto;
 }
@@ -1445,7 +1445,185 @@ footer{
   text-align:center;
   line-height:1.8;
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE — TABLET (max 900px)
+═══════════════════════════════════════════ */
+@media (max-width: 900px) {
+
+  /* Nav */
+  #main-nav { padding: 1rem 1.5rem; }
+  .nav-ep { display: none; }
+
+  /* Hero */
+  .cold-inner { padding: 2rem 1.5rem; text-align: center; }
+  .cold-studio { font-size: 0.55rem; letter-spacing: 0.3em; }
+  .cold-logline { font-size: clamp(1rem, 2vw, 1.2rem); }
+  .ci-badge-row { justify-content: center; }
+
+  /* Ticker */
+  .ticker-item { font-size: 0.6rem; }
+
+  /* Chapter layout */
+  .chapter-inner { padding: 5rem 2rem; }
+  .chapter-title { font-size: clamp(2rem, 7vw, 4rem); }
+  .chapter-prose { font-size: clamp(1rem, 1.8vw, 1.2rem); }
+
+  /* World chapter */
+  .world-layout { flex-direction: column; align-items: center; }
+  .world-grid-wrap { width: min(300px, 80vw); margin: 0 auto 2rem; }
+  .world-prose-wrap { width: 100%; padding-left: 0; }
+
+  /* Villain chapter */
+  .villain-layout { flex-direction: column; align-items: center; }
+  .villain-text { width: 100%; }
+  .villain-sigil-wrap { width: 60%; max-width: 260px; margin: 2rem auto 0; }
+
+  /* Engineer chapter */
+  .engineer-layout { grid-template-columns: 1fr; }
+  .engineer-visual { display: none; }
+
+  /* Hero-axiom chapter */
+  .hero-axiom-layout { grid-template-columns: 1fr; }
+
+  /* Five awakened */
+  .five-intro { padding: 4rem 2rem 2rem; text-align: center; }
+  .five-grid { grid-template-columns: repeat(2, 1fr); gap: 1px; }
+  .awakened-card { padding: 1.5rem; }
+
+  /* Arsenal */
+  .arsenal-grid { grid-template-columns: repeat(2, 1fr); }
+  .weapon { padding: 1.5rem; }
+
+  /* Library wrappers */
+  .lib-grid { grid-template-columns: repeat(2, 1fr); }
+  .lib-card { padding: 1.5rem; }
+  .std-libs { grid-template-columns: repeat(2, 1fr); }
+
+  /* Reckoning */
+  .reckoning-inner { padding: 5rem 2rem; }
+  .reckoning-title { font-size: clamp(2.5rem, 7vw, 5rem); }
+  .dl-grid { grid-template-columns: 1fr; }
+
+  /* Epilogue */
+  .epilogue-inner { padding: 5rem 2rem; }
+  .ep-big { font-size: clamp(3rem, 9vw, 7rem); }
+
+  /* Contact */
+  .cf-inner { padding: 4rem 2rem; }
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — MOBILE (max 600px)
+═══════════════════════════════════════════ */
+@media (max-width: 600px) {
+
+  /* Base */
+  body { font-size: 16px; }
+
+  /* Nav */
+  #main-nav { padding: 0.9rem 1.2rem; }
+  .nav-brand { font-size: 0.9rem; letter-spacing: 0.2em; }
+  .nav-dl { font-size: 0.55rem; padding: 0.35rem 0.8rem; }
+
+  /* Hero */
+  .cold-inner { padding: 1.5rem 1.2rem; }
+  .cold-studio { display: none; }
+  #heartbeat-svg { width: 90%; }
+  .scroll-invite { margin-top: 2rem; }
+  .ci-badge-row { flex-direction: column; gap: 0.5rem; align-items: center; }
+  .ci-targets { text-align: center; }
+
+  /* Ticker */
+  .ticker-wrap { display: none; }
+
+  /* Chapters */
+  .chapter { min-height: auto !important; padding: 3rem 0; }
+  .chapter-inner { padding: 3rem 1.2rem; }
+  .chapter-label { font-size: 0.5rem; letter-spacing: 0.35em; }
+  .chapter-title { font-size: clamp(1.8rem, 8vw, 3rem); line-height: 1.1; }
+  .chapter-prose { font-size: 1rem; max-width: 100% !important; }
+  .divider { margin: 0; }
+
+  /* World */
+  .world-layout { flex-direction: column; }
+  .world-grid-wrap { width: 85vw; margin: 0 auto 2rem; }
+  .world-prose-wrap { padding-left: 0; }
+  .fragment-list li { font-size: 0.9rem; }
+
+  /* Villain */
+  .villain-layout { flex-direction: column; }
+  .villain-sigil-wrap { width: 70%; max-width: 200px; margin: 2rem auto 0; }
+  .villain-quote { font-size: clamp(1rem, 3.5vw, 1.3rem); }
+
+  /* Engineer */
+  .engineer-layout { grid-template-columns: 1fr; gap: 2rem; }
+  .engineer-visual { display: none; }
+  .engineer-bio { padding: 0; }
+
+  /* Hero-axiom */
+  .hero-axiom-layout { grid-template-columns: 1fr; }
+  .axiom-code-block { font-size: 0.62rem; padding: 1rem; }
+  .axiom-feat-grid { grid-template-columns: 1fr 1fr; }
+
+  /* Five awakened */
+  .five-intro { padding: 3rem 1.2rem 1.5rem; text-align: center; }
+  .five-grid { grid-template-columns: 1fr; gap: 1px; }
+  .awakened-card { padding: 1.5rem 1.2rem; }
+  .ac-story { font-size: 0.85rem; }
+
+  /* Arsenal */
+  .arsenal-grid { grid-template-columns: 1fr; }
+  .weapon { padding: 1.5rem 1.2rem; }
+  .weapon-name { font-size: 0.9rem; }
+  .weapon-code { font-size: 0.62rem; }
+
+  /* V3.1 Library wrappers */
+  .v31-badge { font-size: 0.52rem; }
+  .lib-grid { grid-template-columns: 1fr; gap: 1px; }
+  .lib-card { padding: 1.5rem 1.2rem; }
+  .lib-name { font-size: 0.82rem; }
+  .lib-code { font-size: 0.62rem; }
+  .std-libs { grid-template-columns: 1fr; }
+
+  /* Reckoning / Download */
+  .reckoning-inner { padding: 4rem 1.2rem; text-align: center; }
+  .reckoning-title { font-size: clamp(2.2rem, 10vw, 3.5rem); }
+  .reckoning-prose { font-size: 1rem; }
+  .dl-grid { grid-template-columns: 1fr; gap: 0.8rem; }
+  .dl-primary { font-size: 0.7rem; padding: 1rem 1.5rem; text-align: center; }
+  .dl-secondary { font-size: 0.65rem; }
+
+  /* Epilogue */
+  .epilogue-inner { padding: 4rem 1.2rem; }
+  .ep-season { font-size: 0.55rem; }
+  .ep-big { font-size: clamp(2.8rem, 12vw, 5rem); }
+  .ep-prose { font-size: 1rem; }
+  .roadmap-item { padding: 0.8rem 0; }
+  .rm-status { font-size: 0.5rem; padding: 0.2rem 0.5rem; }
+  .rm-text { font-size: 0.85rem; }
+
+  /* Contact form */
+  .cf-inner { padding: 3rem 1.2rem; }
+  .cf-grid { grid-template-columns: 1fr !important; }
+  .cf-input, .cf-textarea { font-size: 0.85rem; }
+  .cf-submit { width: 100%; }
+
+  /* CI badge */
+  .ci-badge { font-size: 0.52rem; padding: 0.3rem 0.7rem; }
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — SMALL MOBILE (max 380px)
+═══════════════════════════════════════════ */
+@media (max-width: 380px) {
+  .chapter-title { font-size: clamp(1.6rem, 9vw, 2.5rem); }
+  .cold-title { font-size: clamp(2.5rem, 13vw, 4rem) !important; }
+  .axiom-feat-grid { grid-template-columns: 1fr; }
+  .nav-dl { display: none; }
+  .reckoning-title { font-size: clamp(1.8rem, 11vw, 3rem); }
+}
 </style>
+
 </head>
 <body>
 
