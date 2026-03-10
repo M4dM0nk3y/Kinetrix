@@ -231,6 +231,25 @@ typedef enum {
   NODE_WS_RECEIVE,     /* ws receive (expression) */
   NODE_WS_CLOSE,       /* ws close */
 
+  /* Wave 4: Advanced Robotics & Storage */
+  NODE_IMU_ATTACH,   /* attach imu i2c */
+  NODE_IMU_READ_X,   /* read accel x | read gyro x */
+  NODE_IMU_READ_Y,   /* read accel y | read gyro y */
+  NODE_IMU_READ_Z,   /* read accel z | read gyro z */
+  NODE_IMU_ORIENT,   /* read orientation */
+  NODE_GPS_ATTACH,   /* attach gps serial N */
+  NODE_GPS_READ_LAT, /* read latitude */
+  NODE_GPS_READ_LON, /* read longitude */
+  NODE_GPS_READ_ALT, /* read altitude */
+  NODE_GPS_READ_SPD, /* read speed */
+  NODE_SD_MOUNT,     /* mount sd pin N */
+  NODE_FILE_OPEN,    /* open file "name" */
+  NODE_FILE_WRITE,   /* write file expr */
+  NODE_FILE_READ,    /* read file */
+  NODE_FILE_CLOSE,   /* close file */
+  NODE_LIDAR_ATTACH, /* attach lidar i2c */
+  NODE_LIDAR_READ,   /* read distance precise */
+
   /* Program root */
   NODE_PROGRAM
 } NodeType;
@@ -679,6 +698,34 @@ struct ASTNode {
     } ws_send;
     /* ws_receive and ws_close have no data fields */
 
+    /* Wave 4: IMU */
+    struct {
+      ASTNode *port; /* e.g., i2c or spi */
+    } imu_attach;
+
+    /* Wave 4: GPS */
+    struct {
+      ASTNode *port; /* serial */
+      ASTNode *baud; /* 9600 */
+    } gps_attach;
+
+    /* Wave 4: Lidar */
+    struct {
+      ASTNode *port; /* e.g. i2c */
+    } lidar_attach;
+
+    /* Wave 4: SD Card / Filesystem */
+    struct {
+      ASTNode *cs_pin;
+    } sd_mount;
+    struct {
+      ASTNode *filename;
+    } file_open;
+    struct {
+      ASTNode *data;
+    } file_write;
+    /* file_read and file_close are 0-arity or implicit, no fields */
+
     /* Radio */
     struct {
       ASTNode *peer_id;
@@ -930,5 +977,27 @@ ASTNode *ast_ws_connect(ASTNode *url);
 ASTNode *ast_ws_send(ASTNode *data);
 ASTNode *ast_ws_receive(void);
 ASTNode *ast_ws_close(void);
+
+/* --- Library Wrapper APIs (Wave 4 - Navigation & Storage) --- */
+ASTNode *ast_imu_attach(ASTNode *port);
+ASTNode *ast_imu_read_x(void);
+ASTNode *ast_imu_read_y(void);
+ASTNode *ast_imu_read_z(void);
+ASTNode *ast_imu_orient(void);
+
+ASTNode *ast_gps_attach(ASTNode *port, ASTNode *baud);
+ASTNode *ast_gps_read_lat(void);
+ASTNode *ast_gps_read_lon(void);
+ASTNode *ast_gps_read_alt(void);
+ASTNode *ast_gps_read_spd(void);
+
+ASTNode *ast_sd_mount(ASTNode *cs_pin);
+ASTNode *ast_file_open(ASTNode *filename);
+ASTNode *ast_file_write(ASTNode *data);
+ASTNode *ast_file_read(void);
+ASTNode *ast_file_close(void);
+
+ASTNode *ast_lidar_attach(ASTNode *port);
+ASTNode *ast_lidar_read(void);
 
 #endif /* KINETRIX_AST_H */

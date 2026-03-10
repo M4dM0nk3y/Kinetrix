@@ -1270,3 +1270,57 @@ ASTNode *ast_ws_send(ASTNode *data) {
 ASTNode *ast_ws_receive(void) { return ast_create(NODE_WS_RECEIVE); }
 
 ASTNode *ast_ws_close(void) { return ast_create(NODE_WS_CLOSE); }
+
+/* --- Library Wrapper APIs (Wave 4 - Navigation & Storage) --- */
+
+ASTNode *ast_imu_attach(ASTNode *port) {
+  ASTNode *node = ast_create(NODE_IMU_ATTACH);
+  node->data.imu_attach.port = port;
+  return node;
+}
+
+ASTNode *ast_imu_read_x(void) { return ast_create(NODE_IMU_READ_X); }
+ASTNode *ast_imu_read_y(void) { return ast_create(NODE_IMU_READ_Y); }
+ASTNode *ast_imu_read_z(void) { return ast_create(NODE_IMU_READ_Z); }
+ASTNode *ast_imu_orient(void) { return ast_create(NODE_IMU_ORIENT); }
+
+ASTNode *ast_gps_attach(ASTNode *port, ASTNode *baud) {
+  ASTNode *node = ast_create(NODE_GPS_ATTACH);
+  node->data.gps_attach.port = port;
+  node->data.gps_attach.baud = baud;
+  return node;
+}
+
+ASTNode *ast_gps_read_lat(void) { return ast_create(NODE_GPS_READ_LAT); }
+ASTNode *ast_gps_read_lon(void) { return ast_create(NODE_GPS_READ_LON); }
+ASTNode *ast_gps_read_alt(void) { return ast_create(NODE_GPS_READ_ALT); }
+ASTNode *ast_gps_read_spd(void) { return ast_create(NODE_GPS_READ_SPD); }
+
+ASTNode *ast_sd_mount(ASTNode *cs_pin) {
+  ASTNode *node = ast_create(NODE_SD_MOUNT);
+  node->data.sd_mount.cs_pin = cs_pin;
+  return node;
+}
+
+ASTNode *ast_file_open(ASTNode *filename) {
+  ASTNode *node = ast_create(NODE_FILE_OPEN);
+  node->data.file_open.filename = filename;
+  return node;
+}
+
+ASTNode *ast_file_write(ASTNode *data) {
+  ASTNode *node = ast_create(NODE_FILE_WRITE);
+  node->data.file_write.data = data;
+  return node;
+}
+
+ASTNode *ast_file_read(void) { return ast_create(NODE_FILE_READ); }
+ASTNode *ast_file_close(void) { return ast_create(NODE_FILE_CLOSE); }
+
+ASTNode *ast_lidar_attach(ASTNode *port) {
+  ASTNode *node = ast_create(NODE_LIDAR_ATTACH);
+  node->data.lidar_attach.port = port;
+  return node;
+}
+
+ASTNode *ast_lidar_read(void) { return ast_create(NODE_LIDAR_READ); }

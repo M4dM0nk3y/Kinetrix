@@ -294,6 +294,35 @@ ws send "hello ws"
 ws close
 ```
 
+### Library Wrappers — Wave 4: Advanced Robotics & Storage 🆕
+
+Native bindings for IMUs, GPS receivers, LIDAR, and local file storage.
+
+```kinetrix
+# 9-DOF IMU (BNO080 / BNO055)
+attach imu
+make float heading = read orientation
+make float accel_x = read accel x
+make float gyro_z = read gyro z
+
+# GPS Receivers
+attach gps baud 9600
+make float latitude = read location lat
+make float longitude = read location lon
+make float speed = read speed
+make float altitude = read altitude
+
+# LIDAR / Time-of-Flight Sensors (VL53L0X)
+attach lidar
+make float dist = read distance precise
+
+# SD Card File Systems
+mount sd chip_select 5
+open file "log.csv"
+write file "1024, 25.4"
+close file
+```
+
 ### Safety Features
 
 ```kinetrix

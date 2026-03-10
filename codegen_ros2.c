@@ -198,6 +198,39 @@ static void ros2_expr(CodeGen *gen, ASTNode *node) {
   case NODE_WS_RECEIVE:
     codegen_emit(gen, "ws_msg_");
     break;
+
+  /* Wave 4: Advanced Robotics & Storage Expressions */
+  case NODE_IMU_READ_X:
+    codegen_emit(gen, "imu_ax_");
+    break;
+  case NODE_IMU_READ_Y:
+    codegen_emit(gen, "imu_ay_");
+    break;
+  case NODE_IMU_READ_Z:
+    codegen_emit(gen, "imu_az_");
+    break;
+  case NODE_IMU_ORIENT:
+    codegen_emit(gen, "imu_head_");
+    break;
+  case NODE_GPS_READ_LAT:
+    codegen_emit(gen, "gps_lat_");
+    break;
+  case NODE_GPS_READ_LON:
+    codegen_emit(gen, "gps_lon_");
+    break;
+  case NODE_GPS_READ_ALT:
+    codegen_emit(gen, "gps_alt_");
+    break;
+  case NODE_GPS_READ_SPD:
+    codegen_emit(gen, "gps_spd_");
+    break;
+  case NODE_LIDAR_READ:
+    codegen_emit(gen, "lidar_dist_");
+    break;
+  case NODE_FILE_READ:
+    codegen_emit(gen, "std::string(\"\") /* ROS2 File Read Stub */");
+    break;
+
   default:
     codegen_emit(gen, "0.0");
     break;
@@ -587,6 +620,58 @@ static void ros2_stmt(CodeGen *gen, ASTNode *node) {
     codegen_emit_indent(gen);
     codegen_emit(gen, "RCLCPP_INFO(this->get_logger(), \"WS Close\");\n");
     break;
+
+  /* Wave 4: Advanced Robotics & Storage Statements */
+  case NODE_IMU_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit_line(gen, "RCLCPP_INFO(this->get_logger(), \"IMU Attach\");");
+    break;
+
+  case NODE_GPS_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(
+        gen,
+        "RCLCPP_INFO(this->get_logger(), \"GPS Attach (Baud: %d)\", (int)(");
+    ros2_expr(gen, node->data.gps_attach.baud);
+    codegen_emit(gen, "));\n");
+    break;
+
+  case NODE_LIDAR_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit_line(gen,
+                      "RCLCPP_INFO(this->get_logger(), \"Lidar Attach\");");
+    break;
+
+  case NODE_SD_MOUNT:
+    codegen_emit_indent(gen);
+    codegen_emit(
+        gen, "RCLCPP_INFO(this->get_logger(), \"SD Mount (CS: %d)\", (int)(");
+    ros2_expr(gen, node->data.sd_mount.cs_pin);
+    codegen_emit(gen, "));\n");
+    break;
+
+  case NODE_FILE_OPEN:
+    codegen_emit_indent(gen);
+    codegen_emit(
+        gen, "RCLCPP_INFO(this->get_logger(), \"File Open: %s\", std::string(");
+    ros2_expr(gen, node->data.file_open.filename);
+    codegen_emit(gen, ").c_str());\n");
+    break;
+
+  case NODE_FILE_WRITE:
+    codegen_emit_indent(gen);
+    codegen_emit(
+        gen,
+        "RCLCPP_INFO(this->get_logger(), \"File Write: %s\", std::string(");
+    ros2_expr(gen, node->data.file_write.data);
+    codegen_emit(gen, ").c_str());\n");
+    break;
+
+  case NODE_FILE_CLOSE:
+    codegen_emit_indent(gen);
+    codegen_emit_line(gen, "RCLCPP_INFO(this->get_logger(), \"File Close\");");
+    break;
+
   default:
     break;
   }
@@ -691,6 +776,14 @@ void codegen_generate_ros2(CodeGen *gen, ASTNode *program) {
   codegen_emit_line(gen, "  std::string mqtt_msg_ = \"\";");
   codegen_emit_line(gen, "  std::string ws_msg_ = \"\";");
   codegen_emit_line(gen, "  std::string wifi_ip_ = \"\";\n");
+
+  /* Wave 4 Globals */
+  codegen_emit_line(
+      gen,
+      "  double imu_ax_ = 0.0, imu_ay_ = 0.0, imu_az_ = 0.0, imu_head_ = 0.0;");
+  codegen_emit_line(gen, "  double gps_lat_ = 0.0, gps_lon_ = 0.0, gps_alt_ = "
+                         "0.0, gps_spd_ = 0.0;");
+  codegen_emit_line(gen, "  double lidar_dist_ = 0.0;\n");
   /* PID Helper Function */
   codegen_emit_line(gen, "  void compute_pid(double current_val) {");
   codegen_emit_line(gen, "    auto now = this->now();");

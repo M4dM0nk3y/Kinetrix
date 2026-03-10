@@ -183,6 +183,20 @@ typedef enum {
   TOK_SUBSCRIBE, /* subscribe */
   TOK_PUBLISH,   /* publish   */
 
+  /* Wave 4 Advanced Robotics & Storage */
+  TOK_IMU,         /* imu         */
+  TOK_ACCEL,       /* accel       */
+  TOK_GYRO,        /* gyro        */
+  TOK_ORIENTATION, /* orientation */
+  TOK_GPS,         /* gps         */
+  TOK_LATITUDE,    /* latitude    */
+  TOK_LONGITUDE,   /* longitude   */
+  TOK_ALTITUDE,    /* altitude    */
+  TOK_LIDAR,       /* lidar       */
+  TOK_PRECISE,     /* precise     */
+  TOK_SD,          /* sd          */
+  TOK_FILE,        /* file        */
+
   /* FFI */
   TOK_COLON, /* : */
   TOK_ARROW, /* -> */

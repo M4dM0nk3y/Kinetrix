@@ -294,6 +294,38 @@ static void pico_expr(CodeGen *gen, ASTNode *node) {
   case NODE_I2C_DEVICE_WRITE:
   case NODE_I2C_DEVICE_READ_ARRAY:
     break;
+  /* Wave 4: Advanced Robotics & Storage Expressions */
+  case NODE_IMU_READ_X:
+    pico_emit(gen, "(float(_kx_imu.acceleration[0]) if _kx_imu else 0.0)");
+    break;
+  case NODE_IMU_READ_Y:
+    pico_emit(gen, "(float(_kx_imu.acceleration[1]) if _kx_imu else 0.0)");
+    break;
+  case NODE_IMU_READ_Z:
+    pico_emit(gen, "(float(_kx_imu.acceleration[2]) if _kx_imu else 0.0)");
+    break;
+  case NODE_IMU_ORIENT:
+    pico_emit(gen, "(float(_kx_imu.euler[0]) if _kx_imu else 0.0)");
+    break;
+  case NODE_GPS_READ_LAT:
+    pico_emit(gen, "(float(_kx_gps.latitude) if _kx_gps else 0.0)");
+    break;
+  case NODE_GPS_READ_LON:
+    pico_emit(gen, "(float(_kx_gps.longitude) if _kx_gps else 0.0)");
+    break;
+  case NODE_GPS_READ_ALT:
+    pico_emit(gen, "(float(_kx_gps.altitude) if _kx_gps else 0.0)");
+    break;
+  case NODE_GPS_READ_SPD:
+    pico_emit(gen, "(float(_kx_gps.spd_over_grnd) if _kx_gps else 0.0)");
+    break;
+  case NODE_LIDAR_READ:
+    pico_emit(gen, "(float(_kx_lidar.read()) if _kx_lidar else 0.0)");
+    break;
+  case NODE_FILE_READ:
+    pico_emit(gen, "(str(_kx_file.read()) if _kx_file else \"\")");
+    break;
+
   default:
     pico_emit(gen, "0");
     break;
@@ -1030,6 +1062,81 @@ static void pico_stmt(CodeGen *gen, ASTNode *node) {
     gen->indent_level--;
     pico_emit(gen, "\n");
     break;
+  /* Wave 4: Advanced Robotics & Storage Statements */
+  case NODE_IMU_ATTACH:
+    pico_indent(gen);
+    pico_emit_line(gen, "global _kx_imu");
+    pico_indent(gen);
+    pico_emit_line(gen, "try:");
+    pico_indent(gen);
+    pico_emit_line(gen, "    from bno08x_i2c import BNO08X_I2C");
+    pico_indent(gen);
+    pico_emit_line(gen,
+                   "    _kx_imu = BNO08X_I2C(I2C(0, scl=Pin(5), sda=Pin(4)))");
+    pico_indent(gen);
+    pico_emit_line(gen, "except: _kx_imu = None");
+    break;
+
+  case NODE_GPS_ATTACH:
+    pico_indent(gen);
+    pico_emit_line(gen, "global _kx_gps_serial, _kx_gps");
+    pico_indent(gen);
+    pico_emit(gen, "try: _kx_gps_serial = UART(1, baudrate=int(");
+    pico_expr(gen, node->data.gps_attach.baud);
+    pico_emit(gen, "), tx=Pin(4), rx=Pin(5))\n");
+    pico_indent(gen);
+    pico_emit_line(gen, "except: _kx_gps_serial = None");
+    break;
+
+  case NODE_LIDAR_ATTACH:
+    pico_indent(gen);
+    pico_emit_line(gen, "global _kx_lidar");
+    pico_indent(gen);
+    pico_emit_line(gen, "try:");
+    pico_indent(gen);
+    pico_emit_line(gen, "    import vl53l0x");
+    pico_indent(gen);
+    pico_emit_line(
+        gen, "    _kx_lidar = vl53l0x.VL53L0X(I2C(0, scl=Pin(5), sda=Pin(4)))");
+    pico_indent(gen);
+    pico_emit_line(gen, "except: _kx_lidar = None");
+    break;
+
+  case NODE_SD_MOUNT:
+    pico_indent(gen);
+    pico_emit_line(gen, "try:");
+    pico_indent(gen);
+    pico_emit_line(gen, "    import os, sdcard");
+    pico_indent(gen);
+    pico_emit(gen, "    _sd = sdcard.SDCard(SPI(1, sck=Pin(10), mosi=Pin(11), "
+                   "miso=Pin(12)), Pin(");
+    pico_expr(gen, node->data.sd_mount.cs_pin);
+    pico_emit(gen, "))\n");
+    pico_indent(gen);
+    pico_emit_line(gen, "    os.mount(_sd, '/sd')");
+    pico_indent(gen);
+    pico_emit_line(gen, "except: print('SD Mount Failed')");
+    break;
+
+  case NODE_FILE_OPEN:
+    pico_indent(gen);
+    pico_emit(gen, "global _kx_file; _kx_file = open('/sd/' + str(");
+    pico_expr(gen, node->data.file_open.filename);
+    pico_emit(gen, "), 'a+')\n");
+    break;
+
+  case NODE_FILE_WRITE:
+    pico_indent(gen);
+    pico_emit(gen, "if _kx_file: _kx_file.write(str(");
+    pico_expr(gen, node->data.file_write.data);
+    pico_emit(gen, ") + '\\n')\n");
+    break;
+
+  case NODE_FILE_CLOSE:
+    pico_indent(gen);
+    pico_emit_line(gen, "if _kx_file: _kx_file.close(); _kx_file = None");
+    break;
+
   default:
     break;
   }
@@ -1076,6 +1183,13 @@ void codegen_generate_pico(CodeGen *gen, ASTNode *program) {
   pico_emit_line(gen, "_kx_ws_msg = ''");
   pico_emit_line(gen, "_kx_ble_msg = ''");
   pico_emit_line(gen, "_kx_wifi_ip = ''\n");
+
+  /* Wave 4 Modules & Globals */
+  pico_emit_line(gen, "_kx_imu = None");
+  pico_emit_line(gen, "_kx_gps_serial = None");
+  pico_emit_line(gen, "_kx_gps = None");
+  pico_emit_line(gen, "_kx_lidar = None");
+  pico_emit_line(gen, "_kx_file = None\n");
 
   pico_emit_line(gen, "def _kx_compute_pid(current_val):");
   pico_emit_line(

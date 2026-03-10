@@ -290,6 +290,39 @@ static void esp32_expression(CodeGen *gen, ASTNode *node) {
     codegen_emit(gen, "_kx_ws_msg");
     break;
 
+  /* Wave 4: Advanced Robotics & Storage Expressions */
+  case NODE_IMU_READ_X:
+    codegen_emit(gen, "(float)(_kx_imu ? _kx_imu->readFloatAccelX() : 0.0)");
+    break;
+  case NODE_IMU_READ_Y:
+    codegen_emit(gen, "(float)(_kx_imu ? _kx_imu->readFloatAccelY() : 0.0)");
+    break;
+  case NODE_IMU_READ_Z:
+    codegen_emit(gen, "(float)(_kx_imu ? _kx_imu->readFloatAccelZ() : 0.0)");
+    break;
+  case NODE_IMU_ORIENT:
+    codegen_emit(gen, "(float)(_kx_imu ? _kx_imu_get_heading() : 0.0)");
+    break;
+  case NODE_GPS_READ_LAT:
+    codegen_emit(gen, "(float)(_kx_gps.location.lat())");
+    break;
+  case NODE_GPS_READ_LON:
+    codegen_emit(gen, "(float)(_kx_gps.location.lng())");
+    break;
+  case NODE_GPS_READ_ALT:
+    codegen_emit(gen, "(float)(_kx_gps.altitude.meters())");
+    break;
+  case NODE_GPS_READ_SPD:
+    codegen_emit(gen, "(float)(_kx_gps.speed.kmph())");
+    break;
+  case NODE_LIDAR_READ:
+    codegen_emit(gen, "(float)(_kx_lidar ? "
+                      "_kx_lidar->readRangeContinuousMillimeters() : 0.0)");
+    break;
+  case NODE_FILE_READ:
+    codegen_emit(gen, "_kx_file_read_string()");
+    break;
+
   default:
     codegen_emit(gen, "0 /* unsupported expr */");
     break;
@@ -1070,6 +1103,68 @@ static void esp32_statement(CodeGen *gen, ASTNode *node) {
     codegen_emit_line(gen, "_kx_wsClient.disconnect();");
     break;
 
+  /* Wave 4: Advanced Robotics & Storage Statements */
+  case NODE_IMU_ATTACH:
+    codegen_emit_line(gen, "/* Setup IMU on I2C */");
+    codegen_emit_line(gen, "if (!_kx_imu) {");
+    gen->indent_level++;
+    codegen_emit_line(gen, "_kx_imu = new SparkFun_BNO080();");
+    codegen_emit_line(gen, "_kx_imu->begin();");
+    codegen_emit_line(gen, "_kx_imu->enableAccelerometer(50);");
+    codegen_emit_line(gen, "_kx_imu->enableGyro(50);");
+    codegen_emit_line(gen, "_kx_imu->enableRotationVector(50);");
+    gen->indent_level--;
+    codegen_emit_line(gen, "}\n");
+    break;
+
+  case NODE_GPS_ATTACH:
+    codegen_emit_line(gen, "/* Setup GPS on Serial */");
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_gps_serial.begin(");
+    esp32_expression(gen, node->data.gps_attach.baud);
+    codegen_emit(
+        gen, ", SERIAL_8N1, 16, 17);\n\n"); // ESP32 HardwareSerial default map
+    break;
+
+  case NODE_LIDAR_ATTACH:
+    codegen_emit_line(gen, "/* Setup LIDAR on I2C */");
+    codegen_emit_line(gen, "if (!_kx_lidar) {");
+    gen->indent_level++;
+    codegen_emit_line(gen, "_kx_lidar = new VL53L0X();");
+    codegen_emit_line(gen, "_kx_lidar->init();");
+    codegen_emit_line(gen, "_kx_lidar->setTimeout(500);");
+    codegen_emit_line(gen, "_kx_lidar->startContinuous();");
+    gen->indent_level--;
+    codegen_emit_line(gen, "}\n");
+    break;
+
+  case NODE_SD_MOUNT:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "if (!SD.begin(");
+    esp32_expression(gen, node->data.sd_mount.cs_pin);
+    codegen_emit(gen, ")) {");
+    codegen_emit_line(gen, "  Serial.println(\"SD Mount Failed\");");
+    codegen_emit_line(gen, "}\n");
+    break;
+
+  case NODE_FILE_OPEN:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_file = SD.open(");
+    esp32_expression(gen, node->data.file_open.filename);
+    codegen_emit(gen, ", FILE_WRITE);\n");
+    break;
+
+  case NODE_FILE_WRITE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "if (_kx_file) _kx_file.println(");
+    esp32_expression(gen, node->data.file_write.data);
+    codegen_emit(gen, ");\n");
+    break;
+
+  case NODE_FILE_CLOSE:
+    codegen_emit_line(gen, "if (_kx_file) _kx_file.close();\n");
+    break;
+
   default:
     break;
   }
@@ -1249,6 +1344,38 @@ void codegen_generate_esp32(CodeGen *gen, ASTNode *program) {
   codegen_emit_line(gen, "  }");
   codegen_emit_line(gen, "};");
   codegen_emit_line(gen, "BLECharacteristic *_kx_ble_char = NULL;\n");
+
+  /* Wave 4 Includes & Globals */
+  codegen_emit_line(gen, "#include <SparkFun_BNO080_Arduino_Library.h>");
+  codegen_emit_line(gen, "#include <TinyGPSPlus.h>");
+  codegen_emit_line(gen, "#include <VL53L0X.h>");
+  codegen_emit_line(gen, "#include <SD.h>");
+
+  codegen_emit_line(gen, "SparkFun_BNO080 *_kx_imu = NULL;");
+  codegen_emit_line(gen, "TinyGPSPlus _kx_gps;");
+  codegen_emit_line(gen,
+                    "HardwareSerial _kx_gps_serial(2); // UART2 for ESP32");
+  codegen_emit_line(gen, "VL53L0X *_kx_lidar = NULL;");
+  codegen_emit_line(gen, "File _kx_file;\n");
+
+  /* Wave 4 Helpers */
+  codegen_emit_line(gen, "float _kx_imu_get_heading() {");
+  codegen_emit_line(gen, "  if(!_kx_imu) return 0.0;");
+  codegen_emit_line(gen, "  float q0 = _kx_imu->getQuatI();");
+  codegen_emit_line(gen, "  float q1 = _kx_imu->getQuatJ();");
+  codegen_emit_line(gen, "  float q2 = _kx_imu->getQuatK();");
+  codegen_emit_line(gen, "  float q3 = _kx_imu->getQuatReal();");
+  codegen_emit_line(gen, "  return atan2(2.0*(q0*q1 + q2*q3), 1.0 - 2.0*(q1*q1 "
+                         "+ q2*q2)) * 180.0/M_PI;");
+  codegen_emit_line(gen, "}");
+  codegen_emit_line(gen, "const char* _kx_file_read_string() {");
+  codegen_emit_line(gen, "  if (!_kx_file) return \"\";");
+  codegen_emit_line(gen, "  static char buf[256];");
+  codegen_emit_line(gen, "  int i=0; while(_kx_file.available() && i<255) "
+                         "buf[i++] = _kx_file.read();");
+  codegen_emit_line(gen, "  buf[i] = 0;");
+  codegen_emit_line(gen, "  return buf;");
+  codegen_emit_line(gen, "}\n");
 
   /* PWM Tracker map for dynamic LEDC channels */
   codegen_emit_line(gen, "int _esp32_pwm_channels[40] = {0};");

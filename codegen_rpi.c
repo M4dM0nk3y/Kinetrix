@@ -334,6 +334,38 @@ static void rpi_expression(CodeGen *gen, ASTNode *node) {
     break;
   }
 
+  /* Wave 4: Advanced Robotics & Storage Expressions */
+  case NODE_IMU_READ_X:
+    rpi_emit(gen, "(float(_kx_imu.acceleration[0]) if _kx_imu else 0.0)");
+    break;
+  case NODE_IMU_READ_Y:
+    rpi_emit(gen, "(float(_kx_imu.acceleration[1]) if _kx_imu else 0.0)");
+    break;
+  case NODE_IMU_READ_Z:
+    rpi_emit(gen, "(float(_kx_imu.acceleration[2]) if _kx_imu else 0.0)");
+    break;
+  case NODE_IMU_ORIENT:
+    rpi_emit(gen, "(float(_kx_imu.euler[0]) if _kx_imu else 0.0)");
+    break;
+  case NODE_GPS_READ_LAT:
+    rpi_emit(gen, "(float(_kx_gps.latitude) if _kx_gps else 0.0)");
+    break;
+  case NODE_GPS_READ_LON:
+    rpi_emit(gen, "(float(_kx_gps.longitude) if _kx_gps else 0.0)");
+    break;
+  case NODE_GPS_READ_ALT:
+    rpi_emit(gen, "(float(_kx_gps.altitude) if _kx_gps else 0.0)");
+    break;
+  case NODE_GPS_READ_SPD:
+    rpi_emit(gen, "(float(_kx_gps.spd_over_grnd) if _kx_gps else 0.0)");
+    break;
+  case NODE_LIDAR_READ:
+    rpi_emit(gen, "(float(_kx_lidar.range) if _kx_lidar else 0.0)");
+    break;
+  case NODE_FILE_READ:
+    rpi_emit(gen, "(str(_kx_file.read()) if _kx_file else \"\")");
+    break;
+
   default:
     rpi_emit(gen, "0  # unsupported expression");
     break;
@@ -1132,6 +1164,67 @@ static void rpi_statement(CodeGen *gen, ASTNode *node) {
     rpi_emit(gen, "\n");
     break;
 
+  /* Wave 4: Advanced Robotics & Storage Statements */
+  case NODE_IMU_ATTACH:
+    rpi_indent(gen);
+    rpi_emit_line(gen, "global _kx_imu");
+    rpi_indent(gen);
+    rpi_emit_line(
+        gen, "try: _kx_imu = adafruit_bno08x.BNO08X_I2C(busio.I2C(board.SCL, "
+             "board.SDA))");
+    rpi_indent(gen);
+    rpi_emit_line(gen, "except: _kx_imu = None");
+    break;
+
+  case NODE_GPS_ATTACH:
+    rpi_indent(gen);
+    rpi_emit_line(gen, "global _kx_gps_serial, _kx_gps");
+    rpi_indent(gen);
+    rpi_emit(
+        gen,
+        "try: _kx_gps_serial = serial.Serial('/dev/serial0', baudrate=int(");
+    rpi_expression(gen, node->data.gps_attach.baud);
+    rpi_emit(gen, "), timeout=1)\n");
+    rpi_indent(gen);
+    rpi_emit_line(gen, "except: _kx_gps_serial = None");
+    break;
+
+  case NODE_LIDAR_ATTACH:
+    rpi_indent(gen);
+    rpi_emit_line(gen, "global _kx_lidar");
+    rpi_indent(gen);
+    rpi_emit_line(gen,
+                  "try: _kx_lidar = "
+                  "adafruit_vl53l0x.VL53L0X(busio.I2C(board.SCL, board.SDA))");
+    rpi_indent(gen);
+    rpi_emit_line(gen, "except: _kx_lidar = None");
+    break;
+
+  case NODE_SD_MOUNT:
+    rpi_indent(gen);
+    rpi_emit_line(
+        gen, "print('RPi runs OS file system natively. SD Mount bypassed.')");
+    break;
+
+  case NODE_FILE_OPEN:
+    rpi_indent(gen);
+    rpi_emit(gen, "global _kx_file; _kx_file = open(");
+    rpi_expression(gen, node->data.file_open.filename);
+    rpi_emit(gen, ", 'a+')\n");
+    break;
+
+  case NODE_FILE_WRITE:
+    rpi_indent(gen);
+    rpi_emit(gen, "if _kx_file: _kx_file.write(str(");
+    rpi_expression(gen, node->data.file_write.data);
+    rpi_emit(gen, ") + '\\n')\n");
+    break;
+
+  case NODE_FILE_CLOSE:
+    rpi_indent(gen);
+    rpi_emit_line(gen, "if _kx_file: _kx_file.close(); _kx_file = None");
+    break;
+
   default:
     break;
   }
@@ -1205,6 +1298,20 @@ void codegen_generate_rpi(CodeGen *gen, ASTNode *program) {
   rpi_emit_line(gen, "_kx_ws_msg = ''");
   rpi_emit_line(gen, "_kx_ble_msg = ''");
   rpi_emit_line(gen, "_kx_wifi_ip = ''\n");
+
+  /* Wave 4 Modules & Globals */
+  rpi_emit_line(gen, "try:");
+  rpi_emit_line(gen, "    import adafruit_bno08x");
+  rpi_emit_line(gen, "    from adafruit_bno08x.i2c import BNO08X_I2C");
+  rpi_emit_line(gen, "    import serial");
+  rpi_emit_line(gen, "    import pynmea2");
+  rpi_emit_line(gen, "    import adafruit_vl53l0x");
+  rpi_emit_line(gen, "except ImportError: pass");
+  rpi_emit_line(gen, "_kx_imu = None");
+  rpi_emit_line(gen, "_kx_gps_serial = None");
+  rpi_emit_line(gen, "_kx_gps = None");
+  rpi_emit_line(gen, "_kx_lidar = None");
+  rpi_emit_line(gen, "_kx_file = None\n");
 
   rpi_emit_line(gen, "def _kx_compute_pid(current_val):");
   rpi_emit_line(

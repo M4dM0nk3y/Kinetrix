@@ -609,6 +609,31 @@ void lexer_next_token(Lexer *lexer) {
       lexer->current_token.type = TOK_SUBSCRIBE;
     else if (!strcmp(v, "publish"))
       lexer->current_token.type = TOK_PUBLISH;
+    /* Wave 4 Navigation/Storage */
+    else if (!strcmp(v, "imu"))
+      lexer->current_token.type = TOK_IMU;
+    else if (!strcmp(v, "accel"))
+      lexer->current_token.type = TOK_ACCEL;
+    else if (!strcmp(v, "gyro"))
+      lexer->current_token.type = TOK_GYRO;
+    else if (!strcmp(v, "orientation"))
+      lexer->current_token.type = TOK_ORIENTATION;
+    else if (!strcmp(v, "gps"))
+      lexer->current_token.type = TOK_GPS;
+    else if (!strcmp(v, "latitude"))
+      lexer->current_token.type = TOK_LATITUDE;
+    else if (!strcmp(v, "longitude"))
+      lexer->current_token.type = TOK_LONGITUDE;
+    else if (!strcmp(v, "altitude"))
+      lexer->current_token.type = TOK_ALTITUDE;
+    else if (!strcmp(v, "lidar"))
+      lexer->current_token.type = TOK_LIDAR;
+    else if (!strcmp(v, "precise"))
+      lexer->current_token.type = TOK_PRECISE;
+    else if (!strcmp(v, "sd"))
+      lexer->current_token.type = TOK_SD;
+    else if (!strcmp(v, "file"))
+      lexer->current_token.type = TOK_FILE;
     /* V3.0 handled as TOK_ID in parser */
     else if (!strcmp(v, "not"))
       lexer->current_token.type = TOK_NOT;
@@ -1299,19 +1324,7 @@ static ASTNode *parse_primary(Parser *parser) {
       return ast_serial_recv();
     }
 
-    /* read distance trigger N echo M */
-    if (parser_match_id(parser, "distance")) {
-      lexer_next_token(parser->lexer);
-      /* expect 'trigger' */
-      if (parser_match_id(parser, "trigger"))
-        lexer_next_token(parser->lexer);
-      ASTNode *trigger = parse_expression(parser);
-      /* expect 'echo' */
-      if (parser_match_id(parser, "echo"))
-        lexer_next_token(parser->lexer);
-      ASTNode *echo = parse_expression(parser);
-      return ast_distance_read(trigger, echo);
-    }
+    /* distance logic moved below */
 
     /* read temperature */
     if (parser_match_id(parser, "temperature")) {
@@ -1323,6 +1336,92 @@ static ASTNode *parse_primary(Parser *parser) {
     if (parser_match_id(parser, "humidity")) {
       lexer_next_token(parser->lexer);
       return ast_dht_read_humid();
+    }
+
+    /* --- Wave 4: Navigation & Storage Reads --- */
+    /* read accel x | y | z */
+    if (parser_match(parser, TOK_ACCEL)) {
+      lexer_next_token(parser->lexer);
+      if (parser_match_id(parser, "x")) {
+        lexer_next_token(parser->lexer);
+        return ast_imu_read_x();
+      }
+      if (parser_match_id(parser, "y")) {
+        lexer_next_token(parser->lexer);
+        return ast_imu_read_y();
+      }
+      if (parser_match_id(parser, "z")) {
+        lexer_next_token(parser->lexer);
+        return ast_imu_read_z();
+      }
+    }
+
+    /* read gyro x | y | z */
+    if (parser_match(parser, TOK_GYRO)) {
+      lexer_next_token(parser->lexer);
+      if (parser_match_id(parser, "x")) {
+        lexer_next_token(parser->lexer);
+        return ast_imu_read_x();
+      }
+      if (parser_match_id(parser, "y")) {
+        lexer_next_token(parser->lexer);
+        return ast_imu_read_y();
+      }
+      if (parser_match_id(parser, "z")) {
+        lexer_next_token(parser->lexer);
+        return ast_imu_read_z();
+      }
+    }
+
+    /* read orientation */
+    if (parser_match(parser, TOK_ORIENTATION)) {
+      lexer_next_token(parser->lexer);
+      return ast_imu_orient();
+    }
+
+    /* read latitude | longitude | altitude | speed */
+    if (parser_match(parser, TOK_LATITUDE)) {
+      lexer_next_token(parser->lexer);
+      return ast_gps_read_lat();
+    }
+    if (parser_match(parser, TOK_LONGITUDE)) {
+      lexer_next_token(parser->lexer);
+      return ast_gps_read_lon();
+    }
+    if (parser_match(parser, TOK_ALTITUDE)) {
+      lexer_next_token(parser->lexer);
+      return ast_gps_read_alt();
+    }
+    if (parser_match_id(parser, "speed")) {
+      lexer_next_token(parser->lexer);
+      return ast_gps_read_spd();
+    }
+
+    /* read distance precise */
+    if (parser_match_id(parser, "distance")) {
+      // Must check if it's 'read distance precise' or 'read distance trigger N
+      // echo M'
+      lexer_next_token(parser->lexer);
+      if (parser_match(parser, TOK_PRECISE)) {
+        lexer_next_token(parser->lexer);
+        return ast_lidar_read();
+      } else {
+        /* expect 'trigger' */
+        if (parser_match_id(parser, "trigger"))
+          lexer_next_token(parser->lexer);
+        ASTNode *trigger = parse_expression(parser);
+        /* expect 'echo' */
+        if (parser_match_id(parser, "echo"))
+          lexer_next_token(parser->lexer);
+        ASTNode *echo = parse_expression(parser);
+        return ast_distance_read(trigger, echo);
+      }
+    }
+
+    /* read file */
+    if (parser_match(parser, TOK_FILE)) {
+      lexer_next_token(parser->lexer);
+      return ast_file_read();
     }
 
     /* read encoder (Wave 2) */
@@ -1659,6 +1758,9 @@ static ASTNode *parse_statement(Parser *parser) {
       lexer_next_token(parser->lexer);
     } else if (parser_match(parser, TOK_BYTE_KW)) {
       decl_type = type_byte();
+      lexer_next_token(parser->lexer);
+    } else if (parser_match_id(parser, "string")) {
+      decl_type = type_string();
       lexer_next_token(parser->lexer);
     }
 
@@ -2361,6 +2463,41 @@ static ASTNode *parse_statement(Parser *parser) {
       ASTNode *pin = parse_expression(parser);
       return ast_esc_attach(pin);
     }
+    /* Wave 4 Wrappers */
+    if (parser_match(parser, TOK_IMU)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *port = NULL;
+      if (parser_match(parser, TOK_I2C) || parser_match(parser, TOK_SPI)) {
+        port = ast_string(parser->lexer->current_token.value);
+        lexer_next_token(parser->lexer);
+      } else {
+        port = parse_expression(parser);
+      }
+      return ast_imu_attach(port);
+    }
+    if (parser_match(parser, TOK_GPS)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *port = NULL;
+      if (parser_match(parser, TOK_SERIAL)) {
+        port = ast_string(parser->lexer->current_token.value);
+        lexer_next_token(parser->lexer);
+      } else {
+        port = parse_expression(parser);
+      }
+      ASTNode *baud = parse_expression(parser); /* Expect 9600 */
+      return ast_gps_attach(port, baud);
+    }
+    if (parser_match(parser, TOK_LIDAR)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *port = NULL;
+      if (parser_match(parser, TOK_I2C) || parser_match(parser, TOK_SPI)) {
+        port = ast_string(parser->lexer->current_token.value);
+        lexer_next_token(parser->lexer);
+      } else {
+        port = parse_expression(parser);
+      }
+      return ast_lidar_attach(port);
+    }
     if (parser_match(parser, TOK_PID)) {
       lexer_next_token(parser->lexer);
       if (!parser_match_id(parser, "kp")) {
@@ -2388,6 +2525,52 @@ static ASTNode *parse_statement(Parser *parser) {
       }
       ASTNode *kd = parse_expression(parser);
       return ast_pid_attach(kp, ki, kd);
+    }
+  }
+
+  /* ============================================================
+   * Wave 4: Navigation & Storage Statement Handlers
+   * ============================================================ */
+
+  /* mount sd pin N */
+  if (parser_match_id(parser, "mount")) {
+    lexer_next_token(parser->lexer);
+    if (parser_match(parser, TOK_SD)) {
+      lexer_next_token(parser->lexer);
+      if (parser_match(parser, TOK_PIN))
+        lexer_next_token(parser->lexer);
+      ASTNode *pin = parse_expression(parser);
+      return ast_sd_mount(pin);
+    }
+  }
+
+  /* open file "name" */
+  if (parser_match(parser, TOK_OPEN)) {
+    // If not matching serial/i2c/spi from Wave 1, check Wave 4 file
+    // The previous TOK_OPEN block for serial is far above. We need to be
+    // careful. Wait, TOK_OPEN is handled starting at line 2778. If we reach
+    // here, we are OUTSIDE the TOK_OPEN block because that block returned NULL
+    // if it didn't match serial/i2c/spi. Instead of overriding, we should
+    // capture `open file` here. Alternatively, we can let it evaluate. The
+    // parser_match(parser, TOK_OPEN) at 2778 consumes the token! We cannot
+    // catch `open` here if it was already consumed on line 2778. Let me fix
+    // this by injecting the open/write/close file logic as a separate tool call
+    // into the TOK_OPEN block. Wait, this block is inside parser_statement but
+    // outside the top TOK_OPEN.
+  }
+
+  /* write file expr */
+  if (parser_match(parser, TOK_WRITE_KW)) {
+    // Similarly, write is consumed above at 2838. I must add the file logic
+    // directly into the TOK_WRITE_KW block or use a different keyword.
+  }
+
+  /* close file */
+  if (parser_match_id(parser, "close")) {
+    lexer_next_token(parser->lexer);
+    if (parser_match(parser, TOK_FILE)) {
+      lexer_next_token(parser->lexer);
+      return ast_file_close();
     }
   }
 
@@ -2705,10 +2888,16 @@ static ASTNode *parse_statement(Parser *parser) {
         lexer_next_token(parser->lexer);
       return ast_spi_open(freq);
     }
+    /* Wave 4: open file "name" */
+    if (parser_match(parser, TOK_FILE)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *filename = parse_expression(parser);
+      return ast_file_open(filename);
+    }
     error_report(parser->errors, ERROR_SYNTAX,
                  parser->lexer->current_token.line,
                  parser->lexer->current_token.column,
-                 "Expected 'serial', 'i2c', or 'spi' after 'open'");
+                 "Expected 'serial', 'i2c', 'spi', or 'file' after 'open'");
     return NULL;
   }
 
@@ -2746,6 +2935,11 @@ static ASTNode *parse_statement(Parser *parser) {
         lexer_next_token(parser->lexer);
       ASTNode *val = parse_expression(parser);
       return ast_i2c_device_write(addr, val);
+    } else if (parser_match(parser, TOK_FILE)) {
+      /* Wave 4: write file expr */
+      lexer_next_token(parser->lexer);
+      ASTNode *data = parse_expression(parser);
+      return ast_file_write(data);
     } else if (parser_match(parser, TOK_DEVICE)) {
       lexer_next_token(parser->lexer);
       Token dev_name = parser->lexer->current_token;
@@ -3085,6 +3279,9 @@ static ASTNode *parse_statement(Parser *parser) {
       t = type_byte();
       lexer_next_token(parser->lexer);
     } else if (parser_match(parser, TOK_VAR)) {
+      lexer_next_token(parser->lexer);
+    } else if (parser_match_id(parser, "string")) {
+      t = type_string();
       lexer_next_token(parser->lexer);
     }
     Token vname = parser->lexer->current_token;

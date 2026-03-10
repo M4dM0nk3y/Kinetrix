@@ -1,0 +1,25 @@
+# Kinetrix Wave 4 Advanced Robotics & Storage Test 
+
+# 1. IMU Integration
+attach imu i2c
+make float ax = read accel x
+make float gy = read gyro y
+make float head = read orientation
+
+# 2. GPS Module
+attach gps serial 9600
+make float lat = read latitude
+make float lon = read longitude
+make float alt = read altitude
+make float kph = read speed
+
+# 3. Time of Flight (Lidar)
+attach lidar i2c
+make float safe_dist = read distance precise
+
+# 4. Storage Memory Data Log
+mount sd pin 5
+open file "sensor_log.csv"
+write file "1024, 5.0"
+make string content = read file
+close file
