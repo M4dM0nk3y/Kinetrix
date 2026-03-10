@@ -1315,6 +1315,41 @@ footer{
   font-size:0.8rem;color:var(--mist);line-height:1.4;
 }
 
+/* ── CI BADGE ── */
+.ci-badge-row{
+  display:flex;align-items:center;gap:1rem;
+  margin-top:1rem;flex-wrap:wrap;
+}
+.ci-badge{
+  display:inline-flex;align-items:center;gap:0.55rem;
+  background:rgba(78,201,78,0.08);
+  border:1px solid rgba(78,201,78,0.3);
+  padding:0.35rem 0.9rem;
+  font-family:var(--font-code);
+  font-size:0.58rem;letter-spacing:0.2em;
+  color:var(--code-g);text-transform:uppercase;
+  text-decoration:none;
+  transition:background 0.2s,border-color 0.2s;
+}
+.ci-badge:hover{
+  background:rgba(78,201,78,0.15);
+  border-color:rgba(78,201,78,0.6);
+}
+.ci-badge .ci-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--code-g);
+  box-shadow:0 0 8px var(--code-g);
+  animation:pulseDot 1.8s ease-in-out infinite;
+}
+.ci-targets{
+  font-family:var(--font-code);
+  font-size:0.58rem;letter-spacing:0.12em;
+  color:rgba(138,122,154,0.5);
+}
+
+/* ── WAVE 3 network card accent ── */
+.wave3-accent{ --lib-color:#38bdf8; }
+
 /* ─────────────────────────────────────────────
    CH9 — CONTACT / TRANSMISSION
 ───────────────────────────────────────────── */
@@ -1441,6 +1476,12 @@ footer{
       In a world where every robot spoke a <em>different tongue</em>,<br>
       one language rose to unite them.
     </p>
+    <div class="ci-badge-row" style="justify-content:center;margin-top:1.5rem;">
+      <a href="https://github.com/M4dM0nk3y/Kinetrix/actions" target="_blank" class="ci-badge">
+        <span class="ci-dot"></span> CI Build Passing
+      </a>
+      <span class="ci-targets">arduino · esp32 · rpi · pico · ros2</span>
+    </div>
     <div class="scroll-invite">
       <span class="scroll-text">Begin the story</span>
       <div class="scroll-arrow"></div>
@@ -2136,6 +2177,86 @@ v3.1.0 ✓</pre>
       </div>
 
     </div>
+
+    <!-- WAVE 3 -->
+    <div class="chapter-label r" style="margin-top:4rem;">Wave 3 &nbsp;·&nbsp; Just Added</div>
+    <h3 class="r" style="font-family:var(--font-title);font-size:clamp(1.4rem,3vw,2.2rem);font-weight:700;letter-spacing:0.05em;margin:0.6rem 0 0.5rem;color:var(--white);">
+      Cloud &amp; Network <span style="color:#38bdf8;">Connectivity.</span>
+    </h3>
+    <p class="chapter-prose r" style="max-width:640px;">
+      Robots that talk to the internet. BLE, WiFi, MQTT, WebSocket, HTTP — all built into the language. Your robot can now publish telemetry, receive commands, and hit APIs without a single line of boilerplate.
+    </p>
+    <div class="v31-status r" style="margin-bottom:0;">
+      <span class="dot-testing" style="background:#38bdf8;"></span>
+      Compiler support live &nbsp;·&nbsp; Hardware testing in progress
+    </div>
+
+    <div class="lib-grid r" style="margin-top:2rem;">
+
+      <div class="lib-card wave3-accent">
+        <span class="lib-icon">📶</span>
+        <div class="lib-name">WiFi</div>
+        <span class="lib-tag" style="color:#38bdf8;">ESP32 · Pico W · network join & IP query</span>
+        <div class="lib-desc">Connect to any network in one line. Read the assigned IP. Everything else — sockets, HTTP — builds on top.</div>
+        <div class="lib-code">
+          <span class="t-kw">connect</span> wifi <span class="t-str">"MyNetwork"</span> password <span class="t-str">"secret"</span><br>
+          <span class="t-kw">make</span> var ip = wifi ip<br>
+          <span class="t-kw">print</span> ip
+        </div>
+      </div>
+
+      <div class="lib-card wave3-accent">
+        <span class="lib-icon">🔵</span>
+        <div class="lib-name">Bluetooth BLE</div>
+        <span class="lib-tag" style="color:#38bdf8;">ESP32 BLE · advertise · send & receive</span>
+        <div class="lib-desc">Advertise a service, send strings, receive commands. Control your robot from a phone app with three lines.</div>
+        <div class="lib-code">
+          <span class="t-kw">enable</span> ble <span class="t-str">"KinetrixRobot"</span><br>
+          <span class="t-kw">ble</span> advertise <span class="t-str">"sensor_data"</span><br>
+          <span class="t-kw">make</span> var msg = ble receive<br>
+          <span class="t-kw">ble</span> send <span class="t-str">"hello"</span>
+        </div>
+      </div>
+
+      <div class="lib-card wave3-accent">
+        <span class="lib-icon">📡</span>
+        <div class="lib-name">MQTT</div>
+        <span class="lib-tag" style="color:#38bdf8;">any broker · publish · subscribe · IoT</span>
+        <div class="lib-desc">Connect to any MQTT broker. Publish telemetry. Subscribe to command topics. The standard protocol for IoT robotics.</div>
+        <div class="lib-code">
+          <span class="t-kw">connect</span> mqtt <span class="t-str">"broker.hivemq.com"</span> port <span class="t-num">1883</span><br>
+          <span class="t-kw">mqtt</span> subscribe <span class="t-str">"kinetrix/cmd"</span><br>
+          <span class="t-kw">mqtt</span> publish <span class="t-str">"kinetrix/data"</span> <span class="t-str">"online"</span><br>
+          <span class="t-kw">make</span> var msg = mqtt read
+        </div>
+      </div>
+
+      <div class="lib-card wave3-accent">
+        <span class="lib-icon">🌐</span>
+        <div class="lib-name">HTTP</div>
+        <span class="lib-tag" style="color:#38bdf8;">GET · POST · REST APIs · JSON body</span>
+        <div class="lib-desc">Hit any REST endpoint. GET sensor data from an API. POST telemetry to your backend. Full request/response in one line.</div>
+        <div class="lib-code">
+          <span class="t-kw">make</span> var res = http get <span class="t-str">"http://api.kinetrix.com/status"</span><br>
+          <span class="t-kw">http</span> post <span class="t-str">"http://api.kinetrix.com/data"</span><br>
+          &nbsp;&nbsp;body <span class="t-str">"{'sensor': 42}"</span>
+        </div>
+      </div>
+
+      <div class="lib-card wave3-accent">
+        <span class="lib-icon">🔌</span>
+        <div class="lib-name">WebSocket</div>
+        <span class="lib-tag" style="color:#38bdf8;">ws:// · real-time · bidirectional</span>
+        <div class="lib-desc">Persistent real-time connection to any WebSocket server. Stream sensor data live. Receive control commands instantly.</div>
+        <div class="lib-code">
+          <span class="t-kw">connect</span> websocket <span class="t-str">"ws://server/stream"</span><br>
+          <span class="t-kw">ws</span> send <span class="t-str">"hello"</span><br>
+          <span class="t-kw">make</span> var msg = ws receive<br>
+          <span class="t-kw">ws</span> close
+        </div>
+      </div>
+
+    </div>
   </div>
 </section>
 
@@ -2153,6 +2274,12 @@ v3.1.0 ✓</pre>
     <p class="reckoning-prose r delay-2">
       Kinetrix is free. Open source. MIT licensed. Every robot that runs it is one less codebase written twice. Download it, build something, and share what you make. <em>That's the whole point.</em>
     </p>
+    <div class="ci-badge-row r delay-2" style="margin-bottom:1rem;">
+      <a href="https://github.com/M4dM0nk3y/Kinetrix/actions" target="_blank" class="ci-badge">
+        <span class="ci-dot"></span> CI · All 5 Targets Passing
+      </a>
+      <span class="ci-targets">auto-tested on every commit</span>
+    </div>
     <div class="r delay-3">
       <div class="dl-grid">
         <a href="https://github.com/M4dM0nk3y/Kinetrix/archive/refs/heads/main.zip" class="dl-primary">
@@ -2209,7 +2336,11 @@ v3.1.0 ✓</pre>
     <div class="coming-soon-box" id="ep-cs">
       <div class="roadmap-item">
         <span class="rm-status building">IN PROGRESS</span>
-        <div class="rm-text"><strong>V3.1 Hardware Validation</strong>: library wrappers (servo, DHT11, ultrasonic, NeoPixel, LCD) are compiler-complete — real-world hardware testing underway</div>
+        <div class="rm-text"><strong>V3.1 Hardware Validation</strong>: library wrappers (servo, DHT11, ultrasonic, NeoPixel, LCD, motors, encoders, PID, BLE, WiFi, MQTT) are compiler-complete — real-world hardware testing underway</div>
+      </div>
+      <div class="roadmap-item">
+        <span class="rm-status building">LIVE</span>
+        <div class="rm-text"><strong>GitHub Actions CI</strong>: every commit now auto-compiles all examples against all 5 targets on Ubuntu — no more "works on my machine"</div>
       </div>
       <div class="roadmap-item">
         <span class="rm-status building">BUILDING</span>
