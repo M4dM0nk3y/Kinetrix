@@ -2790,7 +2790,7 @@ static ASTNode *parse_statement(Parser *parser) {
   }
 
   /* show pixels */
-  if (parser_match_id(parser, "show")) {
+  if (parser_match(parser, TOK_SHOW) || parser_match_id(parser, "show")) {
     lexer_next_token(parser->lexer);
     if (parser_match_id(parser, "pixels")) {
       lexer_next_token(parser->lexer);
@@ -2799,7 +2799,7 @@ static ASTNode *parse_statement(Parser *parser) {
   }
 
   /* clear pixels */
-  if (parser_match_id(parser, "clear")) {
+  if (parser_match(parser, TOK_CLEAR) || parser_match_id(parser, "clear")) {
     lexer_next_token(parser->lexer);
     if (parser_match_id(parser, "pixels")) {
       lexer_next_token(parser->lexer);
@@ -2828,7 +2828,7 @@ static ASTNode *parse_statement(Parser *parser) {
       lexer_next_token(parser->lexer);
       ASTNode *text = parse_expression(parser);
       ASTNode *line = NULL;
-      if (parser_match_id(parser, "line")) {
+      if (parser_match(parser, TOK_LINE) || parser_match_id(parser, "line")) {
         lexer_next_token(parser->lexer);
         line = parse_expression(parser);
       }
