@@ -228,11 +228,16 @@ static void ros2_expr(CodeGen *gen, ASTNode *node) {
     codegen_emit(gen, "lidar_dist_");
     break;
   case NODE_FILE_READ:
-    codegen_emit(gen, "std::string(\"\") /* ROS2 File Read Stub */");
+    codegen_emit(gen, "file_data_");
     break;
 
+  /* Wave 5 Expressions */
+  case NODE_CAM_DETECT: codegen_emit(gen, "(cam_detect_ ? 1.0 : 0.0)"); break;
+  case NODE_CAM_OBJ_X: codegen_emit(gen, "cam_obj_x_"); break;
+  case NODE_CAM_OBJ_Y: codegen_emit(gen, "cam_obj_y_"); break;
+
   default:
-    codegen_emit(gen, "0.0");
+    codegen_emit(gen, "/* unsupported expr */ 0");
     break;
   }
 }
@@ -672,6 +677,50 @@ static void ros2_stmt(CodeGen *gen, ASTNode *node) {
     codegen_emit_line(gen, "RCLCPP_INFO(this->get_logger(), \"File Close\");");
     break;
 
+  /* Wave 5 Statements */
+  case NODE_OLED_ATTACH:
+    codegen_emit_line(gen, "    RCLCPP_INFO(this->get_logger(), \"OLED Attach\");");
+    break;
+  case NODE_OLED_PRINT:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "    RCLCPP_INFO(this->get_logger(), \"OLED Print: %%s\", std::string(");
+    ros2_expr(gen, node->data.oled_print.text);
+    codegen_emit(gen, ").c_str());\n");
+    break;
+  case NODE_OLED_DRAW:
+    codegen_emit_line(gen, "    RCLCPP_INFO(this->get_logger(), \"OLED Draw\");");
+    break;
+  case NODE_OLED_SHOW:
+    codegen_emit_line(gen, "    RCLCPP_INFO(this->get_logger(), \"OLED Show\");");
+    break;
+  case NODE_OLED_CLEAR:
+    codegen_emit_line(gen, "    RCLCPP_INFO(this->get_logger(), \"OLED Clear\");");
+    break;
+  case NODE_AUDIO_ATTACH:
+    codegen_emit_line(gen, "    RCLCPP_INFO(this->get_logger(), \"Audio Attach\");");
+    break;
+  case NODE_PLAY_FREQ:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "    RCLCPP_INFO(this->get_logger(), \"Play Freq: %%f\", (double)(");
+    ros2_expr(gen, node->data.play_freq.frequency);
+    codegen_emit(gen, "));\n");
+    break;
+  case NODE_PLAY_SOUND:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "    RCLCPP_INFO(this->get_logger(), \"Play Sound: %%s\", std::string(");
+    ros2_expr(gen, node->data.play_sound.name);
+    codegen_emit(gen, ").c_str());\n");
+    break;
+  case NODE_SET_VOLUME:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "    audio_volume_ = (int)(");
+    ros2_expr(gen, node->data.set_volume.level);
+    codegen_emit(gen, ");\n");
+    break;
+  case NODE_CAM_ATTACH:
+    codegen_emit_line(gen, "    RCLCPP_INFO(this->get_logger(), \"Camera Attach\");");
+    break;
+
   default:
     break;
   }
@@ -784,6 +833,11 @@ void codegen_generate_ros2(CodeGen *gen, ASTNode *program) {
   codegen_emit_line(gen, "  double gps_lat_ = 0.0, gps_lon_ = 0.0, gps_alt_ = "
                          "0.0, gps_spd_ = 0.0;");
   codegen_emit_line(gen, "  double lidar_dist_ = 0.0;\n");
+
+  /* Wave 5 Globals */
+  codegen_emit_line(gen, "  bool cam_detect_ = false;");
+  codegen_emit_line(gen, "  double cam_obj_x_ = 0.0, cam_obj_y_ = 0.0;");
+  codegen_emit_line(gen, "  int audio_volume_ = 100;\n");
   /* PID Helper Function */
   codegen_emit_line(gen, "  void compute_pid(double current_val) {");
   codegen_emit_line(gen, "    auto now = this->now();");

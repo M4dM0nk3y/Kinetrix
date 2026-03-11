@@ -1324,3 +1324,73 @@ ASTNode *ast_lidar_attach(ASTNode *port) {
 }
 
 ASTNode *ast_lidar_read(void) { return ast_create(NODE_LIDAR_READ); }
+
+/* --- Wave 5: Output Systems & Edge AI Vision --- */
+
+ASTNode *ast_oled_attach(ASTNode *width, ASTNode *height) {
+  ASTNode *node = ast_create(NODE_OLED_ATTACH);
+  node->data.oled_attach.width = width;
+  node->data.oled_attach.height = height;
+  return node;
+}
+
+ASTNode *ast_oled_print(ASTNode *text, ASTNode *x, ASTNode *y) {
+  ASTNode *node = ast_create(NODE_OLED_PRINT);
+  node->data.oled_print.text = text;
+  node->data.oled_print.x = x;
+  node->data.oled_print.y = y;
+  return node;
+}
+
+ASTNode *ast_oled_draw(int shape, ASTNode *x, ASTNode *y, ASTNode *p1, ASTNode *p2) {
+  ASTNode *node = ast_create(NODE_OLED_DRAW);
+  node->data.oled_draw.shape = shape;
+  node->data.oled_draw.x = x;
+  node->data.oled_draw.y = y;
+  node->data.oled_draw.param1 = p1;
+  node->data.oled_draw.param2 = p2;
+  return node;
+}
+
+ASTNode *ast_oled_show(void) { return ast_create(NODE_OLED_SHOW); }
+ASTNode *ast_oled_clear(void) { return ast_create(NODE_OLED_CLEAR); }
+
+ASTNode *ast_audio_attach(ASTNode *pin) {
+  ASTNode *node = ast_create(NODE_AUDIO_ATTACH);
+  node->data.audio_attach.pin = pin;
+  return node;
+}
+
+ASTNode *ast_play_freq(ASTNode *frequency, ASTNode *duration) {
+  ASTNode *node = ast_create(NODE_PLAY_FREQ);
+  node->data.play_freq.frequency = frequency;
+  node->data.play_freq.duration = duration;
+  return node;
+}
+
+ASTNode *ast_play_sound(ASTNode *name) {
+  ASTNode *node = ast_create(NODE_PLAY_SOUND);
+  node->data.play_sound.name = name;
+  return node;
+}
+
+ASTNode *ast_set_volume(ASTNode *level) {
+  ASTNode *node = ast_create(NODE_SET_VOLUME);
+  node->data.set_volume.level = level;
+  return node;
+}
+
+ASTNode *ast_cam_attach(ASTNode *protocol) {
+  ASTNode *node = ast_create(NODE_CAM_ATTACH);
+  node->data.cam_attach.protocol = protocol;
+  return node;
+}
+
+ASTNode *ast_cam_detect(ASTNode *label) {
+  ASTNode *node = ast_create(NODE_CAM_DETECT);
+  node->data.cam_detect.label = label;
+  return node;
+}
+
+ASTNode *ast_cam_obj_x(void) { return ast_create(NODE_CAM_OBJ_X); }
+ASTNode *ast_cam_obj_y(void) { return ast_create(NODE_CAM_OBJ_Y); }

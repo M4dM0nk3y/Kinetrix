@@ -634,6 +634,39 @@ void lexer_next_token(Lexer *lexer) {
       lexer->current_token.type = TOK_SD;
     else if (!strcmp(v, "file"))
       lexer->current_token.type = TOK_FILE;
+    /* Wave 5: Output Systems & Edge AI Vision */
+    else if (!strcmp(v, "oled"))
+      lexer->current_token.type = TOK_OLED;
+    else if (!strcmp(v, "draw"))
+      lexer->current_token.type = TOK_DRAW;
+    else if (!strcmp(v, "circle"))
+      lexer->current_token.type = TOK_CIRCLE;
+    else if (!strcmp(v, "rect"))
+      lexer->current_token.type = TOK_RECT;
+    else if (!strcmp(v, "line"))
+      lexer->current_token.type = TOK_LINE;
+    else if (!strcmp(v, "show"))
+      lexer->current_token.type = TOK_SHOW;
+    else if (!strcmp(v, "clear"))
+      lexer->current_token.type = TOK_CLEAR;
+    else if (!strcmp(v, "audio"))
+      lexer->current_token.type = TOK_AUDIO;
+    else if (!strcmp(v, "play"))
+      lexer->current_token.type = TOK_PLAY;
+    else if (!strcmp(v, "frequency"))
+      lexer->current_token.type = TOK_FREQUENCY;
+    else if (!strcmp(v, "duration"))
+      lexer->current_token.type = TOK_DURATION;
+    else if (!strcmp(v, "sound"))
+      lexer->current_token.type = TOK_SOUND;
+    else if (!strcmp(v, "volume"))
+      lexer->current_token.type = TOK_VOLUME;
+    else if (!strcmp(v, "camera"))
+      lexer->current_token.type = TOK_CAMERA;
+    else if (!strcmp(v, "detect"))
+      lexer->current_token.type = TOK_DETECT;
+    else if (!strcmp(v, "object"))
+      lexer->current_token.type = TOK_OBJECT;
     /* V3.0 handled as TOK_ID in parser */
     else if (!strcmp(v, "not"))
       lexer->current_token.type = TOK_NOT;
@@ -1424,6 +1457,27 @@ static ASTNode *parse_primary(Parser *parser) {
       return ast_file_read();
     }
 
+    /* Wave 5: read camera detect "label" | read camera object x/y */
+    if (parser_match(parser, TOK_CAMERA)) {
+      lexer_next_token(parser->lexer);
+      if (parser_match(parser, TOK_DETECT)) {
+        lexer_next_token(parser->lexer);
+        ASTNode *label = parse_expression(parser);
+        return ast_cam_detect(label);
+      }
+      if (parser_match(parser, TOK_OBJECT)) {
+        lexer_next_token(parser->lexer);
+        if (parser_match_id(parser, "x")) {
+          lexer_next_token(parser->lexer);
+          return ast_cam_obj_x();
+        }
+        if (parser_match_id(parser, "y")) {
+          lexer_next_token(parser->lexer);
+          return ast_cam_obj_y();
+        }
+      }
+    }
+
     /* read encoder (Wave 2) */
     if (parser_match(parser, TOK_ENCODER)) {
       lexer_next_token(parser->lexer);
@@ -1858,6 +1912,12 @@ static ASTNode *parse_statement(Parser *parser) {
         lexer_next_token(parser->lexer);
       ASTNode *t = parse_expression(parser);
       return ast_pid_target(t);
+    }
+    /* Wave 5: set volume N */
+    if (parser_match(parser, TOK_VOLUME)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *level = parse_expression(parser);
+      return ast_set_volume(level);
     }
 
     if (parser_match(parser, TOK_PIN)) {
@@ -2498,6 +2558,39 @@ static ASTNode *parse_statement(Parser *parser) {
       }
       return ast_lidar_attach(port);
     }
+    /* Wave 5 Wrappers */
+    if (parser_match(parser, TOK_OLED)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *width = NULL, *height = NULL;
+      if (parser_match_id(parser, "width")) {
+        lexer_next_token(parser->lexer);
+        width = parse_expression(parser);
+      } else { width = ast_number(128); }
+      if (parser_match_id(parser, "height")) {
+        lexer_next_token(parser->lexer);
+        height = parse_expression(parser);
+      } else { height = ast_number(64); }
+      return ast_oled_attach(width, height);
+    }
+    if (parser_match(parser, TOK_AUDIO)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *pin = NULL;
+      if (parser_match(parser, TOK_PIN)) {
+        lexer_next_token(parser->lexer);
+        pin = parse_expression(parser);
+      } else { pin = ast_number(25); }
+      return ast_audio_attach(pin);
+    }
+    if (parser_match(parser, TOK_CAMERA)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *protocol = NULL;
+      if (parser_match_id(parser, "protocol")) {
+        lexer_next_token(parser->lexer);
+        protocol = ast_string(parser->lexer->current_token.value);
+        lexer_next_token(parser->lexer);
+      } else { protocol = ast_string("i2c"); }
+      return ast_cam_attach(protocol);
+    }
     if (parser_match(parser, TOK_PID)) {
       lexer_next_token(parser->lexer);
       if (!parser_match_id(parser, "kp")) {
@@ -2571,6 +2664,71 @@ static ASTNode *parse_statement(Parser *parser) {
     if (parser_match(parser, TOK_FILE)) {
       lexer_next_token(parser->lexer);
       return ast_file_close();
+    }
+  }
+
+  /* ============================================================
+   * Wave 5: Output Systems & Edge AI Statement Handlers
+   * ============================================================ */
+
+  /* oled print "text" at x N y N | oled show | oled clear | oled draw ... */
+  if (parser_match(parser, TOK_OLED)) {
+    lexer_next_token(parser->lexer);
+    if (parser_match(parser, TOK_PRINT)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *text = parse_expression(parser);
+      ASTNode *x = ast_number(0), *y = ast_number(0);
+      if (parser_match_id(parser, "at")) {
+        lexer_next_token(parser->lexer);
+        if (parser_match_id(parser, "x")) { lexer_next_token(parser->lexer); x = parse_expression(parser); }
+        if (parser_match_id(parser, "y")) { lexer_next_token(parser->lexer); y = parse_expression(parser); }
+      }
+      return ast_oled_print(text, x, y);
+    }
+    if (parser_match(parser, TOK_SHOW)) {
+      lexer_next_token(parser->lexer);
+      return ast_oled_show();
+    }
+    if (parser_match(parser, TOK_CLEAR)) {
+      lexer_next_token(parser->lexer);
+      return ast_oled_clear();
+    }
+    if (parser_match(parser, TOK_DRAW)) {
+      lexer_next_token(parser->lexer);
+      int shape = 0;
+      if (parser_match(parser, TOK_CIRCLE)) { shape = 0; lexer_next_token(parser->lexer); }
+      else if (parser_match(parser, TOK_RECT)) { shape = 1; lexer_next_token(parser->lexer); }
+      else if (parser_match(parser, TOK_LINE)) { shape = 2; lexer_next_token(parser->lexer); }
+      ASTNode *x = ast_number(0), *y = ast_number(0), *p1 = ast_number(10), *p2 = NULL;
+      if (parser_match_id(parser, "x")) { lexer_next_token(parser->lexer); x = parse_expression(parser); }
+      if (parser_match_id(parser, "y")) { lexer_next_token(parser->lexer); y = parse_expression(parser); }
+      if (parser_match_id(parser, "radius") || parser_match_id(parser, "width") || parser_match_id(parser, "x2")) {
+        lexer_next_token(parser->lexer); p1 = parse_expression(parser);
+      }
+      if (parser_match_id(parser, "height") || parser_match_id(parser, "y2")) {
+        lexer_next_token(parser->lexer); p2 = parse_expression(parser);
+      }
+      return ast_oled_draw(shape, x, y, p1, p2);
+    }
+  }
+
+  /* play frequency N duration N | play sound "name" */
+  if (parser_match(parser, TOK_PLAY)) {
+    lexer_next_token(parser->lexer);
+    if (parser_match(parser, TOK_FREQUENCY)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *freq = parse_expression(parser);
+      ASTNode *dur = ast_number(500);
+      if (parser_match(parser, TOK_DURATION)) {
+        lexer_next_token(parser->lexer);
+        dur = parse_expression(parser);
+      }
+      return ast_play_freq(freq, dur);
+    }
+    if (parser_match(parser, TOK_SOUND)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *name = parse_expression(parser);
+      return ast_play_sound(name);
     }
   }
 

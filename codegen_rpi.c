@@ -366,6 +366,11 @@ static void rpi_expression(CodeGen *gen, ASTNode *node) {
     rpi_emit(gen, "(str(_kx_file.read()) if _kx_file else \"\")");
     break;
 
+  /* Wave 5 Expressions */
+  case NODE_CAM_DETECT: rpi_emit(gen, "(1.0 if _kx_husky and _kx_husky.command_request() else 0.0)"); break;
+  case NODE_CAM_OBJ_X: rpi_emit(gen, "(float(_kx_husky_blocks[0].x) if _kx_husky_blocks else 0.0)"); break;
+  case NODE_CAM_OBJ_Y: rpi_emit(gen, "(float(_kx_husky_blocks[0].y) if _kx_husky_blocks else 0.0)"); break;
+
   default:
     rpi_emit(gen, "0  # unsupported expression");
     break;
@@ -1225,6 +1230,74 @@ static void rpi_statement(CodeGen *gen, ASTNode *node) {
     rpi_emit_line(gen, "if _kx_file: _kx_file.close(); _kx_file = None");
     break;
 
+  /* Wave 5 Statements */
+  case NODE_OLED_ATTACH:
+    rpi_indent(gen);
+    rpi_emit_line(gen, "global _kx_oled");
+    rpi_indent(gen);
+    rpi_emit_line(gen, "try: from luma.oled.device import ssd1306; from luma.core.interface.serial import i2c as luma_i2c; from luma.core.render import canvas");
+    rpi_indent(gen);
+    rpi_emit_line(gen, "except: pass");
+    rpi_indent(gen);
+    rpi_emit_line(gen, "try: _kx_oled = ssd1306(luma_i2c(port=1, address=0x3C))");
+    rpi_indent(gen);
+    rpi_emit_line(gen, "except: _kx_oled = None");
+    break;
+  case NODE_OLED_PRINT:
+    rpi_indent(gen);
+    rpi_emit(gen, "if _kx_oled:\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "    with canvas(_kx_oled) as _draw: _draw.text((");
+    rpi_expression(gen, node->data.oled_print.x);
+    rpi_emit(gen, ", ");
+    rpi_expression(gen, node->data.oled_print.y);
+    rpi_emit(gen, "), str(");
+    rpi_expression(gen, node->data.oled_print.text);
+    rpi_emit(gen, "), fill='white')\n");
+    break;
+  case NODE_OLED_DRAW:
+    rpi_indent(gen);
+    rpi_emit_line(gen, "# OLED Draw (shape rendering via luma.oled)");
+    break;
+  case NODE_OLED_SHOW:
+    rpi_indent(gen);
+    rpi_emit_line(gen, "# OLED show (auto-flushed in luma.oled)");
+    break;
+  case NODE_OLED_CLEAR:
+    rpi_indent(gen);
+    rpi_emit_line(gen, "if _kx_oled: _kx_oled.clear()");
+    break;
+  case NODE_AUDIO_ATTACH:
+    rpi_indent(gen);
+    rpi_emit_line(gen, "# Audio attached");
+    break;
+  case NODE_PLAY_FREQ:
+    rpi_indent(gen);
+    rpi_emit(gen, "import subprocess; subprocess.Popen(['speaker-test', '-t', 'sine', '-f', str(int(");
+    rpi_expression(gen, node->data.play_freq.frequency);
+    rpi_emit(gen, ")), '-l', '1'])\n");
+    break;
+  case NODE_PLAY_SOUND:
+    rpi_indent(gen);
+    rpi_emit(gen, "import subprocess; subprocess.Popen(['aplay', str(");
+    rpi_expression(gen, node->data.play_sound.name);
+    rpi_emit(gen, ")])\n");
+    break;
+  case NODE_SET_VOLUME:
+    rpi_indent(gen);
+    rpi_emit(gen, "import subprocess; subprocess.call(['amixer', 'set', 'Master', str(int(");
+    rpi_expression(gen, node->data.set_volume.level);
+    rpi_emit(gen, ")) + '%%'])\n");
+    break;
+  case NODE_CAM_ATTACH:
+    rpi_indent(gen);
+    rpi_emit_line(gen, "global _kx_husky, _kx_husky_blocks");
+    rpi_indent(gen);
+    rpi_emit_line(gen, "try: from huskylensPythonLibrary import HuskyLensLibrary; _kx_husky = HuskyLensLibrary('I2C')");
+    rpi_indent(gen);
+    rpi_emit_line(gen, "except: _kx_husky = None");
+    break;
+
   default:
     break;
   }
@@ -1312,6 +1385,11 @@ void codegen_generate_rpi(CodeGen *gen, ASTNode *program) {
   rpi_emit_line(gen, "_kx_gps = None");
   rpi_emit_line(gen, "_kx_lidar = None");
   rpi_emit_line(gen, "_kx_file = None\n");
+
+  /* Wave 5 Globals */
+  rpi_emit_line(gen, "_kx_oled = None");
+  rpi_emit_line(gen, "_kx_husky = None");
+  rpi_emit_line(gen, "_kx_husky_blocks = []\n");
 
   rpi_emit_line(gen, "def _kx_compute_pid(current_val):");
   rpi_emit_line(

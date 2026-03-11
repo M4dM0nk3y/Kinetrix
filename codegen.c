@@ -416,6 +416,17 @@ static void codegen_expression(CodeGen *gen, ASTNode *node) {
     codegen_emit(gen, "_kx_file_read_string()");
     break;
 
+  /* Wave 5: Output & AI Vision Expressions */
+  case NODE_CAM_DETECT:
+    codegen_emit(gen, "(_kx_huskylens.request() ? 1.0 : 0.0)");
+    break;
+  case NODE_CAM_OBJ_X:
+    codegen_emit(gen, "(_kx_huskylens.available() ? (float)_kx_huskylens.read().xCenter : 0.0)");
+    break;
+  case NODE_CAM_OBJ_Y:
+    codegen_emit(gen, "(_kx_huskylens.available() ? (float)_kx_huskylens.read().yCenter : 0.0)");
+    break;
+
   default:
     codegen_emit(gen, "/* unknown expression */");
     break;
@@ -1241,6 +1252,95 @@ static void codegen_statement(CodeGen *gen, ASTNode *node) {
     codegen_emit_line(gen, "if (_kx_file) _kx_file.close();\n");
     break;
 
+  /* Wave 5: Output Systems & Edge AI Statements */
+  case NODE_OLED_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit_line(gen, "_kx_oled.begin(SSD1306_SWITCHCAPVCC, 0x3C);");
+    codegen_emit_line(gen, "_kx_oled.clearDisplay();\n");
+    break;
+  case NODE_OLED_PRINT:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_oled.setCursor((int)(");
+    codegen_expression(gen, node->data.oled_print.x);
+    codegen_emit(gen, "), (int)(");
+    codegen_expression(gen, node->data.oled_print.y);
+    codegen_emit(gen, ")); _kx_oled.setTextSize(1); _kx_oled.setTextColor(SSD1306_WHITE); _kx_oled.print(");
+    codegen_expression(gen, node->data.oled_print.text);
+    codegen_emit(gen, ");\n");
+    break;
+  case NODE_OLED_DRAW: {
+    codegen_emit_indent(gen);
+    int shape = node->data.oled_draw.shape;
+    if (shape == 0) { /* circle */
+      codegen_emit(gen, "_kx_oled.drawCircle((int)(");
+      codegen_expression(gen, node->data.oled_draw.x);
+      codegen_emit(gen, "), (int)(");
+      codegen_expression(gen, node->data.oled_draw.y);
+      codegen_emit(gen, "), (int)(");
+      codegen_expression(gen, node->data.oled_draw.param1);
+      codegen_emit(gen, "), SSD1306_WHITE);\n");
+    } else if (shape == 1) { /* rect */
+      codegen_emit(gen, "_kx_oled.drawRect((int)(");
+      codegen_expression(gen, node->data.oled_draw.x);
+      codegen_emit(gen, "), (int)(");
+      codegen_expression(gen, node->data.oled_draw.y);
+      codegen_emit(gen, "), (int)(");
+      codegen_expression(gen, node->data.oled_draw.param1);
+      codegen_emit(gen, "), (int)(");
+      if (node->data.oled_draw.param2) codegen_expression(gen, node->data.oled_draw.param2);
+      else codegen_emit(gen, "10");
+      codegen_emit(gen, "), SSD1306_WHITE);\n");
+    } else { /* line */
+      codegen_emit(gen, "_kx_oled.drawLine((int)(");
+      codegen_expression(gen, node->data.oled_draw.x);
+      codegen_emit(gen, "), (int)(");
+      codegen_expression(gen, node->data.oled_draw.y);
+      codegen_emit(gen, "), (int)(");
+      codegen_expression(gen, node->data.oled_draw.param1);
+      codegen_emit(gen, "), (int)(");
+      if (node->data.oled_draw.param2) codegen_expression(gen, node->data.oled_draw.param2);
+      else codegen_emit(gen, "0");
+      codegen_emit(gen, "), SSD1306_WHITE);\n");
+    }
+    break;
+  }
+  case NODE_OLED_SHOW:
+    codegen_emit_line(gen, "_kx_oled.display();\n");
+    break;
+  case NODE_OLED_CLEAR:
+    codegen_emit_line(gen, "_kx_oled.clearDisplay();\n");
+    break;
+  case NODE_AUDIO_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "/* Audio attached on pin ");
+    codegen_expression(gen, node->data.audio_attach.pin);
+    codegen_emit(gen, " */\n");
+    break;
+  case NODE_PLAY_FREQ:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "tone(_kx_audio_pin, (int)(");
+    codegen_expression(gen, node->data.play_freq.frequency);
+    codegen_emit(gen, "), (int)(");
+    codegen_expression(gen, node->data.play_freq.duration);
+    codegen_emit(gen, "));\n");
+    break;
+  case NODE_PLAY_SOUND:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "/* Play sound: ");
+    codegen_expression(gen, node->data.play_sound.name);
+    codegen_emit(gen, " */\n");
+    break;
+  case NODE_SET_VOLUME:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_volume = (int)(");
+    codegen_expression(gen, node->data.set_volume.level);
+    codegen_emit(gen, ");\n");
+    break;
+  case NODE_CAM_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit_line(gen, "_kx_huskylens.begin(Wire);\n");
+    break;
+
   default:
     codegen_emit_line(gen, "/* unknown statement */\n");
     break;
@@ -1399,6 +1499,15 @@ void codegen_generate_arduino(CodeGen *gen, ASTNode *program) {
   codegen_emit_line(gen, "File _kx_file;\n");
 
   codegen_emit_line(gen, "\n");
+
+  /* Wave 5 Includes & Globals */
+  codegen_emit_line(gen, "#include <Adafruit_GFX.h>");
+  codegen_emit_line(gen, "#include <Adafruit_SSD1306.h>");
+  codegen_emit_line(gen, "#include <HUSKYLENS.h>\n");
+  codegen_emit_line(gen, "Adafruit_SSD1306 _kx_oled(128, 64, &Wire, -1);");
+  codegen_emit_line(gen, "HUSKYLENS _kx_huskylens;");
+  codegen_emit_line(gen, "int _kx_audio_pin = 25;");
+  codegen_emit_line(gen, "int _kx_volume = 100;\n");
 
   /* Wave 4 Helpers */
   codegen_emit_line(gen, "float _kx_imu_get_heading() {");

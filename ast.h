@@ -250,6 +250,21 @@ typedef enum {
   NODE_LIDAR_ATTACH, /* attach lidar i2c */
   NODE_LIDAR_READ,   /* read distance precise */
 
+  /* Wave 5: Output Systems & Edge AI Vision */
+  NODE_OLED_ATTACH,    /* attach oled width W height H */
+  NODE_OLED_PRINT,     /* oled print "text" at x N y N */
+  NODE_OLED_DRAW,      /* oled draw circle/rect/line x y ... */
+  NODE_OLED_SHOW,      /* oled show */
+  NODE_OLED_CLEAR,     /* oled clear */
+  NODE_AUDIO_ATTACH,   /* attach audio pin N */
+  NODE_PLAY_FREQ,      /* play frequency N duration N */
+  NODE_PLAY_SOUND,     /* play sound "name" */
+  NODE_SET_VOLUME,     /* set volume N */
+  NODE_CAM_ATTACH,     /* attach camera protocol i2c */
+  NODE_CAM_DETECT,     /* read camera detect "label" (expression) */
+  NODE_CAM_OBJ_X,      /* read camera object x (expression) */
+  NODE_CAM_OBJ_Y,      /* read camera object y (expression) */
+
   /* Program root */
   NODE_PROGRAM
 } NodeType;
@@ -726,6 +741,47 @@ struct ASTNode {
     } file_write;
     /* file_read and file_close are 0-arity or implicit, no fields */
 
+    /* Wave 5: OLED Display */
+    struct {
+      ASTNode *width;
+      ASTNode *height;
+    } oled_attach;
+    struct {
+      ASTNode *text;
+      ASTNode *x;
+      ASTNode *y;
+    } oled_print;
+    struct {
+      int shape; /* 0=circle, 1=rect, 2=line */
+      ASTNode *x;
+      ASTNode *y;
+      ASTNode *param1; /* radius for circle, width for rect, x2 for line */
+      ASTNode *param2; /* height for rect, y2 for line */
+    } oled_draw;
+
+    /* Wave 5: Audio */
+    struct {
+      ASTNode *pin;
+    } audio_attach;
+    struct {
+      ASTNode *frequency;
+      ASTNode *duration;
+    } play_freq;
+    struct {
+      ASTNode *name;
+    } play_sound;
+    struct {
+      ASTNode *level;
+    } set_volume;
+
+    /* Wave 5: Camera / HuskyLens */
+    struct {
+      ASTNode *protocol; /* i2c or uart */
+    } cam_attach;
+    struct {
+      ASTNode *label;
+    } cam_detect;
+
     /* Radio */
     struct {
       ASTNode *peer_id;
@@ -999,5 +1055,22 @@ ASTNode *ast_file_close(void);
 
 ASTNode *ast_lidar_attach(ASTNode *port);
 ASTNode *ast_lidar_read(void);
+
+/* --- Library Wrapper APIs (Wave 5 - Output & AI Vision) --- */
+ASTNode *ast_oled_attach(ASTNode *width, ASTNode *height);
+ASTNode *ast_oled_print(ASTNode *text, ASTNode *x, ASTNode *y);
+ASTNode *ast_oled_draw(int shape, ASTNode *x, ASTNode *y, ASTNode *p1, ASTNode *p2);
+ASTNode *ast_oled_show(void);
+ASTNode *ast_oled_clear(void);
+
+ASTNode *ast_audio_attach(ASTNode *pin);
+ASTNode *ast_play_freq(ASTNode *frequency, ASTNode *duration);
+ASTNode *ast_play_sound(ASTNode *name);
+ASTNode *ast_set_volume(ASTNode *level);
+
+ASTNode *ast_cam_attach(ASTNode *protocol);
+ASTNode *ast_cam_detect(ASTNode *label);
+ASTNode *ast_cam_obj_x(void);
+ASTNode *ast_cam_obj_y(void);
 
 #endif /* KINETRIX_AST_H */

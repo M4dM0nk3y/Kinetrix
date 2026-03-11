@@ -326,6 +326,11 @@ static void pico_expr(CodeGen *gen, ASTNode *node) {
     pico_emit(gen, "(str(_kx_file.read()) if _kx_file else \"\")");
     break;
 
+  /* Wave 5 Expressions */
+  case NODE_CAM_DETECT: pico_emit(gen, "(1 if _kx_husky else 0)"); break;
+  case NODE_CAM_OBJ_X: pico_emit(gen, "(float(_kx_husky_x) if _kx_husky else 0.0)"); break;
+  case NODE_CAM_OBJ_Y: pico_emit(gen, "(float(_kx_husky_y) if _kx_husky else 0.0)"); break;
+
   default:
     pico_emit(gen, "0");
     break;
@@ -1137,6 +1142,68 @@ static void pico_stmt(CodeGen *gen, ASTNode *node) {
     pico_emit_line(gen, "if _kx_file: _kx_file.close(); _kx_file = None");
     break;
 
+  /* Wave 5 Statements */
+  case NODE_OLED_ATTACH:
+    pico_indent(gen);
+    pico_emit_line(gen, "global _kx_oled");
+    pico_indent(gen);
+    pico_emit_line(gen, "try: from ssd1306 import SSD1306_I2C; _kx_oled = SSD1306_I2C(128, 64, I2C(0, scl=Pin(5), sda=Pin(4)))");
+    pico_indent(gen);
+    pico_emit_line(gen, "except: _kx_oled = None");
+    break;
+  case NODE_OLED_PRINT:
+    pico_indent(gen);
+    pico_emit(gen, "if _kx_oled: _kx_oled.text(str(");
+    pico_expr(gen, node->data.oled_print.text);
+    pico_emit(gen, "), int(");
+    pico_expr(gen, node->data.oled_print.x);
+    pico_emit(gen, "), int(");
+    pico_expr(gen, node->data.oled_print.y);
+    pico_emit(gen, "))\n");
+    break;
+  case NODE_OLED_DRAW:
+    pico_indent(gen);
+    pico_emit_line(gen, "# OLED Draw (framebuf primitives)");
+    break;
+  case NODE_OLED_SHOW:
+    pico_indent(gen);
+    pico_emit_line(gen, "if _kx_oled: _kx_oled.show()");
+    break;
+  case NODE_OLED_CLEAR:
+    pico_indent(gen);
+    pico_emit_line(gen, "if _kx_oled: _kx_oled.fill(0)");
+    break;
+  case NODE_AUDIO_ATTACH:
+    pico_indent(gen);
+    pico_emit(gen, "_kx_audio_pin = PWM(Pin(int(");
+    pico_expr(gen, node->data.audio_attach.pin);
+    pico_emit(gen, ")))\n");
+    break;
+  case NODE_PLAY_FREQ:
+    pico_indent(gen);
+    pico_emit(gen, "if _kx_audio_pin: _kx_audio_pin.freq(int(");
+    pico_expr(gen, node->data.play_freq.frequency);
+    pico_emit(gen, ")); _kx_audio_pin.duty_u16(32768); utime.sleep_ms(int(");
+    pico_expr(gen, node->data.play_freq.duration);
+    pico_emit(gen, ")); _kx_audio_pin.duty_u16(0)\n");
+    break;
+  case NODE_PLAY_SOUND:
+    pico_indent(gen);
+    pico_emit_line(gen, "# Play sound (not supported on Pico)");
+    break;
+  case NODE_SET_VOLUME:
+    pico_indent(gen);
+    pico_emit_line(gen, "# Set volume (not supported on Pico)");
+    break;
+  case NODE_CAM_ATTACH:
+    pico_indent(gen);
+    pico_emit_line(gen, "global _kx_husky, _kx_husky_x, _kx_husky_y");
+    pico_indent(gen);
+    pico_emit_line(gen, "try: from huskylensPythonLibrary import HuskyLensLibrary; _kx_husky = HuskyLensLibrary('I2C')");
+    pico_indent(gen);
+    pico_emit_line(gen, "except: _kx_husky = None");
+    break;
+
   default:
     break;
   }
@@ -1190,6 +1257,12 @@ void codegen_generate_pico(CodeGen *gen, ASTNode *program) {
   pico_emit_line(gen, "_kx_gps = None");
   pico_emit_line(gen, "_kx_lidar = None");
   pico_emit_line(gen, "_kx_file = None\n");
+
+  /* Wave 5 Globals */
+  pico_emit_line(gen, "_kx_oled = None");
+  pico_emit_line(gen, "_kx_audio_pin = None");
+  pico_emit_line(gen, "_kx_husky = None");
+  pico_emit_line(gen, "_kx_husky_x, _kx_husky_y = 0, 0\n");
 
   pico_emit_line(gen, "def _kx_compute_pid(current_val):");
   pico_emit_line(

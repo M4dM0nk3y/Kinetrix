@@ -1,0 +1,23 @@
+# Wave 5 Test: Output Systems & Edge AI Vision
+program {
+    # OLED Display (SSD1306)
+    attach oled width 128 height 64
+    oled print "Hello Kinetrix" at x 10 y 20
+    oled draw circle x 64 y 32 radius 15
+    oled show
+    oled clear
+
+    # Audio Output
+    attach audio pin 25
+    play frequency 440 duration 1000
+    play sound "beep"
+    set volume 75
+
+    # Smart Camera (HuskyLens)
+    attach camera protocol i2c
+    make bool found = read camera detect "person"
+    make float cx = read camera object x
+    make float cy = read camera object y
+
+    print "Wave 5 test complete"
+}

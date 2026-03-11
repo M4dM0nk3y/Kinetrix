@@ -323,6 +323,32 @@ write file "1024, 25.4"
 close file
 ```
 
+### Library Wrappers — Wave 5: Output Systems & Edge AI Vision 🆕
+
+Native support for rich output (OLED displays, audio synthesis) and smart AI vision sensors (HuskyLens).
+
+```kinetrix
+# OLED Displays (SSD1306)
+attach oled width 128 height 64
+oled print "Kinetrix V3!" at x 10 y 20
+oled draw circle x 64 y 32 radius 15
+oled draw rect x 0 y 0 width 128 height 64
+oled show
+oled clear
+
+# Audio & Sound Generation
+attach audio pin 25
+set volume 80
+play frequency 440 duration 1000
+play sound "beep.wav"
+
+# Smart AI Vision Cameras (HuskyLens)
+attach camera protocol i2c
+make bool found = read camera detect "person"
+make float cx = read camera object x
+make float cy = read camera object y
+```
+
 ### Safety Features
 
 ```kinetrix

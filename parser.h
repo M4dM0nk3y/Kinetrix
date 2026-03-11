@@ -197,6 +197,24 @@ typedef enum {
   TOK_SD,          /* sd          */
   TOK_FILE,        /* file        */
 
+  /* Wave 5 Output Systems & Edge AI Vision */
+  TOK_OLED,        /* oled        */
+  TOK_DRAW,        /* draw        */
+  TOK_CIRCLE,      /* circle      */
+  TOK_RECT,        /* rect        */
+  TOK_LINE,        /* line        */
+  TOK_SHOW,        /* show        */
+  TOK_CLEAR,       /* clear       */
+  TOK_AUDIO,       /* audio       */
+  TOK_PLAY,        /* play        */
+  TOK_FREQUENCY,   /* frequency   */
+  TOK_DURATION,    /* duration    */
+  TOK_SOUND,       /* sound       */
+  TOK_VOLUME,      /* volume      */
+  TOK_CAMERA,      /* camera      */
+  TOK_DETECT,      /* detect      */
+  TOK_OBJECT,      /* object      */
+
   /* FFI */
   TOK_COLON, /* : */
   TOK_ARROW, /* -> */
