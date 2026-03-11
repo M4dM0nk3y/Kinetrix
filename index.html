@@ -1622,6 +1622,13 @@ footer{
   .nav-dl { display: none; }
   .reckoning-title { font-size: clamp(1.8rem, 11vw, 3rem); }
 }
+/* Wave 5 — 3 card grid responsive */
+@media (max-width: 900px) {
+  .wave5-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+@media (max-width: 600px) {
+  .wave5-grid { grid-template-columns: 1fr !important; }
+}
 </style>
 
 </head>
@@ -2504,7 +2511,63 @@ v3.1.0 ✓</pre>
         </div>
       </div>
 
+    </div><!-- end Wave 4 grid -->
+
+    <!-- WAVE 5 -->
+    <div class="chapter-label r" style="margin-top:4rem;">Wave 5 &nbsp;·&nbsp; Just Added</div>
+    <h3 class="r" style="font-family:var(--font-title);font-size:clamp(1.4rem,3vw,2.2rem);font-weight:700;letter-spacing:0.05em;margin:0.6rem 0 0.5rem;color:var(--white);">
+      Output Systems &amp; <span style="color:#f472b6;">Edge AI Vision.</span>
+    </h3>
+    <p class="chapter-prose r" style="max-width:640px;">
+      Rich output and on-device intelligence. OLED graphics, audio synthesis, and AI object detection — all from the same language that blinks an LED.
+    </p>
+    <div class="v31-status r" style="margin-bottom:0;">
+      <span class="dot-testing" style="background:#f472b6;"></span>
+      Codegen live for all 5 targets &nbsp;·&nbsp; Hardware testing in progress
     </div>
+
+    <div class="lib-grid wave5-grid r" style="margin-top:2rem;grid-template-columns:repeat(3,1fr);">
+
+      <div class="lib-card" style="--lib-color:#f472b6">
+        <span class="lib-icon">🖥️</span>
+        <div class="lib-name">OLED Display</div>
+        <span class="lib-tag" style="color:#f472b6;">SSD1306 · 128×64 · text · shapes · I2C</span>
+        <div class="lib-desc">Print text, draw circles and rectangles, show and clear. Full graphics output on a tiny display, zero boilerplate.</div>
+        <div class="lib-code">
+          <span class="t-kw">attach</span> oled width <span class="t-num">128</span> height <span class="t-num">64</span><br>
+          <span class="t-kw">oled</span> print <span class="t-str">"Kinetrix v3"</span> at x <span class="t-num">10</span> y <span class="t-num">20</span><br>
+          <span class="t-kw">oled</span> draw circle x <span class="t-num">64</span> y <span class="t-num">32</span> radius <span class="t-num">15</span><br>
+          <span class="t-kw">oled</span> show
+        </div>
+      </div>
+
+      <div class="lib-card" style="--lib-color:#f472b6">
+        <span class="lib-icon">🔊</span>
+        <div class="lib-name">Audio Output</div>
+        <span class="lib-tag" style="color:#f472b6;">PWM audio · frequency · .wav · volume</span>
+        <div class="lib-desc">Play frequencies, sound files, and control volume. Alerts, feedback tones, and audio cues for your robot in three lines.</div>
+        <div class="lib-code">
+          <span class="t-kw">attach</span> audio pin <span class="t-num">25</span><br>
+          <span class="t-kw">set</span> volume <span class="t-num">80</span><br>
+          <span class="t-kw">play</span> frequency <span class="t-num">440</span> duration <span class="t-num">1000</span><br>
+          <span class="t-kw">play</span> sound <span class="t-str">"beep.wav"</span>
+        </div>
+      </div>
+
+      <div class="lib-card" style="--lib-color:#f472b6">
+        <span class="lib-icon">👁️</span>
+        <div class="lib-name">HuskyLens — Edge AI Vision</div>
+        <span class="lib-tag" style="color:#f472b6;">on-device AI · object detection · face · I2C</span>
+        <div class="lib-desc">Detect people, objects, faces, and colours on-device with no cloud connection. The most powerful line in the entire language.</div>
+        <div class="lib-code">
+          <span class="t-kw">attach</span> camera protocol i2c<br>
+          <span class="t-kw">make</span> bool found = <span class="t-kw">read</span> camera detect <span class="t-str">"person"</span><br>
+          <span class="t-kw">make</span> float cx = <span class="t-kw">read</span> camera object x<br>
+          <span class="t-kw">make</span> float cy = <span class="t-kw">read</span> camera object y
+        </div>
+      </div>
+
+    </div><!-- end Wave 5 grid -->
   </div>
 </section>
 
