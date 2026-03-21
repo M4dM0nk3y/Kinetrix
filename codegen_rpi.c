@@ -277,6 +277,16 @@ static void rpi_expression(CodeGen *gen, ASTNode *node) {
     rpi_expression(gen, node->data.pid_compute.current_val);
     rpi_emit(gen, ")");
     break;
+  case NODE_KALMAN_COMPUTE:
+    rpi_emit(gen, "_kx_kalman_update(");
+    rpi_expression(gen, node->data.kalman_compute.raw_value);
+    rpi_emit(gen, ")");
+    break;
+  case NODE_AI_COMPUTE:
+    rpi_emit(gen, "_kx_ai_invoke(");
+    rpi_expression(gen, node->data.ai_compute.input_array);
+    rpi_emit(gen, ")");
+    break;
   case NODE_PULSE_READ:
     rpi_emit(gen, "time_pulse_us(");
     rpi_expression(gen, node->data.gpio.pin);
@@ -944,6 +954,62 @@ static void rpi_statement(CodeGen *gen, ASTNode *node) {
     rpi_emit_line(gen, "GPIO.output(_kx_motor_rev, GPIO.LOW)");
     rpi_emit_line(gen, "_kx_motor_pwm.ChangeDutyCycle(0)");
     break;
+
+  case NODE_MECANUM_ATTACH:
+    rpi_indent(gen);
+    rpi_emit(gen, "global _kx_mec_fl, _kx_mec_fr, _kx_mec_bl, _kx_mec_br, ");
+    rpi_emit(gen, "_kx_mec_pwm_fl, _kx_mec_pwm_fr, _kx_mec_pwm_bl, _kx_mec_pwm_br\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_mec_fl = int("); rpi_expression(gen, node->data.mecanum_attach.fl_pin); rpi_emit(gen, ")\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_mec_fr = int("); rpi_expression(gen, node->data.mecanum_attach.fr_pin); rpi_emit(gen, ")\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_mec_bl = int("); rpi_expression(gen, node->data.mecanum_attach.bl_pin); rpi_emit(gen, ")\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_mec_br = int("); rpi_expression(gen, node->data.mecanum_attach.br_pin); rpi_emit(gen, ")\n");
+    rpi_emit_line(gen, "GPIO.setup(_kx_mec_fl, GPIO.OUT)");
+    rpi_emit_line(gen, "GPIO.setup(_kx_mec_fr, GPIO.OUT)");
+    rpi_emit_line(gen, "GPIO.setup(_kx_mec_bl, GPIO.OUT)");
+    rpi_emit_line(gen, "GPIO.setup(_kx_mec_br, GPIO.OUT)");
+    rpi_emit_line(gen, "_kx_mec_pwm_fl = GPIO.PWM(_kx_mec_fl, 1000)");
+    rpi_emit_line(gen, "_kx_mec_pwm_fr = GPIO.PWM(_kx_mec_fr, 1000)");
+    rpi_emit_line(gen, "_kx_mec_pwm_bl = GPIO.PWM(_kx_mec_bl, 1000)");
+    rpi_emit_line(gen, "_kx_mec_pwm_br = GPIO.PWM(_kx_mec_br, 1000)");
+    rpi_emit_line(gen, "_kx_mec_pwm_fl.start(0)");
+    rpi_emit_line(gen, "_kx_mec_pwm_fr.start(0)");
+    rpi_emit_line(gen, "_kx_mec_pwm_bl.start(0)");
+    rpi_emit_line(gen, "_kx_mec_pwm_br.start(0)");
+    break;
+
+  case NODE_MECANUM_MOVE:
+    rpi_emit_line(gen, "if _kx_mec_fl is not None:");
+    gen->indent_level++;
+    rpi_indent(gen);
+    rpi_emit(gen, "_kf_y = "); rpi_expression(gen, node->data.mecanum_move.y); rpi_emit(gen, "\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "_kf_x = "); rpi_expression(gen, node->data.mecanum_move.x); rpi_emit(gen, "\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "_kf_t = "); rpi_expression(gen, node->data.mecanum_move.turn); rpi_emit(gen, "\n");
+    rpi_emit_line(gen, "_kx_fl = _kf_y + _kf_x + _kf_t");
+    rpi_emit_line(gen, "_kx_fr = _kf_y - _kf_x - _kf_t");
+    rpi_emit_line(gen, "_kx_bl = _kf_y - _kf_x + _kf_t");
+    rpi_emit_line(gen, "_kx_br = _kf_y + _kf_x - _kf_t");
+    rpi_emit_line(gen, "_kx_mec_pwm_fl.ChangeDutyCycle(max(0, min(100, abs(_kx_fl) * 100.0 / 255.0)))");
+    rpi_emit_line(gen, "_kx_mec_pwm_fr.ChangeDutyCycle(max(0, min(100, abs(_kx_fr) * 100.0 / 255.0)))");
+    rpi_emit_line(gen, "_kx_mec_pwm_bl.ChangeDutyCycle(max(0, min(100, abs(_kx_bl) * 100.0 / 255.0)))");
+    rpi_emit_line(gen, "_kx_mec_pwm_br.ChangeDutyCycle(max(0, min(100, abs(_kx_br) * 100.0 / 255.0)))");
+    gen->indent_level--;
+    break;
+
+  case NODE_MECANUM_STOP:
+    rpi_emit_line(gen, "if _kx_mec_fl is not None:");
+    gen->indent_level++;
+    rpi_emit_line(gen, "_kx_mec_pwm_fl.ChangeDutyCycle(0)");
+    rpi_emit_line(gen, "_kx_mec_pwm_fr.ChangeDutyCycle(0)");
+    rpi_emit_line(gen, "_kx_mec_pwm_bl.ChangeDutyCycle(0)");
+    rpi_emit_line(gen, "_kx_mec_pwm_br.ChangeDutyCycle(0)");
+    gen->indent_level--;
+    break;
   case NODE_ENCODER_ATTACH:
     rpi_indent(gen);
     rpi_emit(gen, "_kx_enc_a = int(");
@@ -1114,7 +1180,40 @@ static void rpi_statement(CodeGen *gen, ASTNode *node) {
   case NODE_PID_COMPUTE:
     rpi_emit(gen, "_kx_compute_pid(");
     rpi_expression(gen, node->data.pid_compute.current_val);
-    rpi_emit(gen, ")");
+    rpi_emit(gen, ")\n");
+    break;
+
+  case NODE_KALMAN_ATTACH:
+    rpi_indent(gen);
+    rpi_emit_line(gen, "global _kx_kalman_p, _kx_kalman_x, _kx_kalman_k");
+    rpi_indent(gen);
+    rpi_emit_line(gen, "_kx_kalman_p = 1.0; _kx_kalman_x = 0.0; _kx_kalman_k = 0.0");
+    break;
+
+  case NODE_KALMAN_COMPUTE:
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_kalman_update(");
+    rpi_expression(gen, node->data.kalman_compute.raw_value);
+    rpi_emit(gen, ")\n");
+    break;
+  case NODE_AI_LOAD:
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_ai_interpreter = tflite.Interpreter(model_path=");
+    rpi_expression(gen, node->data.ai_load.model_path);
+    rpi_emit(gen, ")\n");
+    rpi_indent(gen);
+    rpi_emit_line(gen, "_kx_ai_interpreter.allocate_tensors()");
+    rpi_indent(gen);
+    rpi_emit_line(gen, "_kx_ai_input_details = _kx_ai_interpreter.get_input_details()");
+    rpi_indent(gen);
+    rpi_emit_line(gen, "_kx_ai_output_details = _kx_ai_interpreter.get_output_details()");
+    break;
+
+  case NODE_AI_COMPUTE:
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_ai_invoke(");
+    rpi_expression(gen, node->data.ai_compute.input_array);
+    rpi_emit(gen, ")\n");
     break;
   case NODE_TONE:
     // RPi PWM starts by verifying object doesn't exist yet, if not it registers
@@ -1364,6 +1463,13 @@ void codegen_generate_rpi(CodeGen *gen, ASTNode *program) {
   rpi_emit_line(gen, "_kx_pid_integral = 0");
   rpi_emit_line(gen, "_kx_pid_last_time = time.time()");
 
+  /* Wave 6 AI Include */
+  rpi_emit_line(gen, "try:");
+  rpi_emit_line(gen, "    import tflite_runtime.interpreter as tflite");
+  rpi_emit_line(gen, "except ImportError:");
+  rpi_emit_line(gen, "    import tensorflow.lite as tflite\n");
+  rpi_emit_line(gen, "import numpy as np\n");
+
   /* Wave 3 Globals */
   rpi_emit_line(gen, "_kx_mqtt_client = None");
   rpi_emit_line(gen, "_kx_mqtt_msg = ''");
@@ -1390,6 +1496,29 @@ void codegen_generate_rpi(CodeGen *gen, ASTNode *program) {
   rpi_emit_line(gen, "_kx_oled = None");
   rpi_emit_line(gen, "_kx_husky = None");
   rpi_emit_line(gen, "_kx_husky_blocks = []\n");
+
+  /* Wave 6 Globals */
+  rpi_emit_line(gen, "_kx_mec_fl = None; _kx_mec_fr = None; _kx_mec_bl = None; _kx_mec_br = None");
+  rpi_emit_line(gen, "_kx_mec_pwm_fl = None; _kx_mec_pwm_fr = None; _kx_mec_pwm_bl = None; _kx_mec_pwm_br = None\n");
+  rpi_emit_line(gen, "_kx_kalman_q = 0.01; _kx_kalman_r = 0.1");
+  rpi_emit_line(gen, "_kx_kalman_x = 0.0; _kx_kalman_p = 1.0; _kx_kalman_k = 0.0\n");
+
+  rpi_emit_line(gen, "def _kx_kalman_update(mea):");
+  rpi_emit_line(gen, "    global _kx_kalman_q, _kx_kalman_r, _kx_kalman_x, _kx_kalman_p, _kx_kalman_k");
+  rpi_emit_line(gen, "    _kx_kalman_p = _kx_kalman_p + _kx_kalman_q");
+  rpi_emit_line(gen, "    _kx_kalman_k = _kx_kalman_p / (_kx_kalman_p + _kx_kalman_r)");
+  rpi_emit_line(gen, "    _kx_kalman_x = _kx_kalman_x + _kx_kalman_k * (mea - _kx_kalman_x)");
+  rpi_emit_line(gen, "    _kx_kalman_p = (1.0 - _kx_kalman_k) * _kx_kalman_p");
+  rpi_emit_line(gen, "    return _kx_kalman_x\n");
+
+  rpi_emit_line(gen, "_kx_ai_interpreter = None; _kx_ai_input_details = None; _kx_ai_output_details = None");
+  rpi_emit_line(gen, "def _kx_ai_invoke(input_data):");
+  rpi_emit_line(gen, "    global _kx_ai_interpreter, _kx_ai_input_details, _kx_ai_output_details");
+  rpi_emit_line(gen, "    if not _kx_ai_interpreter: return 0.0");
+  rpi_emit_line(gen, "    input_data = np.array([input_data], dtype=np.float32) if isinstance(input_data, (int, float)) else np.array(input_data, dtype=np.float32)");
+  rpi_emit_line(gen, "    _kx_ai_interpreter.set_tensor(_kx_ai_input_details[0]['index'], input_data)");
+  rpi_emit_line(gen, "    _kx_ai_interpreter.invoke()");
+  rpi_emit_line(gen, "    return _kx_ai_interpreter.get_tensor(_kx_ai_output_details[0]['index'])[0][0]\n");
 
   rpi_emit_line(gen, "def _kx_compute_pid(current_val):");
   rpi_emit_line(

@@ -255,10 +255,19 @@ static void esp32_expression(CodeGen *gen, ASTNode *node) {
     break;
 
   case NODE_PID_COMPUTE:
-    codegen_emit(gen, "(_kx_pid_input = (double)(");
-    esp32_expression(gen, node->data.pid_compute.current_val);
-    codegen_emit(gen,
-                 "), (_kx_pid ? _kx_pid->Compute() : false), _kx_pid_output)");
+    codegen_emit(gen, "_kx_pid->Compute() ? _kx_pid_output : _kx_pid_output");
+    break;
+
+  case NODE_KALMAN_COMPUTE:
+    codegen_emit(gen, "_kx_kalman_update(");
+    esp32_expression(gen, node->data.kalman_compute.raw_value);
+    codegen_emit(gen, ")");
+    break;
+
+  case NODE_AI_COMPUTE:
+    codegen_emit(gen, "_kx_ai_invoke(");
+    esp32_expression(gen, node->data.ai_compute.input_array);
+    codegen_emit(gen, ")");
     break;
 
   case NODE_I2C_DEVICE_READ:
@@ -782,6 +791,67 @@ static void esp32_statement(CodeGen *gen, ASTNode *node) {
     gen->indent_level--;
     codegen_emit_line(gen, "}\n");
     break;
+
+  case NODE_MECANUM_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_mec_fl = ");
+    esp32_expression(gen, node->data.mecanum_attach.fl_pin);
+    codegen_emit(gen, ";\n");
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_mec_fr = ");
+    esp32_expression(gen, node->data.mecanum_attach.fr_pin);
+    codegen_emit(gen, ";\n");
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_mec_bl = ");
+    esp32_expression(gen, node->data.mecanum_attach.bl_pin);
+    codegen_emit(gen, ";\n");
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_mec_br = ");
+    esp32_expression(gen, node->data.mecanum_attach.br_pin);
+    codegen_emit(gen, ";\n");
+    codegen_emit_line(gen, "pinMode(_kx_mec_fl, OUTPUT);\n");
+    codegen_emit_line(gen, "pinMode(_kx_mec_fr, OUTPUT);\n");
+    codegen_emit_line(gen, "pinMode(_kx_mec_bl, OUTPUT);\n");
+    codegen_emit_line(gen, "pinMode(_kx_mec_br, OUTPUT);\n");
+    break;
+
+  case NODE_MECANUM_MOVE:
+    codegen_emit_line(gen, "if (_kx_mec_fl != -1) {\n");
+    gen->indent_level++;
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "int _kf_y = ");
+    esp32_expression(gen, node->data.mecanum_move.y);
+    codegen_emit(gen, ";\n");
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "int _kf_x = ");
+    esp32_expression(gen, node->data.mecanum_move.x);
+    codegen_emit(gen, ";\n");
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "int _kf_t = ");
+    esp32_expression(gen, node->data.mecanum_move.turn);
+    codegen_emit(gen, ";\n");
+    codegen_emit_line(gen, "int _kx_fl = _kf_y + _kf_x + _kf_t;\n");
+    codegen_emit_line(gen, "int _kx_fr = _kf_y - _kf_x - _kf_t;\n");
+    codegen_emit_line(gen, "int _kx_bl = _kf_y - _kf_x + _kf_t;\n");
+    codegen_emit_line(gen, "int _kx_br = _kf_y + _kf_x - _kf_t;\n");
+    codegen_emit_line(gen, "_ledc_analogWrite(_kx_mec_fl, constrain(abs(_kx_fl), 0, 255));\n");
+    codegen_emit_line(gen, "_ledc_analogWrite(_kx_mec_fr, constrain(abs(_kx_fr), 0, 255));\n");
+    codegen_emit_line(gen, "_ledc_analogWrite(_kx_mec_bl, constrain(abs(_kx_bl), 0, 255));\n");
+    codegen_emit_line(gen, "_ledc_analogWrite(_kx_mec_br, constrain(abs(_kx_br), 0, 255));\n");
+    gen->indent_level--;
+    codegen_emit_line(gen, "}\n");
+    break;
+
+  case NODE_MECANUM_STOP:
+    codegen_emit_line(gen, "if (_kx_mec_fl != -1) {\n");
+    gen->indent_level++;
+    codegen_emit_line(gen, "_ledc_analogWrite(_kx_mec_fl, 0);\n");
+    codegen_emit_line(gen, "_ledc_analogWrite(_kx_mec_fr, 0);\n");
+    codegen_emit_line(gen, "_ledc_analogWrite(_kx_mec_bl, 0);\n");
+    codegen_emit_line(gen, "_ledc_analogWrite(_kx_mec_br, 0);\n");
+    gen->indent_level--;
+    codegen_emit_line(gen, "}\n");
+    break;
   case NODE_ENCODER_ATTACH:
     codegen_emit_indent(gen);
     codegen_emit(gen, "_kx_encoder = new Encoder(");
@@ -830,16 +900,38 @@ static void esp32_statement(CodeGen *gen, ASTNode *node) {
     break;
   case NODE_PID_COMPUTE:
     codegen_emit_indent(gen);
-    codegen_emit(gen, "[&]() -> double {\n");
-    gen->indent_level++;
-    codegen_emit_indent(gen);
     codegen_emit(gen, "_kx_pid_input = ");
     esp32_expression(gen, node->data.pid_compute.current_val);
     codegen_emit(gen, ";\n");
-    codegen_emit_line(gen, "if (_kx_pid) _kx_pid->Compute();\n");
-    codegen_emit_line(gen, "return _kx_pid_output;\n");
-    gen->indent_level--;
-    codegen_emit_line(gen, "}()");
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "if (_kx_pid) _kx_pid->Compute();\n");
+    break;
+
+  case NODE_KALMAN_ATTACH:
+    codegen_emit_line(gen, "_kx_kalman_p = 1.0;");
+    codegen_emit_line(gen, "_kx_kalman_x = 0.0;");
+    codegen_emit_line(gen, "_kx_kalman_k = 0.0;");
+    break;
+
+  case NODE_KALMAN_COMPUTE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_kalman_update(");
+    esp32_expression(gen, node->data.kalman_compute.raw_value);
+    codegen_emit(gen, ");\n");
+    break;
+
+  case NODE_AI_LOAD:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "// AI Model loaded: ");
+    esp32_expression(gen, node->data.ai_load.model_path);
+    codegen_emit(gen, "\n");
+    break;
+
+  case NODE_AI_COMPUTE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_ai_invoke(");
+    esp32_expression(gen, node->data.ai_compute.input_array);
+    codegen_emit(gen, ");\n");
     break;
 
   case NODE_FOR: {
@@ -1402,6 +1494,13 @@ void codegen_generate_esp32(CodeGen *gen, ASTNode *program) {
   codegen_emit_line(gen, "};");
   codegen_emit_line(gen, "BLECharacteristic *_kx_ble_char = NULL;\n");
 
+  /* Wave 6 Kalman Globals */
+  codegen_emit_line(gen, "float _kx_kalman_q = 0.01;");
+  codegen_emit_line(gen, "float _kx_kalman_r = 0.1;");
+  codegen_emit_line(gen, "float _kx_kalman_x = 0.0;");
+  codegen_emit_line(gen, "float _kx_kalman_p = 1.0;");
+  codegen_emit_line(gen, "float _kx_kalman_k = 0.0;\n");
+
   /* Wave 4 Includes & Globals */
   codegen_emit_line(gen, "#include <SparkFun_BNO080_Arduino_Library.h>");
   codegen_emit_line(gen, "#include <TinyGPSPlus.h>");
@@ -1433,7 +1532,25 @@ void codegen_generate_esp32(CodeGen *gen, ASTNode *program) {
   codegen_emit_line(gen, "  float q3 = _kx_imu->getQuatReal();");
   codegen_emit_line(gen, "  return atan2(2.0*(q0*q1 + q2*q3), 1.0 - 2.0*(q1*q1 "
                          "+ q2*q2)) * 180.0/M_PI;");
+  codegen_emit_line(gen, "}\n");
+
+  /* Wave 6 Helpers */
+  codegen_emit_line(gen, "float _kx_kalman_update(float mea) {");
+  codegen_emit_line(gen, "  _kx_kalman_p = _kx_kalman_p + _kx_kalman_q;");
+  codegen_emit_line(gen, "  _kx_kalman_k = _kx_kalman_p / (_kx_kalman_p + _kx_kalman_r);");
+  codegen_emit_line(gen, "  _kx_kalman_x = _kx_kalman_x + _kx_kalman_k * (mea - _kx_kalman_x);");
+  codegen_emit_line(gen, "  _kx_kalman_p = (1.0 - _kx_kalman_k) * _kx_kalman_p;");
+  codegen_emit_line(gen, "  return _kx_kalman_x;");
+  codegen_emit_line(gen, "}\n");
+
+  /* Wave 6 AI Helpers */
+  codegen_emit_line(gen, "float _kx_ai_invoke(float input) {");
+  codegen_emit_line(gen, "  return 0.0; // TFLite Micro omitted for generic target");
   codegen_emit_line(gen, "}");
+  codegen_emit_line(gen, "float _kx_ai_invoke(float* input_array) {");
+  codegen_emit_line(gen, "  return 0.0;");
+  codegen_emit_line(gen, "}\n");
+
   codegen_emit_line(gen, "const char* _kx_file_read_string() {");
   codegen_emit_line(gen, "  if (!_kx_file) return \"\";");
   codegen_emit_line(gen, "  static char buf[256];");
@@ -1458,6 +1575,9 @@ void codegen_generate_esp32(CodeGen *gen, ASTNode *program) {
   codegen_emit_line(gen, "  }");
   codegen_emit_line(gen, "  ledcWrite(_esp32_pwm_channels[pin] - 1, value);");
   codegen_emit_line(gen, "}\n");
+
+  /* Wave 6 Includes & Globals */
+  codegen_emit_line(gen, "int _kx_mec_fl = -1, _kx_mec_fr = -1, _kx_mec_bl = -1, _kx_mec_br = -1;\n");
 
   codegen_emit_line(gen, "/* ESP-NOW state */");
   codegen_emit_line(gen, "volatile float _esp_now_last_val = 0.0;");

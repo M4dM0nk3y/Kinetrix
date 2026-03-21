@@ -215,6 +215,15 @@ typedef enum {
   TOK_DETECT,      /* detect      */
   TOK_OBJECT,      /* object      */
 
+  /* Wave 6: Advanced Locomotion, Sensor Fusion & Edge AI */
+  TOK_MECANUM,     /* mecanum     */
+  TOK_KALMAN,      /* kalman      */
+  TOK_AI,          /* ai          */
+  TOK_MODEL,       /* model       */
+  TOK_RAW,         /* raw         */
+  TOK_COMPUTE_KW,  /* compute     */
+  TOK_LOAD,        /* load        */
+
   /* FFI */
   TOK_COLON, /* : */
   TOK_ARROW, /* -> */

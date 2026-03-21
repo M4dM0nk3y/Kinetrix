@@ -667,6 +667,21 @@ void lexer_next_token(Lexer *lexer) {
       lexer->current_token.type = TOK_DETECT;
     else if (!strcmp(v, "object"))
       lexer->current_token.type = TOK_OBJECT;
+    /* Wave 6 Keywords */
+    else if (!strcmp(v, "mecanum"))
+      lexer->current_token.type = TOK_MECANUM;
+    else if (!strcmp(v, "kalman"))
+      lexer->current_token.type = TOK_KALMAN;
+    else if (!strcmp(v, "ai"))
+      lexer->current_token.type = TOK_AI;
+    else if (!strcmp(v, "model"))
+      lexer->current_token.type = TOK_MODEL;
+    else if (!strcmp(v, "raw"))
+      lexer->current_token.type = TOK_RAW;
+    else if (!strcmp(v, "compute"))
+      lexer->current_token.type = TOK_COMPUTE_KW;
+    else if (!strcmp(v, "load"))
+      lexer->current_token.type = TOK_LOAD;
     /* V3.0 handled as TOK_ID in parser */
     else if (!strcmp(v, "not"))
       lexer->current_token.type = TOK_NOT;
@@ -1087,24 +1102,35 @@ static ASTNode *parse_primary(Parser *parser) {
   }
 
   // Identifier or built-in pseudo-functions
+  /* compute pid/kalman/ai <expr> — expression form */
+  if (parser_match(parser, TOK_COMPUTE_KW)) {
+    lexer_next_token(parser->lexer);
+    if (parser_match(parser, TOK_PID)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *expr = parse_expression(parser);
+      return ast_pid_compute(expr);
+    }
+    if (parser_match(parser, TOK_KALMAN)) {
+      lexer_next_token(parser->lexer);
+      if (parser_match(parser, TOK_RAW)) {
+        lexer_next_token(parser->lexer);
+      }
+      ASTNode *raw = parse_expression(parser);
+      return ast_kalman_compute(raw);
+    }
+    if (parser_match(parser, TOK_AI)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *input = parse_expression(parser);
+      return ast_ai_compute(input);
+    }
+  }
+
   if (parser_match(parser, TOK_ID)) {
     char *name = strdup(tok.value);
     lexer_next_token(parser->lexer);
 
-    // compute pid <expr>
-    if (strcmp(name, "compute") == 0) {
-      if (!parser_match(parser, TOK_PID)) {
-        error_report(parser->errors, ERROR_SYNTAX,
-                     parser->lexer->current_token.line,
-                     parser->lexer->current_token.column,
-                     "Expected 'pid' after 'compute'");
-      } else {
-        lexer_next_token(parser->lexer);
-      }
-      ASTNode *expr = parse_expression(parser);
-      free(name);
-      return ast_pid_compute(expr);
-    }
+    /* Mark variable as used semantic */
+    symbol_table_lookup(parser->symbols, name);
 
     // map(value, fromLow, fromHigh, toLow, toHigh)
     if (strcmp(name, "map") == 0) {
@@ -2591,6 +2617,33 @@ static ASTNode *parse_statement(Parser *parser) {
       } else { protocol = ast_string("i2c"); }
       return ast_cam_attach(protocol);
     }
+    /* Wave 6: attach mecanum fl N fr N bl N br N */
+    if (parser_match(parser, TOK_MECANUM)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *fl = NULL, *fr = NULL, *bl = NULL, *br = NULL;
+      if (parser_match_id(parser, "fl")) {
+        lexer_next_token(parser->lexer);
+        fl = parse_expression(parser);
+      } else { fl = ast_number(2); }
+      if (parser_match_id(parser, "fr")) {
+        lexer_next_token(parser->lexer);
+        fr = parse_expression(parser);
+      } else { fr = ast_number(3); }
+      if (parser_match_id(parser, "bl")) {
+        lexer_next_token(parser->lexer);
+        bl = parse_expression(parser);
+      } else { bl = ast_number(4); }
+      if (parser_match_id(parser, "br")) {
+        lexer_next_token(parser->lexer);
+        br = parse_expression(parser);
+      } else { br = ast_number(5); }
+      return ast_mecanum_attach(fl, fr, bl, br);
+    }
+    /* Wave 6: attach kalman */
+    if (parser_match(parser, TOK_KALMAN)) {
+      lexer_next_token(parser->lexer);
+      return ast_kalman_attach();
+    }
     if (parser_match(parser, TOK_PID)) {
       lexer_next_token(parser->lexer);
       if (!parser_match_id(parser, "kp")) {
@@ -2664,6 +2717,48 @@ static ASTNode *parse_statement(Parser *parser) {
     if (parser_match(parser, TOK_FILE)) {
       lexer_next_token(parser->lexer);
       return ast_file_close();
+    }
+  }
+
+  /* ============================================================
+   * Wave 6: Advanced Locomotion, Sensor Fusion & Edge AI
+   * ============================================================ */
+
+  /* load ai model "file.tflite" */
+  if (parser_match(parser, TOK_LOAD)) {
+    lexer_next_token(parser->lexer);
+    if (parser_match(parser, TOK_AI)) {
+      lexer_next_token(parser->lexer);
+      if (parser_match(parser, TOK_MODEL)) {
+        lexer_next_token(parser->lexer);
+      }
+      ASTNode *model_path = parse_expression(parser);
+      return ast_ai_load(model_path);
+    }
+  }
+
+  /* compute kalman raw N  (statement form) */
+  /* compute ai input      (statement form) */
+  if (parser_match(parser, TOK_COMPUTE_KW)) {
+    lexer_next_token(parser->lexer);
+    if (parser_match(parser, TOK_KALMAN)) {
+      lexer_next_token(parser->lexer);
+      if (parser_match(parser, TOK_RAW)) {
+        lexer_next_token(parser->lexer);
+      }
+      ASTNode *raw = parse_expression(parser);
+      return ast_kalman_compute(raw);
+    }
+    if (parser_match(parser, TOK_AI)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *input = parse_expression(parser);
+      return ast_ai_compute(input);
+    }
+    if (parser_match(parser, TOK_PID)) {
+      /* existing compute pid path - delegate back */
+      lexer_next_token(parser->lexer);
+      ASTNode *val = parse_expression(parser);
+      return ast_pid_compute(val);
     }
   }
 
@@ -2762,6 +2857,24 @@ static ASTNode *parse_statement(Parser *parser) {
       ASTNode *speed = parse_expression(parser);
       return ast_motor_move(dir, speed);
     }
+    /* Wave 6: move mecanum x N y N turn N */
+    if (parser_match(parser, TOK_MECANUM)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *x = NULL, *y = NULL, *turn = NULL;
+      if (parser_match_id(parser, "x")) {
+        lexer_next_token(parser->lexer);
+        x = parse_expression(parser);
+      } else { x = ast_number(0); }
+      if (parser_match_id(parser, "y")) {
+        lexer_next_token(parser->lexer);
+        y = parse_expression(parser);
+      } else { y = ast_number(0); }
+      if (parser_match(parser, TOK_TURN)) {
+        lexer_next_token(parser->lexer);
+        turn = parse_expression(parser);
+      } else { turn = ast_number(0); }
+      return ast_mecanum_move(x, y, turn);
+    }
   }
 
   /* detach servo pin N */
@@ -2786,6 +2899,11 @@ static ASTNode *parse_statement(Parser *parser) {
     if (parser_match(parser, TOK_MOTOR)) {
       lexer_next_token(parser->lexer);
       return ast_motor_stop();
+    }
+    /* Wave 6: stop mecanum */
+    if (parser_match(parser, TOK_MECANUM)) {
+      lexer_next_token(parser->lexer);
+      return ast_mecanum_stop();
     }
   }
 
@@ -2930,6 +3048,7 @@ static ASTNode *parse_statement(Parser *parser) {
       return ast_assignment(target, value);
     }
     // Unknown - just return identifier as expression
+    symbol_table_lookup(parser->symbols, name_tok.value);
     return ast_identifier(name_tok.value);
   }
 

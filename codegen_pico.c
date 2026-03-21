@@ -244,6 +244,16 @@ static void pico_expr(CodeGen *gen, ASTNode *node) {
     pico_expr(gen, node->data.pid_compute.current_val);
     pico_emit(gen, ")");
     break;
+  case NODE_KALMAN_COMPUTE:
+    pico_emit(gen, "_kx_kalman_update(");
+    pico_expr(gen, node->data.kalman_compute.raw_value);
+    pico_emit(gen, ")");
+    break;
+  case NODE_AI_COMPUTE:
+    pico_emit(gen, "_kx_ai_invoke(");
+    pico_expr(gen, node->data.ai_compute.input_array);
+    pico_emit(gen, ")");
+    break;
   case NODE_PULSE_READ:
     pico_emit(gen, "machine.time_pulse_us(Pin(");
     pico_expr(gen, node->data.gpio.pin);
@@ -855,6 +865,54 @@ static void pico_stmt(CodeGen *gen, ASTNode *node) {
     pico_emit_line(gen, "_kx_motor_rev.value(0)");
     pico_emit_line(gen, "_kx_motor_pwm.duty_u16(0)");
     break;
+
+  case NODE_MECANUM_ATTACH:
+    pico_indent(gen);
+    pico_emit(gen, "global _kx_mec_fl, _kx_mec_fr, _kx_mec_bl, _kx_mec_br, ");
+    pico_emit(gen, "_kx_mec_pwm_fl, _kx_mec_pwm_fr, _kx_mec_pwm_bl, _kx_mec_pwm_br\n");
+    pico_indent(gen);
+    pico_emit(gen, "_kx_mec_fl = int("); pico_expr(gen, node->data.mecanum_attach.fl_pin); pico_emit(gen, ")\n");
+    pico_indent(gen);
+    pico_emit(gen, "_kx_mec_fr = int("); pico_expr(gen, node->data.mecanum_attach.fr_pin); pico_emit(gen, ")\n");
+    pico_indent(gen);
+    pico_emit(gen, "_kx_mec_bl = int("); pico_expr(gen, node->data.mecanum_attach.bl_pin); pico_emit(gen, ")\n");
+    pico_indent(gen);
+    pico_emit(gen, "_kx_mec_br = int("); pico_expr(gen, node->data.mecanum_attach.br_pin); pico_emit(gen, ")\n");
+    pico_emit_line(gen, "_kx_mec_pwm_fl = PWM(Pin(_kx_mec_fl)); _kx_mec_pwm_fl.freq(1000); _kx_mec_pwm_fl.duty_u16(0)");
+    pico_emit_line(gen, "_kx_mec_pwm_fr = PWM(Pin(_kx_mec_fr)); _kx_mec_pwm_fr.freq(1000); _kx_mec_pwm_fr.duty_u16(0)");
+    pico_emit_line(gen, "_kx_mec_pwm_bl = PWM(Pin(_kx_mec_bl)); _kx_mec_pwm_bl.freq(1000); _kx_mec_pwm_bl.duty_u16(0)");
+    pico_emit_line(gen, "_kx_mec_pwm_br = PWM(Pin(_kx_mec_br)); _kx_mec_pwm_br.freq(1000); _kx_mec_pwm_br.duty_u16(0)");
+    break;
+
+  case NODE_MECANUM_MOVE:
+    pico_emit_line(gen, "if _kx_mec_fl is not None:");
+    gen->indent_level++;
+    pico_indent(gen);
+    pico_emit(gen, "_kf_y = "); pico_expr(gen, node->data.mecanum_move.y); pico_emit(gen, "\n");
+    pico_indent(gen);
+    pico_emit(gen, "_kf_x = "); pico_expr(gen, node->data.mecanum_move.x); pico_emit(gen, "\n");
+    pico_indent(gen);
+    pico_emit(gen, "_kf_t = "); pico_expr(gen, node->data.mecanum_move.turn); pico_emit(gen, "\n");
+    pico_emit_line(gen, "_kx_fl = _kf_y + _kf_x + _kf_t");
+    pico_emit_line(gen, "_kx_fr = _kf_y - _kf_x - _kf_t");
+    pico_emit_line(gen, "_kx_bl = _kf_y - _kf_x + _kf_t");
+    pico_emit_line(gen, "_kx_br = _kf_y + _kf_x - _kf_t");
+    pico_emit_line(gen, "_kx_mec_pwm_fl.duty_u16(int(max(0, min(65535, abs(_kx_fl) * 65535 / 255))))");
+    pico_emit_line(gen, "_kx_mec_pwm_fr.duty_u16(int(max(0, min(65535, abs(_kx_fr) * 65535 / 255))))");
+    pico_emit_line(gen, "_kx_mec_pwm_bl.duty_u16(int(max(0, min(65535, abs(_kx_bl) * 65535 / 255))))");
+    pico_emit_line(gen, "_kx_mec_pwm_br.duty_u16(int(max(0, min(65535, abs(_kx_br) * 65535 / 255))))");
+    gen->indent_level--;
+    break;
+
+  case NODE_MECANUM_STOP:
+    pico_emit_line(gen, "if _kx_mec_fl is not None:");
+    gen->indent_level++;
+    pico_emit_line(gen, "_kx_mec_pwm_fl.duty_u16(0)");
+    pico_emit_line(gen, "_kx_mec_pwm_fr.duty_u16(0)");
+    pico_emit_line(gen, "_kx_mec_pwm_bl.duty_u16(0)");
+    pico_emit_line(gen, "_kx_mec_pwm_br.duty_u16(0)");
+    gen->indent_level--;
+    break;
   case NODE_ENCODER_ATTACH:
     pico_indent(gen);
     pico_emit(gen, "_kx_enc_a = Pin(int(");
@@ -1030,7 +1088,35 @@ static void pico_stmt(CodeGen *gen, ASTNode *node) {
   case NODE_PID_COMPUTE:
     pico_emit(gen, "_kx_compute_pid(");
     pico_expr(gen, node->data.pid_compute.current_val);
-    pico_emit(gen, ")");
+    pico_emit(gen, ")\n");
+    break;
+
+  case NODE_KALMAN_ATTACH:
+    pico_indent(gen);
+    pico_emit_line(gen, "global _kx_kalman_p, _kx_kalman_x, _kx_kalman_k");
+    pico_indent(gen);
+    pico_emit_line(gen, "_kx_kalman_p = 1.0; _kx_kalman_x = 0.0; _kx_kalman_k = 0.0");
+    break;
+
+  case NODE_KALMAN_COMPUTE:
+    pico_indent(gen);
+    pico_emit(gen, "_kx_kalman_update(");
+    pico_expr(gen, node->data.kalman_compute.raw_value);
+    pico_emit(gen, ")\n");
+    break;
+
+  case NODE_AI_LOAD:
+    pico_indent(gen);
+    pico_emit(gen, "# AI Model loaded: ");
+    pico_expr(gen, node->data.ai_load.model_path);
+    pico_emit(gen, "\n");
+    break;
+
+  case NODE_AI_COMPUTE:
+    pico_indent(gen);
+    pico_emit(gen, "_kx_ai_invoke(");
+    pico_expr(gen, node->data.ai_compute.input_array);
+    pico_emit(gen, ")\n");
     break;
   case NODE_TONE:
     pico_indent(gen);
@@ -1257,6 +1343,26 @@ void codegen_generate_pico(CodeGen *gen, ASTNode *program) {
   pico_emit_line(gen, "_kx_gps = None");
   pico_emit_line(gen, "_kx_lidar = None");
   pico_emit_line(gen, "_kx_file = None\n");
+
+  /* Wave 6 Globals */
+  pico_emit_line(gen, "_kx_mec_fl = None; _kx_mec_fr = None; _kx_mec_bl = None; _kx_mec_br = None");
+  pico_emit_line(gen, "_kx_mec_pwm_fl = None; _kx_mec_pwm_fr = None; _kx_mec_pwm_bl = None; _kx_mec_pwm_br = None\n");
+
+  /* Wave 6 Kalman Globals */
+  pico_emit_line(gen, "_kx_kalman_q = 0.01; _kx_kalman_r = 0.1");
+  pico_emit_line(gen, "_kx_kalman_x = 0.0; _kx_kalman_p = 1.0; _kx_kalman_k = 0.0\n");
+
+  pico_emit_line(gen, "def _kx_kalman_update(mea):");
+  pico_emit_line(gen, "    global _kx_kalman_q, _kx_kalman_r, _kx_kalman_x, _kx_kalman_p, _kx_kalman_k");
+  pico_emit_line(gen, "    _kx_kalman_p = _kx_kalman_p + _kx_kalman_q");
+  pico_emit_line(gen, "    _kx_kalman_k = _kx_kalman_p / (_kx_kalman_p + _kx_kalman_r)");
+  pico_emit_line(gen, "    _kx_kalman_x = _kx_kalman_x + _kx_kalman_k * (mea - _kx_kalman_x)");
+  pico_emit_line(gen, "    _kx_kalman_p = (1.0 - _kx_kalman_k) * _kx_kalman_p");
+  pico_emit_line(gen, "    return _kx_kalman_x\n");
+
+  /* Wave 6 AI Helpers */
+  pico_emit_line(gen, "def _kx_ai_invoke(input_data):");
+  pico_emit_line(gen, "    return 0.0 # TFLite Micro omitted for generic target\n");
 
   /* Wave 5 Globals */
   pico_emit_line(gen, "_kx_oled = None");

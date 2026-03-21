@@ -177,8 +177,18 @@ static void ros2_expr(CodeGen *gen, ASTNode *node) {
     codegen_emit(gen, "_kx_encoder_pos");
     break;
   case NODE_PID_COMPUTE:
-    codegen_emit(gen, "_kx_compute_pid(");
+    codegen_emit(gen, "compute_pid(");
     ros2_expr(gen, node->data.pid_compute.current_val);
+    codegen_emit(gen, ")");
+    break;
+  case NODE_KALMAN_COMPUTE:
+    codegen_emit(gen, "compute_kalman_update(");
+    ros2_expr(gen, node->data.kalman_compute.raw_value);
+    codegen_emit(gen, ")");
+    break;
+  case NODE_AI_COMPUTE:
+    codegen_emit(gen, "_kx_ai_invoke(");
+    ros2_expr(gen, node->data.ai_compute.input_array);
     codegen_emit(gen, ")");
     break;
 
@@ -483,8 +493,39 @@ static void ros2_stmt(CodeGen *gen, ASTNode *node) {
                  node->data.motor_move.direction);
     break;
   case NODE_MOTOR_STOP:
-    codegen_emit_line(gen, "{ auto _m = std_msgs::msg::Float64(); _m.data = "
-                           "0.0; motor_pub_->publish(_m); }");
+    codegen_emit_indent(gen);
+    codegen_emit_line(
+        gen, "{ auto _m = std_msgs::msg::Float64(); _m.data = 0; "
+             "motor_pub_->publish(_m); }");
+    break;
+
+  case NODE_MECANUM_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "// Mecanum attach (FL: ");
+    ros2_expr(gen, node->data.mecanum_attach.fl_pin);
+    codegen_emit(gen, ", FR: ");
+    ros2_expr(gen, node->data.mecanum_attach.fr_pin);
+    codegen_emit(gen, ")\n");
+    break;
+
+  case NODE_MECANUM_MOVE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "{\n");
+    gen->indent_level++;
+    codegen_emit_indent(gen); codegen_emit(gen, "double _kf_y = "); ros2_expr(gen, node->data.mecanum_move.y); codegen_emit(gen, ";\n");
+    codegen_emit_indent(gen); codegen_emit(gen, "double _kf_x = "); ros2_expr(gen, node->data.mecanum_move.x); codegen_emit(gen, ";\n");
+    codegen_emit_indent(gen); codegen_emit(gen, "double _kf_t = "); ros2_expr(gen, node->data.mecanum_move.turn); codegen_emit(gen, ";\n");
+    codegen_emit_line(gen, "auto _m1 = std_msgs::msg::Float64(); _m1.data = _kf_y + _kf_x + _kf_t; mec_fl_pub_->publish(_m1);");
+    codegen_emit_line(gen, "auto _m2 = std_msgs::msg::Float64(); _m2.data = _kf_y - _kf_x - _kf_t; mec_fr_pub_->publish(_m2);");
+    codegen_emit_line(gen, "auto _m3 = std_msgs::msg::Float64(); _m3.data = _kf_y - _kf_x + _kf_t; mec_bl_pub_->publish(_m3);");
+    codegen_emit_line(gen, "auto _m4 = std_msgs::msg::Float64(); _m4.data = _kf_y + _kf_x - _kf_t; mec_br_pub_->publish(_m4);");
+    gen->indent_level--;
+    codegen_emit_indent(gen); codegen_emit(gen, "}\n");
+    break;
+
+  case NODE_MECANUM_STOP:
+    codegen_emit_indent(gen);
+    codegen_emit_line(gen, "{ auto _m = std_msgs::msg::Float64(); _m.data = 0; mec_fl_pub_->publish(_m); mec_fr_pub_->publish(_m); mec_bl_pub_->publish(_m); mec_br_pub_->publish(_m); }");
     break;
   case NODE_ENCODER_ATTACH:
     codegen_emit_indent(gen);
@@ -536,6 +577,32 @@ static void ros2_stmt(CodeGen *gen, ASTNode *node) {
     codegen_emit_indent(gen);
     codegen_emit(gen, "compute_pid(");
     ros2_expr(gen, node->data.pid_compute.current_val);
+    codegen_emit(gen, ");\n");
+    break;
+
+  case NODE_KALMAN_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit_line(gen, "kalman_p_ = 1.0; kalman_x_ = 0.0; kalman_k_ = 0.0;");
+    break;
+
+  case NODE_KALMAN_COMPUTE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "compute_kalman_update(");
+    ros2_expr(gen, node->data.kalman_compute.raw_value);
+    codegen_emit(gen, ");\n");
+    break;
+
+  case NODE_AI_LOAD:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "// AI Model loaded: ");
+    ros2_expr(gen, node->data.ai_load.model_path);
+    codegen_emit(gen, "\n");
+    break;
+
+  case NODE_AI_COMPUTE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_ai_invoke(");
+    ros2_expr(gen, node->data.ai_compute.input_array);
     codegen_emit(gen, ");\n");
     break;
 
@@ -788,6 +855,12 @@ void codegen_generate_ros2(CodeGen *gen, ASTNode *program) {
   codegen_emit_line(
       gen, "esc_pub_ = "
            "create_publisher<std_msgs::msg::Float64>(\"/kinetrix/esc\", 10);");
+
+  /* Wave 6 Publishers */
+  codegen_emit_line(gen, "mec_fl_pub_ = create_publisher<std_msgs::msg::Float64>(\"/kinetrix/mecanum_fl\", 10);");
+  codegen_emit_line(gen, "mec_fr_pub_ = create_publisher<std_msgs::msg::Float64>(\"/kinetrix/mecanum_fr\", 10);");
+  codegen_emit_line(gen, "mec_bl_pub_ = create_publisher<std_msgs::msg::Float64>(\"/kinetrix/mecanum_bl\", 10);");
+  codegen_emit_line(gen, "mec_br_pub_ = create_publisher<std_msgs::msg::Float64>(\"/kinetrix/mecanum_br\", 10);");
   codegen_emit_line(gen, "// Timer drives the main robot loop");
   codegen_emit_line(gen, "timer_ = create_wall_timer(10ms, "
                          "std::bind(&KinetrixNode::loop, this));");
@@ -808,8 +881,22 @@ void codegen_generate_ros2(CodeGen *gen, ASTNode *program) {
       "  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr motor_pub_;");
   codegen_emit_line(
       gen, "  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr esc_pub_;");
+
+  /* Wave 6 Globals */
+  codegen_emit_line(gen, "  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr mec_fl_pub_;");
+  codegen_emit_line(gen, "  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr mec_fr_pub_;");
+  codegen_emit_line(gen, "  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr mec_bl_pub_;");
+  codegen_emit_line(gen, "  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr mec_br_pub_;");
+
   codegen_emit_line(gen, "  rclcpp::TimerBase::SharedPtr timer_;");
   codegen_emit_line(gen, "  double sensor_val_0_ = 0.0, pin_state_0_ = 0.0;");
+
+  /* Wave 6 Kalman Globals */
+  codegen_emit_line(gen, "  double kalman_q_ = 0.01;");
+  codegen_emit_line(gen, "  double kalman_r_ = 0.1;");
+  codegen_emit_line(gen, "  double kalman_x_ = 0.0;");
+  codegen_emit_line(gen, "  double kalman_p_ = 1.0;");
+  codegen_emit_line(gen, "  double kalman_k_ = 0.0;\n");
 
   /* Wave 2 Globals */
   codegen_emit_line(gen, "  double stepper_speed_ = 100.0;");
@@ -852,6 +939,23 @@ void codegen_generate_ros2(CodeGen *gen, ASTNode *program) {
   codegen_emit_line(gen, "    pid_last_time_ = now;");
   codegen_emit_line(gen, "    // Output handling requires user application to "
                          "subscribe/route Kinetrix state");
+  codegen_emit_line(gen, "  }\n");
+
+  /* Kalman Helper Function */
+  codegen_emit_line(gen, "  double compute_kalman_update(double mea) {");
+  codegen_emit_line(gen, "    kalman_p_ = kalman_p_ + kalman_q_;");
+  codegen_emit_line(gen, "    kalman_k_ = kalman_p_ / (kalman_p_ + kalman_r_);");
+  codegen_emit_line(gen, "    kalman_x_ = kalman_x_ + kalman_k_ * (mea - kalman_x_);");
+  codegen_emit_line(gen, "    kalman_p_ = (1.0 - kalman_k_) * kalman_p_;");
+  codegen_emit_line(gen, "    return kalman_x_;");
+  codegen_emit_line(gen, "  }\n");
+
+  /* Wave 6 AI Helpers */
+  codegen_emit_line(gen, "  double _kx_ai_invoke(double input) {");
+  codegen_emit_line(gen, "    return 0.0; // TFLite Micro omitted for generic target");
+  codegen_emit_line(gen, "  }");
+  codegen_emit_line(gen, "  double _kx_ai_invoke(double* input_array) {");
+  codegen_emit_line(gen, "    return 0.0;");
   codegen_emit_line(gen, "  }\n");
 
   codegen_emit_line(gen, "  void loop() {");

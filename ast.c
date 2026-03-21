@@ -1394,3 +1394,44 @@ ASTNode *ast_cam_detect(ASTNode *label) {
 
 ASTNode *ast_cam_obj_x(void) { return ast_create(NODE_CAM_OBJ_X); }
 ASTNode *ast_cam_obj_y(void) { return ast_create(NODE_CAM_OBJ_Y); }
+
+/* Wave 6: Advanced Locomotion, Sensor Fusion & Edge AI */
+ASTNode *ast_mecanum_attach(ASTNode *fl, ASTNode *fr, ASTNode *bl,
+                            ASTNode *br) {
+  ASTNode *node = ast_create(NODE_MECANUM_ATTACH);
+  node->data.mecanum_attach.fl_pin = fl;
+  node->data.mecanum_attach.fr_pin = fr;
+  node->data.mecanum_attach.bl_pin = bl;
+  node->data.mecanum_attach.br_pin = br;
+  return node;
+}
+
+ASTNode *ast_mecanum_move(ASTNode *x, ASTNode *y, ASTNode *turn) {
+  ASTNode *node = ast_create(NODE_MECANUM_MOVE);
+  node->data.mecanum_move.x = x;
+  node->data.mecanum_move.y = y;
+  node->data.mecanum_move.turn = turn;
+  return node;
+}
+
+ASTNode *ast_mecanum_stop(void) { return ast_create(NODE_MECANUM_STOP); }
+
+ASTNode *ast_kalman_attach(void) { return ast_create(NODE_KALMAN_ATTACH); }
+
+ASTNode *ast_kalman_compute(ASTNode *raw_value) {
+  ASTNode *node = ast_create(NODE_KALMAN_COMPUTE);
+  node->data.kalman_compute.raw_value = raw_value;
+  return node;
+}
+
+ASTNode *ast_ai_load(ASTNode *model_path) {
+  ASTNode *node = ast_create(NODE_AI_LOAD);
+  node->data.ai_load.model_path = model_path;
+  return node;
+}
+
+ASTNode *ast_ai_compute(ASTNode *input_array) {
+  ASTNode *node = ast_create(NODE_AI_COMPUTE);
+  node->data.ai_compute.input_array = input_array;
+  return node;
+}

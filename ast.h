@@ -265,6 +265,15 @@ typedef enum {
   NODE_CAM_OBJ_X,      /* read camera object x (expression) */
   NODE_CAM_OBJ_Y,      /* read camera object y (expression) */
 
+  /* Wave 6: Advanced Locomotion, Sensor Fusion & Edge AI */
+  NODE_MECANUM_ATTACH,  /* attach mecanum fl N fr N bl N br N */
+  NODE_MECANUM_MOVE,    /* move mecanum x N y N turn N */
+  NODE_MECANUM_STOP,    /* stop mecanum */
+  NODE_KALMAN_ATTACH,   /* attach kalman */
+  NODE_KALMAN_COMPUTE,  /* compute kalman raw N (expression) */
+  NODE_AI_LOAD,         /* load ai model "file" */
+  NODE_AI_COMPUTE,      /* compute ai input (expression) */
+
   /* Program root */
   NODE_PROGRAM
 } NodeType;
@@ -782,6 +791,32 @@ struct ASTNode {
       ASTNode *label;
     } cam_detect;
 
+    /* Wave 6: Mecanum Drive */
+    struct {
+      ASTNode *fl_pin;
+      ASTNode *fr_pin;
+      ASTNode *bl_pin;
+      ASTNode *br_pin;
+    } mecanum_attach;
+    struct {
+      ASTNode *x;
+      ASTNode *y;
+      ASTNode *turn;
+    } mecanum_move;
+
+    /* Wave 6: Kalman Filter */
+    struct {
+      ASTNode *raw_value;
+    } kalman_compute;
+
+    /* Wave 6: Edge AI */
+    struct {
+      ASTNode *model_path;
+    } ai_load;
+    struct {
+      ASTNode *input_array;
+    } ai_compute;
+
     /* Radio */
     struct {
       ASTNode *peer_id;
@@ -1072,5 +1107,14 @@ ASTNode *ast_cam_attach(ASTNode *protocol);
 ASTNode *ast_cam_detect(ASTNode *label);
 ASTNode *ast_cam_obj_x(void);
 ASTNode *ast_cam_obj_y(void);
+
+/* Wave 6: Advanced Locomotion, Sensor Fusion & Edge AI */
+ASTNode *ast_mecanum_attach(ASTNode *fl, ASTNode *fr, ASTNode *bl, ASTNode *br);
+ASTNode *ast_mecanum_move(ASTNode *x, ASTNode *y, ASTNode *turn);
+ASTNode *ast_mecanum_stop(void);
+ASTNode *ast_kalman_attach(void);
+ASTNode *ast_kalman_compute(ASTNode *raw_value);
+ASTNode *ast_ai_load(ASTNode *model_path);
+ASTNode *ast_ai_compute(ASTNode *input_array);
 
 #endif /* KINETRIX_AST_H */

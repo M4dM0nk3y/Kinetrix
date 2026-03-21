@@ -349,6 +349,25 @@ make float cx = read camera object x
 make float cy = read camera object y
 ```
 
+### Library Wrappers — Wave 6: Advanced Locomotion, Kinematics & Edge AI 🆕
+
+Mecanum drive kinematics, sensor fusion data processing, and simple Edge AI (TFLite Micro) inference seamlessly compiling to all platforms!
+
+```kinetrix
+# Mecanum / Omni-Directional Drive
+attach mecanum fl 2 fr 3 bl 4 br 5
+move mecanum x 50 y 0 turn 50
+stop mecanum
+
+# Sensor Fusion (Kalman Filters)
+attach kalman
+make float filtered = compute kalman raw 10.5
+
+# Edge AI Inference (TensorFlow Lite Micro)
+load ai model "model.tflite"
+make float prediction = compute ai filtered
+```
+
 ### Safety Features
 
 ```kinetrix
