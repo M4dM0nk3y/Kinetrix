@@ -1435,3 +1435,65 @@ ASTNode *ast_ai_compute(ASTNode *input_array) {
   node->data.ai_compute.input_array = input_array;
   return node;
 }
+
+/* Wave 7: The Master Automaton */
+
+ASTNode *ast_arm_attach(ASTNode *dof, ASTNode *len1, ASTNode *len2, ASTNode *len3) {
+  ASTNode *node = ast_create(NODE_ARM_ATTACH);
+  node->data.arm_attach.dof = dof;
+  node->data.arm_attach.len1 = len1;
+  node->data.arm_attach.len2 = len2;
+  node->data.arm_attach.len3 = len3;
+  return node;
+}
+
+ASTNode *ast_arm_move(ASTNode *x, ASTNode *y, ASTNode *z) {
+  ASTNode *node = ast_create(NODE_ARM_MOVE);
+  node->data.arm_move.x = x;
+  node->data.arm_move.y = y;
+  node->data.arm_move.z = z;
+  return node;
+}
+
+ASTNode *ast_grid_create(const char *name, ASTNode *width, ASTNode *height) {
+  ASTNode *node = ast_create(NODE_GRID_CREATE);
+  node->data.grid_create.name = strdup(name);
+  node->data.grid_create.width = width;
+  node->data.grid_create.height = height;
+  return node;
+}
+
+ASTNode *ast_grid_obstacle(const char *name, ASTNode *x, ASTNode *y) {
+  ASTNode *node = ast_create(NODE_GRID_OBSTACLE);
+  node->data.grid_obstacle.name = strdup(name);
+  node->data.grid_obstacle.x = x;
+  node->data.grid_obstacle.y = y;
+  return node;
+}
+
+ASTNode *ast_path_compute(ASTNode *from_x, ASTNode *from_y, ASTNode *to_x, ASTNode *to_y) {
+  ASTNode *node = ast_create(NODE_PATH_COMPUTE);
+  node->data.path_compute.from_x = from_x;
+  node->data.path_compute.from_y = from_y;
+  node->data.path_compute.to_x = to_x;
+  node->data.path_compute.to_y = to_y;
+  return node;
+}
+
+ASTNode *ast_drone_attach(ASTNode *fl, ASTNode *fr, ASTNode *bl, ASTNode *br) {
+  ASTNode *node = ast_create(NODE_DRONE_ATTACH);
+  node->data.drone_attach.fl = fl;
+  node->data.drone_attach.fr = fr;
+  node->data.drone_attach.bl = bl;
+  node->data.drone_attach.br = br;
+  return node;
+}
+
+ASTNode *ast_drone_set(ASTNode *pitch, ASTNode *roll, ASTNode *yaw, ASTNode *throttle) {
+  ASTNode *node = ast_create(NODE_DRONE_SET);
+  node->data.drone_set.pitch = pitch;
+  node->data.drone_set.roll = roll;
+  node->data.drone_set.yaw = yaw;
+  node->data.drone_set.throttle = throttle;
+  return node;
+}

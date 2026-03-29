@@ -287,6 +287,17 @@ static void rpi_expression(CodeGen *gen, ASTNode *node) {
     rpi_expression(gen, node->data.ai_compute.input_array);
     rpi_emit(gen, ")");
     break;
+  case NODE_PATH_COMPUTE:
+    rpi_emit(gen, "_kx_path_compute(");
+    rpi_expression(gen, node->data.path_compute.from_x);
+    rpi_emit(gen, ", ");
+    rpi_expression(gen, node->data.path_compute.from_y);
+    rpi_emit(gen, ", ");
+    rpi_expression(gen, node->data.path_compute.to_x);
+    rpi_emit(gen, ", ");
+    rpi_expression(gen, node->data.path_compute.to_y);
+    rpi_emit(gen, ")");
+    break;
   case NODE_PULSE_READ:
     rpi_emit(gen, "time_pulse_us(");
     rpi_expression(gen, node->data.gpio.pin);
@@ -1215,6 +1226,81 @@ static void rpi_statement(CodeGen *gen, ASTNode *node) {
     rpi_expression(gen, node->data.ai_compute.input_array);
     rpi_emit(gen, ")\n");
     break;
+
+  case NODE_ARM_ATTACH:
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_arm_len[0] = ");
+    rpi_expression(gen, node->data.arm_attach.len1);
+    rpi_emit(gen, "; _kx_arm_len[1] = ");
+    rpi_expression(gen, node->data.arm_attach.len2);
+    rpi_emit(gen, "; _kx_arm_len[2] = ");
+    rpi_expression(gen, node->data.arm_attach.len3);
+    rpi_emit(gen, "\n");
+    break;
+  case NODE_ARM_MOVE:
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_arm_ik(");
+    rpi_expression(gen, node->data.arm_move.x);
+    rpi_emit(gen, ", ");
+    rpi_expression(gen, node->data.arm_move.y);
+    rpi_emit(gen, ", ");
+    rpi_expression(gen, node->data.arm_move.z);
+    rpi_emit(gen, ")\n");
+    break;
+  case NODE_GRID_CREATE:
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_grid_w = int(");
+    rpi_expression(gen, node->data.grid_create.width);
+    rpi_emit(gen, "); _kx_grid_h = int(");
+    rpi_expression(gen, node->data.grid_create.height);
+    rpi_emit(gen, "); _kx_grid = [[0]*_kx_grid_w for _ in range(_kx_grid_h)]\n");
+    break;
+  case NODE_GRID_OBSTACLE:
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_grid[int(");
+    rpi_expression(gen, node->data.grid_obstacle.y);
+    rpi_emit(gen, ")][int(");
+    rpi_expression(gen, node->data.grid_obstacle.x);
+    rpi_emit(gen, ")] = 1\n");
+    break;
+  case NODE_PATH_COMPUTE:
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_path_compute(");
+    rpi_expression(gen, node->data.path_compute.from_x);
+    rpi_emit(gen, ", ");
+    rpi_expression(gen, node->data.path_compute.from_y);
+    rpi_emit(gen, ", ");
+    rpi_expression(gen, node->data.path_compute.to_x);
+    rpi_emit(gen, ", ");
+    rpi_expression(gen, node->data.path_compute.to_y);
+    rpi_emit(gen, ")\n");
+    break;
+  case NODE_DRONE_ATTACH:
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_drone_pins = [");
+    rpi_expression(gen, node->data.drone_attach.fl);
+    rpi_emit(gen, ", ");
+    rpi_expression(gen, node->data.drone_attach.fr);
+    rpi_emit(gen, ", ");
+    rpi_expression(gen, node->data.drone_attach.bl);
+    rpi_emit(gen, ", ");
+    rpi_expression(gen, node->data.drone_attach.br);
+    rpi_emit(gen, "]\n");
+    rpi_indent(gen);
+    rpi_emit_line(gen, "for p in _kx_drone_pins: GPIO.setup(p, GPIO.OUT)");
+    break;
+  case NODE_DRONE_SET:
+    rpi_indent(gen);
+    rpi_emit(gen, "_kx_drone_mix(");
+    rpi_expression(gen, node->data.drone_set.pitch);
+    rpi_emit(gen, ", ");
+    rpi_expression(gen, node->data.drone_set.roll);
+    rpi_emit(gen, ", ");
+    rpi_expression(gen, node->data.drone_set.yaw);
+    rpi_emit(gen, ", ");
+    rpi_expression(gen, node->data.drone_set.throttle);
+    rpi_emit(gen, ")\n");
+    break;
   case NODE_TONE:
     // RPi PWM starts by verifying object doesn't exist yet, if not it registers
     // it globally, and changes its frequency using GPIO.ChangeFrequency. Wait,
@@ -1519,6 +1605,46 @@ void codegen_generate_rpi(CodeGen *gen, ASTNode *program) {
   rpi_emit_line(gen, "    _kx_ai_interpreter.set_tensor(_kx_ai_input_details[0]['index'], input_data)");
   rpi_emit_line(gen, "    _kx_ai_interpreter.invoke()");
   rpi_emit_line(gen, "    return _kx_ai_interpreter.get_tensor(_kx_ai_output_details[0]['index'])[0][0]\n");
+
+  /* Wave 7 Python Helpers */
+  rpi_emit_line(gen, "import math");
+  rpi_emit_line(gen, "_kx_arm_len = [0.0, 0.0, 0.0, 0.0]");
+  rpi_emit_line(gen, "_kx_arm_angles = [0.0, 0.0, 0.0, 0.0]");
+  rpi_emit_line(gen, "def _kx_arm_ik(tx, ty, tz):");
+  rpi_emit_line(gen, "    global _kx_arm_angles");
+  rpi_emit_line(gen, "    r = math.sqrt(tx*tx + ty*ty)");
+  rpi_emit_line(gen, "    d = math.sqrt(r*r + tz*tz)");
+  rpi_emit_line(gen, "    L1, L2 = _kx_arm_len[0], _kx_arm_len[1]");
+  rpi_emit_line(gen, "    ca = (d*d - L1*L1 - L2*L2) / (2.0*L1*L2) if L1*L2 != 0 else 0");
+  rpi_emit_line(gen, "    ca = max(-1, min(1, ca))");
+  rpi_emit_line(gen, "    _kx_arm_angles[1] = math.acos(ca)");
+  rpi_emit_line(gen, "    _kx_arm_angles[0] = math.atan2(tz, r) - math.atan2(L2*math.sin(_kx_arm_angles[1]), L1 + L2*ca)");
+  rpi_emit_line(gen, "    _kx_arm_angles[2] = math.atan2(ty, tx)\n");
+
+  rpi_emit_line(gen, "_kx_grid_w = 0; _kx_grid_h = 0; _kx_grid = []");
+  rpi_emit_line(gen, "_kx_path_result = []");
+  rpi_emit_line(gen, "def _kx_path_compute(sx, sy, gx, gy):");
+  rpi_emit_line(gen, "    global _kx_path_result");
+  rpi_emit_line(gen, "    from collections import deque");
+  rpi_emit_line(gen, "    _kx_path_result = []");
+  rpi_emit_line(gen, "    if sx==gx and sy==gy: return []");
+  rpi_emit_line(gen, "    visited = [[False]*_kx_grid_w for _ in range(_kx_grid_h)]");
+  rpi_emit_line(gen, "    q = deque([(sx,sy,[])]); visited[sy][sx] = True");
+  rpi_emit_line(gen, "    while q:");
+  rpi_emit_line(gen, "        cx,cy,path = q.popleft()");
+  rpi_emit_line(gen, "        if cx==gx and cy==gy: _kx_path_result = path + [(cx,cy)]; return _kx_path_result");
+  rpi_emit_line(gen, "        for dx,dy in [(1,0),(-1,0),(0,1),(0,-1)]:");
+  rpi_emit_line(gen, "            nx,ny = cx+dx,cy+dy");
+  rpi_emit_line(gen, "            if 0<=nx<_kx_grid_w and 0<=ny<_kx_grid_h and not visited[ny][nx] and not _kx_grid[ny][nx]:");
+  rpi_emit_line(gen, "                visited[ny][nx]=True; q.append((nx,ny,path+[(cx,cy)]))");
+  rpi_emit_line(gen, "    return []\n");
+
+  rpi_emit_line(gen, "_kx_drone_pins = [-1,-1,-1,-1]");
+  rpi_emit_line(gen, "def _kx_drone_mix(pitch, roll, yaw, throttle):");
+  rpi_emit_line(gen, "    vals = [int(throttle+pitch+roll-yaw), int(throttle+pitch-roll+yaw), int(throttle-pitch+roll+yaw), int(throttle-pitch-roll-yaw)]");
+  rpi_emit_line(gen, "    vals = [max(0, min(255, v)) for v in vals]");
+  rpi_emit_line(gen, "    for i,p in enumerate(_kx_drone_pins):");
+  rpi_emit_line(gen, "        if p >= 0: GPIO.output(p, vals[i] > 127)\n");
 
   rpi_emit_line(gen, "def _kx_compute_pid(current_val):");
   rpi_emit_line(

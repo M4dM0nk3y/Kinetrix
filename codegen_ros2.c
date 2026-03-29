@@ -191,6 +191,17 @@ static void ros2_expr(CodeGen *gen, ASTNode *node) {
     ros2_expr(gen, node->data.ai_compute.input_array);
     codegen_emit(gen, ")");
     break;
+  case NODE_PATH_COMPUTE:
+    codegen_emit(gen, "_kx_path_compute(");
+    ros2_expr(gen, node->data.path_compute.from_x);
+    codegen_emit(gen, ", ");
+    ros2_expr(gen, node->data.path_compute.from_y);
+    codegen_emit(gen, ", ");
+    ros2_expr(gen, node->data.path_compute.to_x);
+    codegen_emit(gen, ", ");
+    ros2_expr(gen, node->data.path_compute.to_y);
+    codegen_emit(gen, ")");
+    break;
 
   /* Wave 3: Communication Expressions */
   case NODE_BLE_RECEIVE:
@@ -606,6 +617,81 @@ static void ros2_stmt(CodeGen *gen, ASTNode *node) {
     codegen_emit(gen, ");\n");
     break;
 
+  case NODE_ARM_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_arm_dof = (int)");
+    ros2_expr(gen, node->data.arm_attach.dof);
+    codegen_emit(gen, "; _kx_arm_len[0] = ");
+    ros2_expr(gen, node->data.arm_attach.len1);
+    codegen_emit(gen, "; _kx_arm_len[1] = ");
+    ros2_expr(gen, node->data.arm_attach.len2);
+    codegen_emit(gen, "; _kx_arm_len[2] = ");
+    ros2_expr(gen, node->data.arm_attach.len3);
+    codegen_emit(gen, ";\n");
+    break;
+  case NODE_ARM_MOVE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_arm_ik(");
+    ros2_expr(gen, node->data.arm_move.x);
+    codegen_emit(gen, ", ");
+    ros2_expr(gen, node->data.arm_move.y);
+    codegen_emit(gen, ", ");
+    ros2_expr(gen, node->data.arm_move.z);
+    codegen_emit(gen, ");\n");
+    break;
+  case NODE_GRID_CREATE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_grid_w = (int)");
+    ros2_expr(gen, node->data.grid_create.width);
+    codegen_emit(gen, "; _kx_grid_h = (int)");
+    ros2_expr(gen, node->data.grid_create.height);
+    codegen_emit(gen, "; memset(_kx_grid, 0, sizeof(_kx_grid));\n");
+    break;
+  case NODE_GRID_OBSTACLE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_grid[(int)");
+    ros2_expr(gen, node->data.grid_obstacle.y);
+    codegen_emit(gen, "][(int)");
+    ros2_expr(gen, node->data.grid_obstacle.x);
+    codegen_emit(gen, "] = 1;\n");
+    break;
+  case NODE_PATH_COMPUTE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_path_compute(");
+    ros2_expr(gen, node->data.path_compute.from_x);
+    codegen_emit(gen, ", ");
+    ros2_expr(gen, node->data.path_compute.from_y);
+    codegen_emit(gen, ", ");
+    ros2_expr(gen, node->data.path_compute.to_x);
+    codegen_emit(gen, ", ");
+    ros2_expr(gen, node->data.path_compute.to_y);
+    codegen_emit(gen, ");\n");
+    break;
+  case NODE_DRONE_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_drone_pins[0] = ");
+    ros2_expr(gen, node->data.drone_attach.fl);
+    codegen_emit(gen, "; _kx_drone_pins[1] = ");
+    ros2_expr(gen, node->data.drone_attach.fr);
+    codegen_emit(gen, "; _kx_drone_pins[2] = ");
+    ros2_expr(gen, node->data.drone_attach.bl);
+    codegen_emit(gen, "; _kx_drone_pins[3] = ");
+    ros2_expr(gen, node->data.drone_attach.br);
+    codegen_emit(gen, ";\n");
+    break;
+  case NODE_DRONE_SET:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_drone_mix(");
+    ros2_expr(gen, node->data.drone_set.pitch);
+    codegen_emit(gen, ", ");
+    ros2_expr(gen, node->data.drone_set.roll);
+    codegen_emit(gen, ", ");
+    ros2_expr(gen, node->data.drone_set.yaw);
+    codegen_emit(gen, ", ");
+    ros2_expr(gen, node->data.drone_set.throttle);
+    codegen_emit(gen, ");\n");
+    break;
+
   /* Wave 3: Communication Statements */
   case NODE_BLE_ENABLE:
     codegen_emit_indent(gen);
@@ -956,6 +1042,30 @@ void codegen_generate_ros2(CodeGen *gen, ASTNode *program) {
   codegen_emit_line(gen, "  }");
   codegen_emit_line(gen, "  double _kx_ai_invoke(double* input_array) {");
   codegen_emit_line(gen, "    return 0.0;");
+  codegen_emit_line(gen, "  }\n");
+
+  /* Wave 7 ROS2 Globals & Helpers */
+  codegen_emit_line(gen, "  int _kx_arm_dof = 3; double _kx_arm_len[4] = {0,0,0,0}; double _kx_arm_angles[4] = {0,0,0,0};");
+  codegen_emit_line(gen, "  void _kx_arm_ik(double tx, double ty, double tz) {");
+  codegen_emit_line(gen, "    double r=sqrt(tx*tx+ty*ty), d=sqrt(r*r+tz*tz), L1=_kx_arm_len[0], L2=_kx_arm_len[1];");
+  codegen_emit_line(gen, "    double ca=(d*d-L1*L1-L2*L2)/(2.0*L1*L2); if(ca<-1)ca=-1; if(ca>1)ca=1;");
+  codegen_emit_line(gen, "    _kx_arm_angles[1]=acos(ca); _kx_arm_angles[0]=atan2(tz,r)-atan2(L2*sin(_kx_arm_angles[1]),L1+L2*ca);");
+  codegen_emit_line(gen, "    _kx_arm_angles[2]=atan2(ty,tx);");
+  codegen_emit_line(gen, "  }\n");
+  codegen_emit_line(gen, "  int _kx_grid_w=0,_kx_grid_h=0; int _kx_grid[64][64]; int _kx_path_result[256]; int _kx_path_len=0;");
+  codegen_emit_line(gen, "  int _kx_path_compute(int sx,int sy,int gx,int gy) {");
+  codegen_emit_line(gen, "    _kx_path_len=0; if(sx==gx&&sy==gy)return 0;");
+  codegen_emit_line(gen, "    int v[64][64]; memset(v,0,sizeof(v)); int qx[4096],qy[4096],qp[4096]; int qf=0,qb=0;");
+  codegen_emit_line(gen, "    qx[qb]=sx;qy[qb]=sy;qp[qb]=-1;qb++;v[sy][sx]=1; int dx[]={1,-1,0,0},dy[]={0,0,1,-1};");
+  codegen_emit_line(gen, "    while(qf<qb){int cx=qx[qf],cy=qy[qf],cp=qf;qf++;");
+  codegen_emit_line(gen, "      if(cx==gx&&cy==gy){int t=cp;while(t!=-1){_kx_path_result[_kx_path_len++]=qx[t]*100+qy[t];t=qp[t];}return _kx_path_len;}");
+  codegen_emit_line(gen, "      for(int i=0;i<4;i++){int nx=cx+dx[i],ny=cy+dy[i];");
+  codegen_emit_line(gen, "        if(nx>=0&&nx<_kx_grid_w&&ny>=0&&ny<_kx_grid_h&&!v[ny][nx]&&!_kx_grid[ny][nx]){v[ny][nx]=1;qx[qb]=nx;qy[qb]=ny;qp[qb]=cp;qb++;}}}");
+  codegen_emit_line(gen, "    return 0;");
+  codegen_emit_line(gen, "  }\n");
+  codegen_emit_line(gen, "  int _kx_drone_pins[4] = {-1,-1,-1,-1};");
+  codegen_emit_line(gen, "  void _kx_drone_mix(double pitch,double roll,double yaw,double throttle) {");
+  codegen_emit_line(gen, "    RCLCPP_INFO(this->get_logger(), \"Drone mix: p=%.1f r=%.1f y=%.1f t=%.1f\", pitch, roll, yaw, throttle);");
   codegen_emit_line(gen, "  }\n");
 
   codegen_emit_line(gen, "  void loop() {");

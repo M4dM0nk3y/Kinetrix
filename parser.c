@@ -682,6 +682,17 @@ void lexer_next_token(Lexer *lexer) {
       lexer->current_token.type = TOK_COMPUTE_KW;
     else if (!strcmp(v, "load"))
       lexer->current_token.type = TOK_LOAD;
+    /* Wave 7: The Master Automaton */
+    else if (!strcmp(v, "arm"))
+      lexer->current_token.type = TOK_ARM;
+    else if (!strcmp(v, "quadcopter"))
+      lexer->current_token.type = TOK_QUADCOPTER;
+    else if (!strcmp(v, "drone"))
+      lexer->current_token.type = TOK_DRONE;
+    else if (!strcmp(v, "grid"))
+      lexer->current_token.type = TOK_GRID;
+    else if (!strcmp(v, "path"))
+      lexer->current_token.type = TOK_PATH;
     /* V3.0 handled as TOK_ID in parser */
     else if (!strcmp(v, "not"))
       lexer->current_token.type = TOK_NOT;
@@ -1122,6 +1133,21 @@ static ASTNode *parse_primary(Parser *parser) {
       lexer_next_token(parser->lexer);
       ASTNode *input = parse_expression(parser);
       return ast_ai_compute(input);
+    }
+    /* Wave 7: compute path from x N y N to x N y N */
+    if (parser_match(parser, TOK_PATH)) {
+      lexer_next_token(parser->lexer);
+      parser_expect(parser, TOK_FROM);
+      parser_expect_id(parser, "x");
+      ASTNode *from_x = parse_expression(parser);
+      parser_expect_id(parser, "y");
+      ASTNode *from_y = parse_expression(parser);
+      parser_expect(parser, TOK_TO);
+      parser_expect_id(parser, "x");
+      ASTNode *to_x = parse_expression(parser);
+      parser_expect_id(parser, "y");
+      ASTNode *to_y = parse_expression(parser);
+      return ast_path_compute(from_x, from_y, to_x, to_y);
     }
   }
 
@@ -1704,6 +1730,22 @@ static ASTNode *parse_statement(Parser *parser) {
   if (parser_match(parser, TOK_MAKE)) {
     lexer_next_token(parser->lexer);
 
+    /* Wave 7: make grid name size WxH */
+    if (parser_match(parser, TOK_GRID)) {
+      lexer_next_token(parser->lexer);
+      Token name_tok = parser->lexer->current_token;
+      name_tok.value = strdup(name_tok.value);
+      parser_expect(parser, TOK_ID);
+      parser_expect_id(parser, "size");
+      ASTNode *width = parse_expression(parser);
+      /* Accept optional 'x' separator: size 10x10 or size 10 10 */
+      if (parser_match_id(parser, "x")) {
+        lexer_next_token(parser->lexer);
+      }
+      ASTNode *height = parse_expression(parser);
+      return ast_grid_create(name_tok.value, width, height);
+    }
+
     /* make array <type> <name>[<size>]    OR
        make array <name>[<size>] of <type> */
     if (parser_match(parser, TOK_ARRAY)) {
@@ -1944,6 +1986,47 @@ static ASTNode *parse_statement(Parser *parser) {
       lexer_next_token(parser->lexer);
       ASTNode *level = parse_expression(parser);
       return ast_set_volume(level);
+    }
+    /* Wave 7: set drone target pitch N roll N yaw N throttle N */
+    if (parser_match(parser, TOK_DRONE)) {
+      lexer_next_token(parser->lexer);
+      if (parser_match_id(parser, "target")) {
+        lexer_next_token(parser->lexer);
+      }
+      ASTNode *pitch = ast_number(0), *roll = ast_number(0), *yaw = ast_number(0), *throttle = ast_number(1500);
+      if (parser_match_id(parser, "pitch")) {
+        lexer_next_token(parser->lexer);
+        pitch = parse_expression(parser);
+      }
+      if (parser_match_id(parser, "roll")) {
+        lexer_next_token(parser->lexer);
+        roll = parse_expression(parser);
+      }
+      if (parser_match_id(parser, "yaw")) {
+        lexer_next_token(parser->lexer);
+        yaw = parse_expression(parser);
+      }
+      if (parser_match_id(parser, "throttle")) {
+        lexer_next_token(parser->lexer);
+        throttle = parse_expression(parser);
+      }
+      return ast_drone_set(pitch, roll, yaw, throttle);
+    }
+    /* Wave 7: set grid name obstacle at x N y N */
+    if (parser_match(parser, TOK_GRID)) {
+      lexer_next_token(parser->lexer);
+      Token name_tok = parser->lexer->current_token;
+      name_tok.value = strdup(name_tok.value);
+      parser_expect(parser, TOK_ID);
+      parser_expect_id(parser, "obstacle");
+      if (parser_match_id(parser, "at")) {
+        lexer_next_token(parser->lexer);
+      }
+      parser_expect_id(parser, "x");
+      ASTNode *x = parse_expression(parser);
+      parser_expect_id(parser, "y");
+      ASTNode *y = parse_expression(parser);
+      return ast_grid_obstacle(name_tok.value, x, y);
     }
 
     if (parser_match(parser, TOK_PIN)) {
@@ -2644,6 +2727,41 @@ static ASTNode *parse_statement(Parser *parser) {
       lexer_next_token(parser->lexer);
       return ast_kalman_attach();
     }
+    /* Wave 7: attach arm dof N length1 L1 length2 L2 length3 L3 */
+    if (parser_match(parser, TOK_ARM)) {
+      lexer_next_token(parser->lexer);
+      parser_expect_id(parser, "dof");
+      ASTNode *dof = parse_expression(parser);
+      parser_expect_id(parser, "length1");
+      ASTNode *len1 = parse_expression(parser);
+      parser_expect_id(parser, "length2");
+      ASTNode *len2 = parse_expression(parser);
+      parser_expect_id(parser, "length3");
+      ASTNode *len3 = parse_expression(parser);
+      return ast_arm_attach(dof, len1, len2, len3);
+    }
+    /* Wave 7: attach quadcopter fl N fr N bl N br N */
+    if (parser_match(parser, TOK_QUADCOPTER)) {
+      lexer_next_token(parser->lexer);
+      ASTNode *fl = ast_number(2), *fr = ast_number(3), *bl = ast_number(4), *br = ast_number(5);
+      if (parser_match_id(parser, "fl")) {
+        lexer_next_token(parser->lexer);
+        fl = parse_expression(parser);
+      }
+      if (parser_match_id(parser, "fr")) {
+        lexer_next_token(parser->lexer);
+        fr = parse_expression(parser);
+      }
+      if (parser_match_id(parser, "bl")) {
+        lexer_next_token(parser->lexer);
+        bl = parse_expression(parser);
+      }
+      if (parser_match_id(parser, "br")) {
+        lexer_next_token(parser->lexer);
+        br = parse_expression(parser);
+      }
+      return ast_drone_attach(fl, fr, bl, br);
+    }
     if (parser_match(parser, TOK_PID)) {
       lexer_next_token(parser->lexer);
       if (!parser_match_id(parser, "kp")) {
@@ -2874,6 +2992,27 @@ static ASTNode *parse_statement(Parser *parser) {
         turn = parse_expression(parser);
       } else { turn = ast_number(0); }
       return ast_mecanum_move(x, y, turn);
+    }
+    /* Wave 7: move arm to x N y N z N */
+    if (parser_match(parser, TOK_ARM)) {
+      lexer_next_token(parser->lexer);
+      if (parser_match(parser, TOK_TO)) {
+        lexer_next_token(parser->lexer);
+      }
+      ASTNode *x = ast_number(0), *y = ast_number(0), *z = ast_number(0);
+      if (parser_match_id(parser, "x")) {
+        lexer_next_token(parser->lexer);
+        x = parse_expression(parser);
+      }
+      if (parser_match_id(parser, "y")) {
+        lexer_next_token(parser->lexer);
+        y = parse_expression(parser);
+      }
+      if (parser_match_id(parser, "z")) {
+        lexer_next_token(parser->lexer);
+        z = parse_expression(parser);
+      }
+      return ast_arm_move(x, y, z);
     }
   }
 

@@ -224,6 +224,13 @@ typedef enum {
   TOK_COMPUTE_KW,  /* compute     */
   TOK_LOAD,        /* load        */
 
+  /* Wave 7: The Master Automaton */
+  TOK_ARM,         /* arm         */
+  TOK_QUADCOPTER,  /* quadcopter  */
+  TOK_DRONE,       /* drone       */
+  TOK_GRID,        /* grid        */
+  TOK_PATH,        /* path        */
+
   /* FFI */
   TOK_COLON, /* : */
   TOK_ARROW, /* -> */

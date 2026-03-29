@@ -269,6 +269,17 @@ static void esp32_expression(CodeGen *gen, ASTNode *node) {
     esp32_expression(gen, node->data.ai_compute.input_array);
     codegen_emit(gen, ")");
     break;
+  case NODE_PATH_COMPUTE:
+    codegen_emit(gen, "_kx_path_compute(");
+    esp32_expression(gen, node->data.path_compute.from_x);
+    codegen_emit(gen, ", ");
+    esp32_expression(gen, node->data.path_compute.from_y);
+    codegen_emit(gen, ", ");
+    esp32_expression(gen, node->data.path_compute.to_x);
+    codegen_emit(gen, ", ");
+    esp32_expression(gen, node->data.path_compute.to_y);
+    codegen_emit(gen, ")");
+    break;
 
   case NODE_I2C_DEVICE_READ:
     codegen_emit(gen, "(Wire.beginTransmission(");
@@ -934,6 +945,81 @@ static void esp32_statement(CodeGen *gen, ASTNode *node) {
     codegen_emit(gen, ");\n");
     break;
 
+  case NODE_ARM_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_arm_dof = (int)");
+    esp32_expression(gen, node->data.arm_attach.dof);
+    codegen_emit(gen, "; _kx_arm_len[0] = ");
+    esp32_expression(gen, node->data.arm_attach.len1);
+    codegen_emit(gen, "; _kx_arm_len[1] = ");
+    esp32_expression(gen, node->data.arm_attach.len2);
+    codegen_emit(gen, "; _kx_arm_len[2] = ");
+    esp32_expression(gen, node->data.arm_attach.len3);
+    codegen_emit(gen, ";\n");
+    break;
+  case NODE_ARM_MOVE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_arm_ik(");
+    esp32_expression(gen, node->data.arm_move.x);
+    codegen_emit(gen, ", ");
+    esp32_expression(gen, node->data.arm_move.y);
+    codegen_emit(gen, ", ");
+    esp32_expression(gen, node->data.arm_move.z);
+    codegen_emit(gen, ");\n");
+    break;
+  case NODE_GRID_CREATE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_grid_w = (int)");
+    esp32_expression(gen, node->data.grid_create.width);
+    codegen_emit(gen, "; _kx_grid_h = (int)");
+    esp32_expression(gen, node->data.grid_create.height);
+    codegen_emit(gen, "; memset(_kx_grid, 0, sizeof(_kx_grid));\n");
+    break;
+  case NODE_GRID_OBSTACLE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_grid[(int)");
+    esp32_expression(gen, node->data.grid_obstacle.y);
+    codegen_emit(gen, "][(int)");
+    esp32_expression(gen, node->data.grid_obstacle.x);
+    codegen_emit(gen, "] = 1;\n");
+    break;
+  case NODE_PATH_COMPUTE:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_path_compute(");
+    esp32_expression(gen, node->data.path_compute.from_x);
+    codegen_emit(gen, ", ");
+    esp32_expression(gen, node->data.path_compute.from_y);
+    codegen_emit(gen, ", ");
+    esp32_expression(gen, node->data.path_compute.to_x);
+    codegen_emit(gen, ", ");
+    esp32_expression(gen, node->data.path_compute.to_y);
+    codegen_emit(gen, ");\n");
+    break;
+  case NODE_DRONE_ATTACH:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_drone_fl = ");
+    esp32_expression(gen, node->data.drone_attach.fl);
+    codegen_emit(gen, "; _kx_drone_fr = ");
+    esp32_expression(gen, node->data.drone_attach.fr);
+    codegen_emit(gen, "; _kx_drone_bl = ");
+    esp32_expression(gen, node->data.drone_attach.bl);
+    codegen_emit(gen, "; _kx_drone_br = ");
+    esp32_expression(gen, node->data.drone_attach.br);
+    codegen_emit(gen, ";\n");
+    break;
+  case NODE_DRONE_SET:
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "_kx_drone_mix(");
+    esp32_expression(gen, node->data.drone_set.pitch);
+    codegen_emit(gen, ", ");
+    esp32_expression(gen, node->data.drone_set.roll);
+    codegen_emit(gen, ", ");
+    esp32_expression(gen, node->data.drone_set.yaw);
+    codegen_emit(gen, ", ");
+    esp32_expression(gen, node->data.drone_set.throttle);
+    codegen_emit(gen, ");\n");
+    break;
+
   case NODE_FOR: {
     int loop_id = gen->loop_counter++;
     codegen_emit_indent(gen);
@@ -1549,6 +1635,33 @@ void codegen_generate_esp32(CodeGen *gen, ASTNode *program) {
   codegen_emit_line(gen, "}");
   codegen_emit_line(gen, "float _kx_ai_invoke(float* input_array) {");
   codegen_emit_line(gen, "  return 0.0;");
+  codegen_emit_line(gen, "}\n");
+
+  /* Wave 7 Globals & Helpers */
+  codegen_emit_line(gen, "int _kx_arm_dof = 3; float _kx_arm_len[4] = {0,0,0,0}; float _kx_arm_angles[4] = {0,0,0,0};");
+  codegen_emit_line(gen, "void _kx_arm_ik(float tx, float ty, float tz) {");
+  codegen_emit_line(gen, "  float r=sqrt(tx*tx+ty*ty), d=sqrt(r*r+tz*tz), L1=_kx_arm_len[0], L2=_kx_arm_len[1];");
+  codegen_emit_line(gen, "  float ca=(d*d-L1*L1-L2*L2)/(2.0*L1*L2); if(ca<-1)ca=-1; if(ca>1)ca=1;");
+  codegen_emit_line(gen, "  _kx_arm_angles[1]=acos(ca); _kx_arm_angles[0]=atan2(tz,r)-atan2(L2*sin(_kx_arm_angles[1]),L1+L2*ca);");
+  codegen_emit_line(gen, "  _kx_arm_angles[2]=atan2(ty,tx);");
+  codegen_emit_line(gen, "}\n");
+  codegen_emit_line(gen, "int _kx_grid_w=0,_kx_grid_h=0; int _kx_grid[64][64]; int _kx_path_result[256]; int _kx_path_len=0;");
+  codegen_emit_line(gen, "int _kx_path_compute(int sx,int sy,int gx,int gy) {");
+  codegen_emit_line(gen, "  _kx_path_len=0; if(sx==gx&&sy==gy)return 0;");
+  codegen_emit_line(gen, "  int v[64][64]; memset(v,0,sizeof(v)); int qx[4096],qy[4096],qp[4096]; int qf=0,qb=0;");
+  codegen_emit_line(gen, "  qx[qb]=sx;qy[qb]=sy;qp[qb]=-1;qb++;v[sy][sx]=1; int dx[]={1,-1,0,0},dy[]={0,0,1,-1};");
+  codegen_emit_line(gen, "  while(qf<qb){int cx=qx[qf],cy=qy[qf],cp=qf;qf++;");
+  codegen_emit_line(gen, "    if(cx==gx&&cy==gy){int t=cp;while(t!=-1){_kx_path_result[_kx_path_len++]=qx[t]*100+qy[t];t=qp[t];}return _kx_path_len;}");
+  codegen_emit_line(gen, "    for(int i=0;i<4;i++){int nx=cx+dx[i],ny=cy+dy[i];");
+  codegen_emit_line(gen, "      if(nx>=0&&nx<_kx_grid_w&&ny>=0&&ny<_kx_grid_h&&!v[ny][nx]&&!_kx_grid[ny][nx]){v[ny][nx]=1;qx[qb]=nx;qy[qb]=ny;qp[qb]=cp;qb++;}}}");
+  codegen_emit_line(gen, "  return 0;");
+  codegen_emit_line(gen, "}\n");
+  codegen_emit_line(gen, "int _kx_drone_fl=-1,_kx_drone_fr=-1,_kx_drone_bl=-1,_kx_drone_br=-1;");
+  codegen_emit_line(gen, "void _kx_drone_mix(float p,float r,float y,float t) {");
+  codegen_emit_line(gen, "  int fl=(int)(t+p+r-y),fr=(int)(t+p-r+y),bl=(int)(t-p+r+y),br=(int)(t-p-r-y);");
+  codegen_emit_line(gen, "  fl=constrain(fl,0,255);fr=constrain(fr,0,255);bl=constrain(bl,0,255);br=constrain(br,0,255);");
+  codegen_emit_line(gen, "  _ledc_analogWrite(_kx_drone_fl,fl);_ledc_analogWrite(_kx_drone_fr,fr);");
+  codegen_emit_line(gen, "  _ledc_analogWrite(_kx_drone_bl,bl);_ledc_analogWrite(_kx_drone_br,br);");
   codegen_emit_line(gen, "}\n");
 
   codegen_emit_line(gen, "const char* _kx_file_read_string() {");

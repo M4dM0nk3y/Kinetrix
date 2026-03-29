@@ -254,6 +254,17 @@ static void pico_expr(CodeGen *gen, ASTNode *node) {
     pico_expr(gen, node->data.ai_compute.input_array);
     pico_emit(gen, ")");
     break;
+  case NODE_PATH_COMPUTE:
+    pico_emit(gen, "_kx_path_compute(");
+    pico_expr(gen, node->data.path_compute.from_x);
+    pico_emit(gen, ", ");
+    pico_expr(gen, node->data.path_compute.from_y);
+    pico_emit(gen, ", ");
+    pico_expr(gen, node->data.path_compute.to_x);
+    pico_emit(gen, ", ");
+    pico_expr(gen, node->data.path_compute.to_y);
+    pico_emit(gen, ")");
+    break;
   case NODE_PULSE_READ:
     pico_emit(gen, "machine.time_pulse_us(Pin(");
     pico_expr(gen, node->data.gpio.pin);
@@ -1118,6 +1129,81 @@ static void pico_stmt(CodeGen *gen, ASTNode *node) {
     pico_expr(gen, node->data.ai_compute.input_array);
     pico_emit(gen, ")\n");
     break;
+
+  case NODE_ARM_ATTACH:
+    pico_indent(gen);
+    pico_emit(gen, "_kx_arm_len[0] = ");
+    pico_expr(gen, node->data.arm_attach.len1);
+    pico_emit(gen, "; _kx_arm_len[1] = ");
+    pico_expr(gen, node->data.arm_attach.len2);
+    pico_emit(gen, "; _kx_arm_len[2] = ");
+    pico_expr(gen, node->data.arm_attach.len3);
+    pico_emit(gen, "\n");
+    break;
+  case NODE_ARM_MOVE:
+    pico_indent(gen);
+    pico_emit(gen, "_kx_arm_ik(");
+    pico_expr(gen, node->data.arm_move.x);
+    pico_emit(gen, ", ");
+    pico_expr(gen, node->data.arm_move.y);
+    pico_emit(gen, ", ");
+    pico_expr(gen, node->data.arm_move.z);
+    pico_emit(gen, ")\n");
+    break;
+  case NODE_GRID_CREATE:
+    pico_indent(gen);
+    pico_emit(gen, "_kx_grid_w = int(");
+    pico_expr(gen, node->data.grid_create.width);
+    pico_emit(gen, "); _kx_grid_h = int(");
+    pico_expr(gen, node->data.grid_create.height);
+    pico_emit(gen, "); _kx_grid = [[0]*_kx_grid_w for _ in range(_kx_grid_h)]\n");
+    break;
+  case NODE_GRID_OBSTACLE:
+    pico_indent(gen);
+    pico_emit(gen, "_kx_grid[int(");
+    pico_expr(gen, node->data.grid_obstacle.y);
+    pico_emit(gen, ")][int(");
+    pico_expr(gen, node->data.grid_obstacle.x);
+    pico_emit(gen, ")] = 1\n");
+    break;
+  case NODE_PATH_COMPUTE:
+    pico_indent(gen);
+    pico_emit(gen, "_kx_path_compute(");
+    pico_expr(gen, node->data.path_compute.from_x);
+    pico_emit(gen, ", ");
+    pico_expr(gen, node->data.path_compute.from_y);
+    pico_emit(gen, ", ");
+    pico_expr(gen, node->data.path_compute.to_x);
+    pico_emit(gen, ", ");
+    pico_expr(gen, node->data.path_compute.to_y);
+    pico_emit(gen, ")\n");
+    break;
+  case NODE_DRONE_ATTACH:
+    pico_indent(gen);
+    pico_emit(gen, "_kx_drone_pins = [");
+    pico_expr(gen, node->data.drone_attach.fl);
+    pico_emit(gen, ", ");
+    pico_expr(gen, node->data.drone_attach.fr);
+    pico_emit(gen, ", ");
+    pico_expr(gen, node->data.drone_attach.bl);
+    pico_emit(gen, ", ");
+    pico_expr(gen, node->data.drone_attach.br);
+    pico_emit(gen, "]\n");
+    pico_indent(gen);
+    pico_emit_line(gen, "for p in _kx_drone_pins: Pin(p, Pin.OUT)");
+    break;
+  case NODE_DRONE_SET:
+    pico_indent(gen);
+    pico_emit(gen, "_kx_drone_mix(");
+    pico_expr(gen, node->data.drone_set.pitch);
+    pico_emit(gen, ", ");
+    pico_expr(gen, node->data.drone_set.roll);
+    pico_emit(gen, ", ");
+    pico_expr(gen, node->data.drone_set.yaw);
+    pico_emit(gen, ", ");
+    pico_expr(gen, node->data.drone_set.throttle);
+    pico_emit(gen, ")\n");
+    break;
   case NODE_TONE:
     pico_indent(gen);
     pico_emit(gen, "_pwm = PWM(Pin(");
@@ -1363,6 +1449,43 @@ void codegen_generate_pico(CodeGen *gen, ASTNode *program) {
   /* Wave 6 AI Helpers */
   pico_emit_line(gen, "def _kx_ai_invoke(input_data):");
   pico_emit_line(gen, "    return 0.0 # TFLite Micro omitted for generic target\n");
+
+  /* Wave 7 MicroPython Helpers */
+  pico_emit_line(gen, "import math");
+  pico_emit_line(gen, "_kx_arm_len = [0.0, 0.0, 0.0, 0.0]");
+  pico_emit_line(gen, "_kx_arm_angles = [0.0, 0.0, 0.0, 0.0]");
+  pico_emit_line(gen, "def _kx_arm_ik(tx, ty, tz):");
+  pico_emit_line(gen, "    global _kx_arm_angles");
+  pico_emit_line(gen, "    r = math.sqrt(tx*tx + ty*ty)");
+  pico_emit_line(gen, "    d = math.sqrt(r*r + tz*tz)");
+  pico_emit_line(gen, "    L1, L2 = _kx_arm_len[0], _kx_arm_len[1]");
+  pico_emit_line(gen, "    ca = (d*d-L1*L1-L2*L2)/(2.0*L1*L2) if L1*L2!=0 else 0");
+  pico_emit_line(gen, "    ca = max(-1, min(1, ca))");
+  pico_emit_line(gen, "    _kx_arm_angles[1] = math.acos(ca)");
+  pico_emit_line(gen, "    _kx_arm_angles[0] = math.atan2(tz,r) - math.atan2(L2*math.sin(_kx_arm_angles[1]),L1+L2*ca)");
+  pico_emit_line(gen, "    _kx_arm_angles[2] = math.atan2(ty, tx)\n");
+
+  pico_emit_line(gen, "_kx_grid_w=0; _kx_grid_h=0; _kx_grid=[]; _kx_path_result=[]");
+  pico_emit_line(gen, "def _kx_path_compute(sx,sy,gx,gy):");
+  pico_emit_line(gen, "    global _kx_path_result; _kx_path_result=[]");
+  pico_emit_line(gen, "    if sx==gx and sy==gy: return []");
+  pico_emit_line(gen, "    visited=[[False]*_kx_grid_w for _ in range(_kx_grid_h)]");
+  pico_emit_line(gen, "    q=[(sx,sy,[])]; visited[sy][sx]=True");
+  pico_emit_line(gen, "    while q:");
+  pico_emit_line(gen, "        cx,cy,path=q.pop(0)");
+  pico_emit_line(gen, "        if cx==gx and cy==gy: _kx_path_result=path+[(cx,cy)]; return _kx_path_result");
+  pico_emit_line(gen, "        for dx,dy in [(1,0),(-1,0),(0,1),(0,-1)]:");
+  pico_emit_line(gen, "            nx,ny=cx+dx,cy+dy");
+  pico_emit_line(gen, "            if 0<=nx<_kx_grid_w and 0<=ny<_kx_grid_h and not visited[ny][nx] and not _kx_grid[ny][nx]:");
+  pico_emit_line(gen, "                visited[ny][nx]=True; q.append((nx,ny,path+[(cx,cy)]))");
+  pico_emit_line(gen, "    return []\n");
+
+  pico_emit_line(gen, "_kx_drone_pins=[-1,-1,-1,-1]");
+  pico_emit_line(gen, "def _kx_drone_mix(pitch,roll,yaw,throttle):");
+  pico_emit_line(gen, "    vals=[int(throttle+pitch+roll-yaw),int(throttle+pitch-roll+yaw),int(throttle-pitch+roll+yaw),int(throttle-pitch-roll-yaw)]");
+  pico_emit_line(gen, "    vals=[max(0,min(65535,v*257)) for v in vals]");
+  pico_emit_line(gen, "    for i,p in enumerate(_kx_drone_pins):");
+  pico_emit_line(gen, "        if p>=0: PWM(Pin(p)).duty_u16(vals[i])\n");
 
   /* Wave 5 Globals */
   pico_emit_line(gen, "_kx_oled = None");

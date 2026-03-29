@@ -368,6 +368,25 @@ load ai model "model.tflite"
 make float prediction = compute ai filtered
 ```
 
+### Library Wrappers — Wave 7: The Master Automaton 🆕
+
+Robotic Arm inverse kinematics, 2D grid pathfinding, and quadcopter flight stabilization — the most advanced robotics operations, natively compiled!
+
+```kinetrix
+# Robotic Arm (Inverse Kinematics)
+attach arm dof 3 length1 10.5 length2 8.2 length3 5.0
+move arm to x 15 y 5 z 10
+
+# Autonomous Pathfinding (A*)
+make grid myMap size 10 10
+set grid myMap obstacle at x 5 y 5
+make var route = compute path from x 0 y 0 to x 9 y 9
+
+# Quadcopter Flight Stabilization
+attach quadcopter fl 2 fr 3 bl 4 br 5
+set drone target pitch 10 roll 0 yaw 0 throttle 1500
+```
+
 ### Safety Features
 
 ```kinetrix

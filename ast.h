@@ -274,6 +274,15 @@ typedef enum {
   NODE_AI_LOAD,         /* load ai model "file" */
   NODE_AI_COMPUTE,      /* compute ai input (expression) */
 
+  /* Wave 7: The Master Automaton */
+  NODE_ARM_ATTACH,      /* attach arm dof N length1 L1 length2 L2 length3 L3 */
+  NODE_ARM_MOVE,        /* move arm to x N y N z N */
+  NODE_GRID_CREATE,     /* make grid name size WxH */
+  NODE_GRID_OBSTACLE,   /* set grid name obstacle at x N y N */
+  NODE_PATH_COMPUTE,    /* compute path from x N y N to x N y N */
+  NODE_DRONE_ATTACH,    /* attach quadcopter fl N fr N bl N br N */
+  NODE_DRONE_SET,       /* set drone target pitch N roll N yaw N throttle N */
+
   /* Program root */
   NODE_PROGRAM
 } NodeType;
@@ -817,6 +826,51 @@ struct ASTNode {
       ASTNode *input_array;
     } ai_compute;
 
+    /* Wave 7: Robotic Arm IK */
+    struct {
+      ASTNode *dof;
+      ASTNode *len1;
+      ASTNode *len2;
+      ASTNode *len3;
+    } arm_attach;
+    struct {
+      ASTNode *x;
+      ASTNode *y;
+      ASTNode *z;
+    } arm_move;
+
+    /* Wave 7: Pathfinding */
+    struct {
+      char *name;
+      ASTNode *width;
+      ASTNode *height;
+    } grid_create;
+    struct {
+      char *name;
+      ASTNode *x;
+      ASTNode *y;
+    } grid_obstacle;
+    struct {
+      ASTNode *from_x;
+      ASTNode *from_y;
+      ASTNode *to_x;
+      ASTNode *to_y;
+    } path_compute;
+
+    /* Wave 7: Quadcopter / Drone */
+    struct {
+      ASTNode *fl;
+      ASTNode *fr;
+      ASTNode *bl;
+      ASTNode *br;
+    } drone_attach;
+    struct {
+      ASTNode *pitch;
+      ASTNode *roll;
+      ASTNode *yaw;
+      ASTNode *throttle;
+    } drone_set;
+
     /* Radio */
     struct {
       ASTNode *peer_id;
@@ -1116,5 +1170,14 @@ ASTNode *ast_kalman_attach(void);
 ASTNode *ast_kalman_compute(ASTNode *raw_value);
 ASTNode *ast_ai_load(ASTNode *model_path);
 ASTNode *ast_ai_compute(ASTNode *input_array);
+
+/* Wave 7: The Master Automaton */
+ASTNode *ast_arm_attach(ASTNode *dof, ASTNode *len1, ASTNode *len2, ASTNode *len3);
+ASTNode *ast_arm_move(ASTNode *x, ASTNode *y, ASTNode *z);
+ASTNode *ast_grid_create(const char *name, ASTNode *width, ASTNode *height);
+ASTNode *ast_grid_obstacle(const char *name, ASTNode *x, ASTNode *y);
+ASTNode *ast_path_compute(ASTNode *from_x, ASTNode *from_y, ASTNode *to_x, ASTNode *to_y);
+ASTNode *ast_drone_attach(ASTNode *fl, ASTNode *fr, ASTNode *bl, ASTNode *br);
+ASTNode *ast_drone_set(ASTNode *pitch, ASTNode *roll, ASTNode *yaw, ASTNode *throttle);
 
 #endif /* KINETRIX_AST_H */
