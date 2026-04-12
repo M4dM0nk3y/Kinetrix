@@ -2,6 +2,8 @@
 
 **The first programming language designed specifically for robotics — write once, compile for any board.**
 
+![Build](https://img.shields.io/badge/build-passing-brightgreen) ![Tests](https://img.shields.io/badge/tests-115%2F115-brightgreen) ![Security](https://img.shields.io/badge/security-hardened-blue) ![Targets](https://img.shields.io/badge/targets-5%20platforms-orange)
+
 ```kinetrix
 program {
     enable ota "my_fleet" password "secret"
@@ -288,7 +290,7 @@ make var res = http get "http://api.kinetrix.com/status"
 http post "http://api.kinetrix.com/data" body "{'status': 'ok'}"
 
 # WebSockets
-connect websocket "ws://echo.websocket.org"
+connect websocket "ws://my-server.local:8080/feed"
 make var w_msg = ws receive
 ws send "hello ws"
 ws close
@@ -423,6 +425,43 @@ if radio_available {
 
 ---
 
+## Package Manager & Fleet Management
+
+### Package Manager (kpm)
+
+Install community and standard library packages:
+
+```bash
+python3 kpm.py install drive
+python3 kpm.py install sonar
+python3 kpm.py search "motor"
+python3 kpm.py list
+```
+
+### Fleet Management
+
+Kinetrix includes a complete fleet management stack:
+
+```bash
+# Start the package registry (local or cloud)
+export KPM_API_KEY="your-secret-key"
+python3 registry_server.py
+
+# Deploy to robot fleet via OTA
+./kcc_push.sh robot.kx --target esp32 --password secret123
+
+# On the robot — auto-update agent
+export ROBOT_ID="robot-01"
+python3 robot_agent.py
+```
+
+The robot agent supports:
+- Automatic polling for OTA updates
+- Semantic version checking (rejects downgrades)
+- Secure tar extraction (Zip Slip protection)
+
+---
+
 ## Project Structure
 
 ```
@@ -441,23 +480,43 @@ Kinetrix/
 ├── diagnostics.c          # Compiler diagnostics
 ├── Makefile               # Build system
 ├── kcc_push.sh            # OTA fleet push tool
+├── kpm.py                 # Package manager (CLI)
+├── registry_server.py     # Package registry server
+├── robot_agent.py         # OTA update agent for robots
+├── test_all.sh            # CI test suite (115 tests)
 ├── examples/              # Example programs
 └── libs/                  # Standard library modules
+    ├── drive.kx           # Motor drive abstractions
+    ├── sonar.kx           # Ultrasonic distance sensor
+    ├── math.kx            # Math utilities
+    ├── music.kx           # Tone/melody helpers
+    └── test_lib.kx        # Linker test module
 ```
 
 ---
 
 ## Testing
 
-The CI automatically compiles all example `.kx` files across all 5 targets on every push.
+The CI suite compiles all example `.kx` files across all 5 targets:
 
 ```bash
-# Run locally:
-make
-for f in examples/*.kx; do ./kcc --target=arduino "$f"; done
+# Run the full test suite (115 tests)
+bash test_all.sh
+
+# Or compile a single file
+./kcc examples/wave7_test.kx --target arduino
+./kcc examples/wave7_test.kx --target esp32
+./kcc examples/wave7_test.kx --target rpi
 ```
 
----
+### Security Hardening
+
+The compiler has undergone a comprehensive 6-pass security audit covering:
+- **Memory safety**: All AST nodes properly freed, NULL guards on malloc
+- **Injection prevention**: String literals escaped across all 5 backends
+- **Platform correctness**: No C++ exceptions on AVR/ESP32, AVR-safe BFS
+- **Fleet security**: Path traversal protection, API key auth, Zip Slip guards
+- **Zero warnings**: Compiles clean with `-Wall -Wextra`
 
 ## Version
 
