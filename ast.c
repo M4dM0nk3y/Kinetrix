@@ -249,6 +249,7 @@ Type *type_clone(Type *t) {
   clone->return_type = type_clone(t->return_type);
   clone->array_size = t->array_size;
   clone->param_count = t->param_count;
+  clone->struct_name = t->struct_name ? strdup(t->struct_name) : NULL;
 
   if (t->param_types != NULL) {
     clone->param_types = malloc(sizeof(Type *) * t->param_count);
@@ -276,6 +277,7 @@ void type_free(Type *t) {
     free(t->param_types);
   }
 
+  free(t->struct_name);
   free(t);
 }
 
@@ -860,12 +862,18 @@ void ast_free(ASTNode *node) {
   type_free(node->value_type);
 
   switch (node->type) {
+  /* --- Literals --- */
+  case NODE_NUMBER:
+  case NODE_BOOL:
+    break;
   case NODE_STRING:
     free(node->data.string.value);
     break;
   case NODE_IDENTIFIER:
     free(node->data.identifier.name);
     break;
+
+  /* --- Operations --- */
   case NODE_BINARY_OP:
     ast_free(node->data.binary_op.left);
     ast_free(node->data.binary_op.right);
@@ -873,6 +881,12 @@ void ast_free(ASTNode *node) {
   case NODE_UNARY_OP:
     ast_free(node->data.unary_op.operand);
     break;
+  case NODE_CAST:
+    type_free(node->data.cast_op.target_type);
+    ast_free(node->data.cast_op.operand);
+    break;
+
+  /* --- Function call --- */
   case NODE_CALL:
     free(node->data.call.name);
     for (int i = 0; i < node->data.call.arg_count; i++) {
@@ -880,6 +894,8 @@ void ast_free(ASTNode *node) {
     }
     free(node->data.call.args);
     break;
+
+  /* --- Array / buffer --- */
   case NODE_ARRAY_ACCESS:
     ast_free(node->data.array_access.array);
     ast_free(node->data.array_access.index);
@@ -890,6 +906,23 @@ void ast_free(ASTNode *node) {
     }
     free(node->data.array_literal.elements);
     break;
+  case NODE_ARRAY_DECL:
+  case NODE_BUFFER_DECL:
+    free(node->data.array_decl.name);
+    type_free(node->data.array_decl.elem_type);
+    break;
+  case NODE_BUFFER_PUSH:
+    free(node->data.buffer_push.buffer_name);
+    ast_free(node->data.buffer_push.value);
+    break;
+
+  /* --- Struct access --- */
+  case NODE_STRUCT_ACCESS:
+    ast_free(node->data.struct_access.object);
+    free(node->data.struct_access.member);
+    break;
+
+  /* --- Statements --- */
   case NODE_VAR_DECL:
     free(node->data.var_decl.name);
     type_free(node->data.var_decl.declared_type);
@@ -915,6 +948,13 @@ void ast_free(ASTNode *node) {
   case NODE_FOREVER:
     ast_free(node->data.forever_loop.body);
     break;
+  case NODE_FOR:
+    free(node->data.for_loop.var_name);
+    ast_free(node->data.for_loop.start_expr);
+    ast_free(node->data.for_loop.end_expr);
+    ast_free(node->data.for_loop.step_expr);
+    ast_free(node->data.for_loop.body);
+    break;
   case NODE_BLOCK:
     for (int i = 0; i < node->data.block.statement_count; i++) {
       ast_free(node->data.block.statements[i]);
@@ -924,6 +964,50 @@ void ast_free(ASTNode *node) {
   case NODE_RETURN:
     ast_free(node->data.return_stmt.value);
     break;
+  case NODE_BREAK:
+  case NODE_CONTINUE:
+    break;
+
+  /* --- GPIO / tone (shared gpio union) --- */
+  case NODE_GPIO_WRITE:
+  case NODE_GPIO_READ:
+  case NODE_ANALOG_READ:
+  case NODE_ANALOG_WRITE:
+  case NODE_PULSE_READ:
+  case NODE_SERVO_WRITE:
+  case NODE_TONE:
+  case NODE_NOTONE:
+    ast_free(node->data.gpio.pin);
+    ast_free(node->data.gpio.value);
+    break;
+
+  /* --- I2C low-level (shared i2c union) --- */
+  case NODE_I2C_BEGIN:
+  case NODE_I2C_START:
+  case NODE_I2C_SEND:
+  case NODE_I2C_STOP:
+  case NODE_I2C_READ:
+    ast_free(node->data.i2c.address);
+    ast_free(node->data.i2c.data);
+    break;
+
+  /* --- Generic single-child (unary union) --- */
+  case NODE_WAIT:
+  case NODE_PRINT:
+  case NODE_PRINTLN:
+  case NODE_STEPPER_SPEED:
+  case NODE_ESC_THROTTLE:
+  case NODE_PID_TARGET:
+    ast_free(node->data.unary.child);
+    break;
+
+  /* --- Math function --- */
+  case NODE_MATH_FUNC:
+    ast_free(node->data.math_func.arg1);
+    ast_free(node->data.math_func.arg2);
+    break;
+
+  /* --- Function definition --- */
   case NODE_FUNCTION_DEF:
     free(node->data.function_def.name);
     for (int i = 0; i < node->data.function_def.param_count; i++) {
@@ -934,29 +1018,447 @@ void ast_free(ASTNode *node) {
     free(node->data.function_def.param_types);
     type_free(node->data.function_def.return_type);
     ast_free(node->data.function_def.body);
+    free(node->data.function_def.extern_lang);
     break;
+
+  /* --- Program root --- */
   case NODE_PROGRAM:
     for (int i = 0; i < node->data.program.function_count; i++) {
       ast_free(node->data.program.functions[i]);
     }
     free(node->data.program.functions);
     ast_free(node->data.program.main_block);
+    free(node->data.program.pins_used);
+    free(node->data.program.in_pins_used);
     break;
-  // Handle other node types with children
-  default:
-    // Many nodes use the unary or gpio structure
-    if (node->type == NODE_WAIT || node->type == NODE_PRINT) {
-      ast_free(node->data.unary.child);
-    } else if (node->type >= NODE_GPIO_WRITE && node->type <= NODE_NOTONE) {
-      ast_free(node->data.gpio.pin);
-      ast_free(node->data.gpio.value);
-    } else if (node->type >= NODE_I2C_BEGIN && node->type <= NODE_I2C_READ) {
-      ast_free(node->data.i2c.address);
-      ast_free(node->data.i2c.data);
-    } else if (node->type == NODE_MATH_FUNC) {
-      ast_free(node->data.math_func.arg1);
-      ast_free(node->data.math_func.arg2);
+
+  /* --- Interrupts --- */
+  case NODE_INTERRUPT_PIN:
+    ast_free(node->data.interrupt_pin.body);
+    break;
+  case NODE_INTERRUPT_TIMER:
+    ast_free(node->data.interrupt_timer.body);
+    break;
+  case NODE_DISABLE_INTERRUPTS:
+  case NODE_ENABLE_INTERRUPTS:
+    break;
+
+  /* --- UART --- */
+  case NODE_SERIAL_OPEN:
+    break;
+  case NODE_SERIAL_SEND:
+    ast_free(node->data.serial_send.value);
+    break;
+  case NODE_SERIAL_RECV:
+    break;
+
+  /* --- I2C high-level --- */
+  case NODE_I2C_OPEN:
+    break;
+  case NODE_I2C_DEVICE_READ:
+    ast_free(node->data.i2c_device_read.device_addr);
+    ast_free(node->data.i2c_device_read.reg_addr);
+    break;
+  case NODE_I2C_DEVICE_READ_ARRAY:
+    ast_free(node->data.i2c_device_read_array.device_addr);
+    ast_free(node->data.i2c_device_read_array.reg_addr);
+    ast_free(node->data.i2c_device_read_array.count);
+    free(node->data.i2c_device_read_array.array_name);
+    break;
+  case NODE_I2C_DEVICE_WRITE:
+    ast_free(node->data.i2c_device_write.device_addr);
+    ast_free(node->data.i2c_device_write.value);
+    break;
+
+  /* --- SPI --- */
+  case NODE_SPI_OPEN:
+    break;
+  case NODE_SPI_TRANSFER:
+    ast_free(node->data.spi_transfer.data);
+    break;
+
+  /* --- Named devices --- */
+  case NODE_DEVICE_DEF:
+    free(node->data.device_def.device_name);
+    ast_free(node->data.device_def.address_or_baud);
+    break;
+  case NODE_DEVICE_READ:
+  case NODE_DEVICE_READ_REG:
+    free(node->data.device_read.device_name);
+    ast_free(node->data.device_read.reg);
+    break;
+  case NODE_DEVICE_WRITE:
+    free(node->data.device_write.device_name);
+    ast_free(node->data.device_write.value);
+    break;
+
+  /* --- Wireless radio --- */
+  case NODE_RADIO_SEND:
+    ast_free(node->data.radio_send.peer_id);
+    ast_free(node->data.radio_send.data);
+    break;
+  case NODE_RADIO_AVAILABLE:
+  case NODE_RADIO_READ:
+    break;
+
+  /* --- Error handling --- */
+  case NODE_TRY:
+    ast_free(node->data.try_stmt.try_block);
+    ast_free(node->data.try_stmt.error_block);
+    break;
+  case NODE_WATCHDOG_ENABLE:
+  case NODE_WATCHDOG_FEED:
+    break;
+  case NODE_OTA_ENABLE:
+    free(node->data.ota_enable.hostname);
+    free(node->data.ota_enable.password);
+    break;
+  case NODE_ASSERT:
+    ast_free(node->data.assert_stmt.condition);
+    ast_free(node->data.assert_stmt.action);
+    break;
+
+  /* --- Structs --- */
+  case NODE_STRUCT_DEF:
+    free(node->data.struct_def.name);
+    for (int i = 0; i < node->data.struct_def.field_count; i++) {
+      free(node->data.struct_def.fields[i].name);
+      type_free(node->data.struct_def.fields[i].type);
     }
+    free(node->data.struct_def.fields);
+    break;
+  case NODE_STRUCT_INSTANCE:
+    free(node->data.struct_instance.struct_type);
+    free(node->data.struct_instance.var_name);
+    break;
+
+  /* --- Concurrency --- */
+  case NODE_TASK_DEF:
+    free(node->data.task_def.name);
+    ast_free(node->data.task_def.body);
+    break;
+  case NODE_TASK_START:
+    free(node->data.task_start.task_name);
+    break;
+  case NODE_SHARED_DECL:
+    /* shared declarations use var_decl structure */
+    free(node->data.var_decl.name);
+    type_free(node->data.var_decl.declared_type);
+    ast_free(node->data.var_decl.initializer);
+    break;
+
+  /* --- Wave 1: Servo --- */
+  case NODE_SERVO_ATTACH:
+    ast_free(node->data.servo_attach.pin);
+    break;
+  case NODE_SERVO_MOVE:
+    ast_free(node->data.servo_write.angle);
+    break;
+  case NODE_SERVO_DETACH:
+    ast_free(node->data.servo_detach.pin);
+    break;
+
+  /* --- Wave 1: Distance / DHT --- */
+  case NODE_DISTANCE_READ:
+    ast_free(node->data.distance_read.trigger_pin);
+    ast_free(node->data.distance_read.echo_pin);
+    break;
+  case NODE_DHT_ATTACH:
+    ast_free(node->data.dht_attach.pin);
+    break;
+  case NODE_DHT_READ_TEMP:
+  case NODE_DHT_READ_HUMID:
+    break;
+
+  /* --- Wave 1: NeoPixel --- */
+  case NODE_NEOPIXEL_INIT:
+    ast_free(node->data.neopixel_init.pin);
+    ast_free(node->data.neopixel_init.count);
+    break;
+  case NODE_NEOPIXEL_SET:
+    ast_free(node->data.neopixel_set.index);
+    ast_free(node->data.neopixel_set.r);
+    ast_free(node->data.neopixel_set.g);
+    ast_free(node->data.neopixel_set.b);
+    break;
+  case NODE_NEOPIXEL_SHOW:
+  case NODE_NEOPIXEL_CLEAR:
+    break;
+
+  /* --- Wave 1: LCD --- */
+  case NODE_LCD_INIT:
+    ast_free(node->data.lcd_init.cols);
+    ast_free(node->data.lcd_init.rows);
+    break;
+  case NODE_LCD_PRINT:
+    ast_free(node->data.lcd_print.text);
+    ast_free(node->data.lcd_print.line);
+    break;
+  case NODE_LCD_CLEAR:
+    break;
+
+  /* --- Wave 2: Stepper --- */
+  case NODE_STEPPER_ATTACH:
+    ast_free(node->data.stepper_attach.step_pin);
+    ast_free(node->data.stepper_attach.dir_pin);
+    break;
+  case NODE_STEPPER_MOVE:
+    ast_free(node->data.stepper_move.steps);
+    break;
+
+  /* --- Wave 2: DC Motor --- */
+  case NODE_MOTOR_ATTACH:
+    ast_free(node->data.motor_attach.en_pin);
+    ast_free(node->data.motor_attach.fwd_pin);
+    ast_free(node->data.motor_attach.rev_pin);
+    break;
+  case NODE_MOTOR_MOVE:
+    ast_free(node->data.motor_move.speed);
+    break;
+  case NODE_MOTOR_STOP:
+    break;
+
+  /* --- Wave 2: Encoder --- */
+  case NODE_ENCODER_ATTACH:
+    ast_free(node->data.encoder_attach.pin_a);
+    ast_free(node->data.encoder_attach.pin_b);
+    break;
+  case NODE_ENCODER_READ:
+  case NODE_ENCODER_RESET:
+    break;
+
+  /* --- Wave 2: ESC --- */
+  case NODE_ESC_ATTACH:
+    ast_free(node->data.esc_attach.pin);
+    break;
+
+  /* --- Wave 2: PID --- */
+  case NODE_PID_ATTACH:
+    ast_free(node->data.pid_attach.kp);
+    ast_free(node->data.pid_attach.ki);
+    ast_free(node->data.pid_attach.kd);
+    break;
+  case NODE_PID_COMPUTE:
+    ast_free(node->data.pid_compute.current_val);
+    break;
+
+  /* --- Wave 3: BLE --- */
+  case NODE_BLE_ENABLE:
+    ast_free(node->data.ble_enable.name);
+    break;
+  case NODE_BLE_ADVERTISE:
+    ast_free(node->data.ble_advertise.data);
+    break;
+  case NODE_BLE_SEND:
+    ast_free(node->data.ble_send.data);
+    break;
+  case NODE_BLE_RECEIVE:
+    break;
+
+  /* --- Wave 3: WiFi --- */
+  case NODE_WIFI_CONNECT:
+    ast_free(node->data.wifi_connect.ssid);
+    ast_free(node->data.wifi_connect.password);
+    break;
+  case NODE_WIFI_IP:
+    break;
+
+  /* --- Wave 3: MQTT --- */
+  case NODE_MQTT_CONNECT:
+    ast_free(node->data.mqtt_connect.broker);
+    ast_free(node->data.mqtt_connect.port);
+    break;
+  case NODE_MQTT_SUBSCRIBE:
+    ast_free(node->data.mqtt_subscribe.topic);
+    break;
+  case NODE_MQTT_PUBLISH:
+    ast_free(node->data.mqtt_publish.topic);
+    ast_free(node->data.mqtt_publish.payload);
+    break;
+  case NODE_MQTT_READ:
+    break;
+
+  /* --- Wave 3: HTTP --- */
+  case NODE_HTTP_GET:
+    ast_free(node->data.http_get.url);
+    break;
+  case NODE_HTTP_POST:
+    ast_free(node->data.http_post.url);
+    ast_free(node->data.http_post.body);
+    break;
+
+  /* --- Wave 3: WebSocket --- */
+  case NODE_WS_CONNECT:
+    ast_free(node->data.ws_connect.url);
+    break;
+  case NODE_WS_SEND:
+    ast_free(node->data.ws_send.data);
+    break;
+  case NODE_WS_RECEIVE:
+  case NODE_WS_CLOSE:
+    break;
+
+  /* --- Wave 4: IMU --- */
+  case NODE_IMU_ATTACH:
+    ast_free(node->data.imu_attach.port);
+    break;
+  case NODE_IMU_READ_X:
+  case NODE_IMU_READ_Y:
+  case NODE_IMU_READ_Z:
+  case NODE_IMU_ORIENT:
+    break;
+
+  /* --- Wave 4: GPS --- */
+  case NODE_GPS_ATTACH:
+    ast_free(node->data.gps_attach.port);
+    ast_free(node->data.gps_attach.baud);
+    break;
+  case NODE_GPS_READ_LAT:
+  case NODE_GPS_READ_LON:
+  case NODE_GPS_READ_ALT:
+  case NODE_GPS_READ_SPD:
+    break;
+
+  /* --- Wave 4: SD / File --- */
+  case NODE_SD_MOUNT:
+    ast_free(node->data.sd_mount.cs_pin);
+    break;
+  case NODE_FILE_OPEN:
+    ast_free(node->data.file_open.filename);
+    break;
+  case NODE_FILE_WRITE:
+    ast_free(node->data.file_write.data);
+    break;
+  case NODE_FILE_READ:
+  case NODE_FILE_CLOSE:
+    break;
+
+  /* --- Wave 4: Lidar --- */
+  case NODE_LIDAR_ATTACH:
+    ast_free(node->data.lidar_attach.port);
+    break;
+  case NODE_LIDAR_READ:
+    break;
+
+  /* --- Wave 5: OLED --- */
+  case NODE_OLED_ATTACH:
+    ast_free(node->data.oled_attach.width);
+    ast_free(node->data.oled_attach.height);
+    break;
+  case NODE_OLED_PRINT:
+    ast_free(node->data.oled_print.text);
+    ast_free(node->data.oled_print.x);
+    ast_free(node->data.oled_print.y);
+    break;
+  case NODE_OLED_DRAW:
+    ast_free(node->data.oled_draw.x);
+    ast_free(node->data.oled_draw.y);
+    ast_free(node->data.oled_draw.param1);
+    ast_free(node->data.oled_draw.param2);
+    break;
+  case NODE_OLED_SHOW:
+  case NODE_OLED_CLEAR:
+    break;
+
+  /* --- Wave 5: Audio --- */
+  case NODE_AUDIO_ATTACH:
+    ast_free(node->data.audio_attach.pin);
+    break;
+  case NODE_PLAY_FREQ:
+    ast_free(node->data.play_freq.frequency);
+    ast_free(node->data.play_freq.duration);
+    break;
+  case NODE_PLAY_SOUND:
+    ast_free(node->data.play_sound.name);
+    break;
+  case NODE_SET_VOLUME:
+    ast_free(node->data.set_volume.level);
+    break;
+
+  /* --- Wave 5: Camera --- */
+  case NODE_CAM_ATTACH:
+    ast_free(node->data.cam_attach.protocol);
+    break;
+  case NODE_CAM_DETECT:
+    ast_free(node->data.cam_detect.label);
+    break;
+  case NODE_CAM_OBJ_X:
+  case NODE_CAM_OBJ_Y:
+    break;
+
+  /* --- Wave 6: Mecanum --- */
+  case NODE_MECANUM_ATTACH:
+    ast_free(node->data.mecanum_attach.fl_pin);
+    ast_free(node->data.mecanum_attach.fr_pin);
+    ast_free(node->data.mecanum_attach.bl_pin);
+    ast_free(node->data.mecanum_attach.br_pin);
+    break;
+  case NODE_MECANUM_MOVE:
+    ast_free(node->data.mecanum_move.x);
+    ast_free(node->data.mecanum_move.y);
+    ast_free(node->data.mecanum_move.turn);
+    break;
+  case NODE_MECANUM_STOP:
+    break;
+
+  /* --- Wave 6: Kalman --- */
+  case NODE_KALMAN_ATTACH:
+    break;
+  case NODE_KALMAN_COMPUTE:
+    ast_free(node->data.kalman_compute.raw_value);
+    break;
+
+  /* --- Wave 6: AI --- */
+  case NODE_AI_LOAD:
+    ast_free(node->data.ai_load.model_path);
+    break;
+  case NODE_AI_COMPUTE:
+    ast_free(node->data.ai_compute.input_array);
+    break;
+
+  /* --- Wave 7: Robotic Arm --- */
+  case NODE_ARM_ATTACH:
+    ast_free(node->data.arm_attach.dof);
+    ast_free(node->data.arm_attach.len1);
+    ast_free(node->data.arm_attach.len2);
+    ast_free(node->data.arm_attach.len3);
+    break;
+  case NODE_ARM_MOVE:
+    ast_free(node->data.arm_move.x);
+    ast_free(node->data.arm_move.y);
+    ast_free(node->data.arm_move.z);
+    break;
+
+  /* --- Wave 7: Pathfinding --- */
+  case NODE_GRID_CREATE:
+    free(node->data.grid_create.name);
+    ast_free(node->data.grid_create.width);
+    ast_free(node->data.grid_create.height);
+    break;
+  case NODE_GRID_OBSTACLE:
+    free(node->data.grid_obstacle.name);
+    ast_free(node->data.grid_obstacle.x);
+    ast_free(node->data.grid_obstacle.y);
+    break;
+  case NODE_PATH_COMPUTE:
+    ast_free(node->data.path_compute.from_x);
+    ast_free(node->data.path_compute.from_y);
+    ast_free(node->data.path_compute.to_x);
+    ast_free(node->data.path_compute.to_y);
+    break;
+
+  /* --- Wave 7: Drone --- */
+  case NODE_DRONE_ATTACH:
+    ast_free(node->data.drone_attach.fl);
+    ast_free(node->data.drone_attach.fr);
+    ast_free(node->data.drone_attach.bl);
+    ast_free(node->data.drone_attach.br);
+    break;
+  case NODE_DRONE_SET:
+    ast_free(node->data.drone_set.pitch);
+    ast_free(node->data.drone_set.roll);
+    ast_free(node->data.drone_set.yaw);
+    ast_free(node->data.drone_set.throttle);
     break;
   }
 

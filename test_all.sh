@@ -2,8 +2,7 @@
 
 # Kinetrix Comprehensive Test Suite
 # Compiles all available .kx examples against all 5 target environments.
-
-set -e
+# Runs ALL tests and reports a complete summary, even if some fail.
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -24,6 +23,7 @@ fi
 
 total_tests=0
 passed_tests=0
+failed_tests=()
 
 for file in $EXAMPLES; do
     if [ ! -f "$file" ]; then continue; fi
@@ -32,19 +32,35 @@ for file in $EXAMPLES; do
     for target in "${TARGETS[@]}"; do
         total_tests=$((total_tests + 1))
         
-        # Capture stderr and stdout
-        if ./kcc "$file" -t "$target" > /dev/null 2>&1; then
+        # Use target-specific output file to prevent overwrite conflicts
+        outfile="/tmp/kx_ci_${target}_$$"
+        if ./kcc "$file" -t "$target" -o "$outfile" > /dev/null 2>&1; then
             echo -e "  [${GREEN}PASS${NC}] $target"
             passed_tests=$((passed_tests + 1))
         else
             echo -e "  [${RED}FAIL${NC}] $target"
-            # Run again without output redirect to show the error
-            ./kcc "$file" -t "$target" || true
-            exit 1 # Fail fast on first error
+            failed_tests+=("$file ($target)")
         fi
+        rm -f "$outfile" "$outfile".*
     done
 done
 
-echo ""
-echo -e "${GREEN}All systems go! $passed_tests / $total_tests tests passed.${NC}"
+# Always clean up generated output files
 rm -f Kinetrix_Output.*
+
+echo ""
+echo "════════════════════════════════════════"
+if [ ${#failed_tests[@]} -gt 0 ]; then
+    echo -e "${RED}FAILED: $passed_tests / $total_tests tests passed.${NC}"
+    echo ""
+    echo "Failed tests:"
+    for ft in "${failed_tests[@]}"; do
+        echo -e "  ${RED}✗${NC} $ft"
+    done
+    echo "════════════════════════════════════════"
+    exit 1
+else
+    echo -e "${GREEN}All systems go! $passed_tests / $total_tests tests passed.${NC}"
+    echo "════════════════════════════════════════"
+    exit 0
+fi

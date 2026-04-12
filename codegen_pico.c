@@ -36,9 +36,20 @@ static void pico_expr(CodeGen *gen, ASTNode *node) {
   case NODE_NUMBER:
     pico_emit(gen, "%g", node->data.number.value);
     break;
-  case NODE_STRING:
-    pico_emit(gen, "\"%s\"", node->data.string.value);
+  case NODE_STRING: {
+    /* Escape backslashes and quotes for MicroPython string literal */
+    pico_emit(gen, "\"");
+    for (const char *p = node->data.string.value; *p; p++) {
+      if (*p == '\\') pico_emit(gen, "\\\\");
+      else if (*p == '"') pico_emit(gen, "\\\"");
+      else if (*p == '\n') pico_emit(gen, "\\n");
+      else if (*p == '\r') pico_emit(gen, "\\r");
+      else if (*p == '\t') pico_emit(gen, "\\t");
+      else fputc(*p, gen->output);
+    }
+    pico_emit(gen, "\"");
     break;
+  }
   case NODE_BOOL:
     pico_emit(gen, "%s", node->data.boolean.value ? "True" : "False");
     break;

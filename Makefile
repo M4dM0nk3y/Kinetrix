@@ -3,6 +3,7 @@
 
 CC = gcc
 CFLAGS = -Wall -Wextra -std=c99 -g
+RELEASE_CFLAGS = -Wall -Wextra -std=c99 -O2 -DNDEBUG
 LDFLAGS = 
 
 # Source files
@@ -21,20 +22,20 @@ OUTPUT_DIR = build
 $(TARGET): $(OBJS) compiler_v3.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-# Windows cross-compilation
+# Windows cross-compilation (release)
 windows: $(SRCS) compiler_v3.c
 	mkdir -p $(OUTPUT_DIR)
-	x86_64-w64-mingw32-gcc $(CFLAGS) -o $(OUTPUT_DIR)/kcc.exe $^ $(LDFLAGS)
+	x86_64-w64-mingw32-gcc $(RELEASE_CFLAGS) -o $(OUTPUT_DIR)/kcc.exe $^ $(LDFLAGS)
 
-# Linux cross-compilation
+# Linux cross-compilation (release)
 linux: $(SRCS) compiler_v3.c
 	mkdir -p $(OUTPUT_DIR)
-	x86_64-linux-gnu-gcc $(CFLAGS) -o $(OUTPUT_DIR)/kcc_linux $^ $(LDFLAGS)
+	x86_64-linux-gnu-gcc $(RELEASE_CFLAGS) -o $(OUTPUT_DIR)/kcc_linux $^ $(LDFLAGS)
 
-# Mac compilation (Universal/Native)
+# Mac compilation (Universal/Native, release)
 mac: $(SRCS) compiler_v3.c
 	mkdir -p $(OUTPUT_DIR)
-	$(CC) $(CFLAGS) -o $(OUTPUT_DIR)/kcc_mac $^ $(LDFLAGS)
+	$(CC) $(RELEASE_CFLAGS) -o $(OUTPUT_DIR)/kcc_mac $^ $(LDFLAGS)
 
 release: mac windows linux
 

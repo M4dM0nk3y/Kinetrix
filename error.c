@@ -11,6 +11,8 @@
 
 ErrorList *error_list_create(int max_errors) {
   ErrorList *list = malloc(sizeof(ErrorList));
+  if (!list)
+    return NULL;
   list->head = NULL;
   list->tail = NULL;
   list->count = 0;
@@ -43,6 +45,8 @@ void error_report(ErrorList *list, ErrorType type, int line, int column,
     return;
 
   Error *err = malloc(sizeof(Error));
+  if (!err)
+    return;
   err->type = type;
   err->line = line;
   err->column = column;
@@ -56,6 +60,10 @@ void error_report(ErrorList *list, ErrorType type, int line, int column,
   va_end(args);
 
   err->message = strdup(buffer);
+  if (!err->message) {
+    free(err);
+    return;
+  }
 
   // Add to list
   if (list->tail == NULL) {

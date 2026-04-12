@@ -1,8 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * Kinetrix Package Manager (kpm)
- * Command-line tool for managing Kinetrix packages
+ * Kinetrix Package Manager (kpm) — DEPRECATED
+ *
+ * This file is superseded by kpm.py, which is the canonical package manager
+ * connected to registry_server.py. This JS version targets a non-existent
+ * packages.kinetrix.dev endpoint and uses package.json (incompatible with
+ * the Python version's kinetrix.json format).
+ *
+ * Please use: python3 kpm.py <command>
  */
 
 const fs = require('fs');

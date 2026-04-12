@@ -15,6 +15,22 @@
 static void esp32_expression(CodeGen *gen, ASTNode *node);
 static void esp32_statement(CodeGen *gen, ASTNode *node);
 
+/* Emit a C/C++ string literal with proper escaping (ESP32 backend) */
+static void esp32_emit_escaped_string(CodeGen *gen, const char *s) {
+  codegen_emit(gen, "\"");
+  for (const char *p = s; *p; p++) {
+    switch (*p) {
+    case '\\': codegen_emit(gen, "\\\\"); break;
+    case '\"': codegen_emit(gen, "\\\""); break;
+    case '\n': codegen_emit(gen, "\\n"); break;
+    case '\r': codegen_emit(gen, "\\r"); break;
+    case '\t': codegen_emit(gen, "\\t"); break;
+    default:   fputc(*p, gen->output); break;
+    }
+  }
+  codegen_emit(gen, "\"");
+}
+
 // ============================================================
 // EXPRESSION GENERATION
 // ============================================================
@@ -28,7 +44,7 @@ static void esp32_expression(CodeGen *gen, ASTNode *node) {
     codegen_emit(gen, "%g", node->data.number.value);
     break;
   case NODE_STRING:
-    codegen_emit(gen, "\"%s\"", node->data.string.value);
+    esp32_emit_escaped_string(gen, node->data.string.value);
     break;
   case NODE_BOOL:
     codegen_emit(gen, "%s", node->data.boolean.value ? "true" : "false");
@@ -415,7 +431,9 @@ static void esp32_statement(CodeGen *gen, ASTNode *node) {
     codegen_emit_line(gen,
                       "hw_timer_t * timer_%d = timerBegin(%d, 80, true);\n",
                       node->data.interrupt_timer.timer_id,
-                      node->data.interrupt_timer.timer_id % 4);
+                      node->data.interrupt_timer.timer_id > 3
+                          ? 3 /* ESP32 has only 4 hardware timers (0-3) */
+                          : node->data.interrupt_timer.timer_id);
     codegen_emit_line(gen,
                       "timerAttachInterrupt(timer_%d, &_isr_timer_%d, true);\n",
                       node->data.interrupt_timer.timer_id,
@@ -518,17 +536,20 @@ static void esp32_statement(CodeGen *gen, ASTNode *node) {
 
   /* ---- Error handling ---- */
   case NODE_TRY:
-    codegen_emit_line(gen, "try {\n");
+    /* ESP32 Arduino core has C++ exceptions disabled by default */
+    codegen_emit_line(gen, "{ /* try */\n");
     gen->indent_level++;
     esp32_statement(gen, node->data.try_stmt.try_block);
     gen->indent_level--;
-    codegen_emit_line(gen, "} catch (...) {\n");
+    codegen_emit_line(gen, "} /* end try */\n");
     if (node->data.try_stmt.error_block) {
+      codegen_emit_line(gen, "/* error handler (ESP32: exceptions disabled) */\n");
+      codegen_emit_line(gen, "if (0) {\n");
       gen->indent_level++;
       esp32_statement(gen, node->data.try_stmt.error_block);
       gen->indent_level--;
+      codegen_emit_line(gen, "}\n");
     }
-    codegen_emit_line(gen, "}\n");
     break;
 
   case NODE_WATCHDOG_ENABLE:
@@ -1173,20 +1194,24 @@ static void esp32_statement(CodeGen *gen, ASTNode *node) {
     codegen_emit_line(gen, "}\n");
     break;
 
-  case NODE_BLE_ENABLE:
+  case NODE_BLE_ENABLE: {
+    /* Generate pseudo-unique UUIDs from the BLE name to avoid collisions */
     codegen_emit_indent(gen);
-    codegen_emit(gen, "BLEDevice::init((String(");
+    codegen_emit(gen, "{ String _ble_name = String(");
     esp32_expression(gen, node->data.ble_enable.name);
-    codegen_emit_line(gen, ")).c_str());");
+    codegen_emit_line(gen, ");");
+    codegen_emit_line(gen, "  BLEDevice::init(_ble_name.c_str());");
     codegen_emit_line(gen, "  BLEServer *pServer = BLEDevice::createServer();");
-    codegen_emit_line(
-        gen,
-        "  BLEService *pService = "
-        "pServer->createService(\"4fafc201-1fb5-459e-8fcc-c5c9c331914b\");");
+    codegen_emit_line(gen, "  /* Generate deterministic UUID from device name */");
+    codegen_emit_line(gen, "  uint32_t _h = 0x4fafc201;");
+    codegen_emit_line(gen, "  for (int i = 0; i < _ble_name.length(); i++) _h = _h * 31 + _ble_name[i];");
+    codegen_emit_line(gen, "  char _svc_uuid[48], _chr_uuid[48];");
+    codegen_emit_line(gen, "  snprintf(_svc_uuid, sizeof(_svc_uuid), \"%08x-1fb5-459e-8fcc-c5c9c331914b\", _h);");
+    codegen_emit_line(gen, "  snprintf(_chr_uuid, sizeof(_chr_uuid), \"%08x-36e1-4688-b7f5-ea07361b26a8\", _h ^ 0xBEB5483E);");
+    codegen_emit_line(gen, "  BLEService *pService = pServer->createService(_svc_uuid);");
     codegen_emit_line(gen,
                       "  _kx_ble_char = "
-                      "pService->createCharacteristic(\"beb5483e-36e1-4688-"
-                      "b7f5-ea07361b26a8\", BLECharacteristic::PROPERTY_READ | "
+                      "pService->createCharacteristic(_chr_uuid, BLECharacteristic::PROPERTY_READ | "
                       "BLECharacteristic::PROPERTY_WRITE | "
                       "BLECharacteristic::PROPERTY_NOTIFY);");
     codegen_emit_line(gen,
@@ -1194,14 +1219,14 @@ static void esp32_statement(CodeGen *gen, ASTNode *node) {
     codegen_emit_line(gen, "  pService->start();");
     codegen_emit_line(
         gen, "  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();");
-    codegen_emit_line(gen, "  "
-                           "pAdvertising->addServiceUUID(\"4fafc201-1fb5-459e-"
-                           "8fcc-c5c9c331914b\");");
+    codegen_emit_line(gen, "  pAdvertising->addServiceUUID(_svc_uuid);");
     codegen_emit_line(gen, "  pAdvertising->setScanResponse(true);");
     codegen_emit_line(gen, "  pAdvertising->setMinPreferred(0x06);");
     codegen_emit_line(gen, "  pAdvertising->setMinPreferred(0x12);");
     codegen_emit_line(gen, "  BLEDevice::startAdvertising();");
+    codegen_emit_line(gen, "}");
     break;
+  }
   case NODE_BLE_ADVERTISE:
     /* handled loosely by startAdvertising in enable */
     break;
@@ -1263,19 +1288,29 @@ static void esp32_statement(CodeGen *gen, ASTNode *node) {
     esp32_expression(gen, node->data.http_post.body);
     codegen_emit_line(gen, ")); http.end(); }");
     break;
-  case NODE_WS_CONNECT:
+  case NODE_WS_CONNECT: {
+    /* Parse user URL and pass it through to WebSocketsClient */
     codegen_emit_indent(gen);
-    /* In a real scenario we parse URL into host, port, path */
-    codegen_emit(gen, "/* Connect WebSocket to: ");
+    codegen_emit(gen, "{ String _ws_url = String(");
     esp32_expression(gen, node->data.ws_connect.url);
-    codegen_emit_line(gen, " (WebSocketsClient simplified stub) */");
-    codegen_emit_line(
-        gen, "  _kx_wsClient.begin(\"echo.websocket.org\", 80, \"/\");");
+    codegen_emit_line(gen, ");");
+    codegen_emit_line(gen, "  /* Extract host from ws://host:port/path */");
+    codegen_emit_line(gen, "  String _ws_host = _ws_url;");
+    codegen_emit_line(gen, "  int _ws_port = 80; String _ws_path = \"/\";");
+    codegen_emit_line(gen, "  int _ws_prot = _ws_url.indexOf(\"://\");");
+    codegen_emit_line(gen, "  if (_ws_prot >= 0) _ws_host = _ws_url.substring(_ws_prot + 3);");
+    codegen_emit_line(gen, "  int _ws_slash = _ws_host.indexOf('/');");
+    codegen_emit_line(gen, "  if (_ws_slash >= 0) { _ws_path = _ws_host.substring(_ws_slash); _ws_host = _ws_host.substring(0, _ws_slash); }");
+    codegen_emit_line(gen, "  int _ws_colon = _ws_host.indexOf(':');");
+    codegen_emit_line(gen, "  if (_ws_colon >= 0) { _ws_port = _ws_host.substring(_ws_colon + 1).toInt(); _ws_host = _ws_host.substring(0, _ws_colon); }");
+    codegen_emit_line(gen, "  _kx_wsClient.begin(_ws_host.c_str(), _ws_port, _ws_path.c_str());");
     codegen_emit_line(
         gen,
         "  _kx_wsClient.onEvent([](WStype_t type, uint8_t * payload, size_t "
         "length) { if(type == WStype_TEXT) _kx_ws_msg = (char*)payload; });");
+    codegen_emit_line(gen, "}");
     break;
+  }
   case NODE_WS_SEND:
     codegen_emit_indent(gen);
     codegen_emit(gen, "_kx_wsClient.sendTXT(String(");
@@ -1678,6 +1713,7 @@ void codegen_generate_esp32(CodeGen *gen, ASTNode *program) {
   codegen_emit_line(gen, "int _esp32_next_pwm_channel = 0;");
 
   codegen_emit_line(gen, "void _ledc_analogWrite(uint8_t pin, int value) {");
+  codegen_emit_line(gen, "  if (_esp32_next_pwm_channel >= 16) return; /* ESP32 has 16 LEDC channels max */");
   codegen_emit_line(gen, "  if (_esp32_pwm_channels[pin] == 0) {");
   codegen_emit_line(
       gen, "    _esp32_pwm_channels[pin] = _esp32_next_pwm_channel + 1;");
@@ -1873,9 +1909,15 @@ void codegen_generate_esp32(CodeGen *gen, ASTNode *program) {
     codegen_emit_line(
         gen, "    Serial.print(\"IP: \"); Serial.println(WiFi.localIP());");
     codegen_emit_line(gen, "  }");
-    codegen_emit_line(gen, "  ArduinoOTA.setHostname(\"%s\");", ota_hostname);
+    codegen_emit_indent(gen);
+    codegen_emit(gen, "  ArduinoOTA.setHostname(");
+    esp32_emit_escaped_string(gen, ota_hostname);
+    codegen_emit(gen, ");\n");
     if (ota_password) {
-      codegen_emit_line(gen, "  ArduinoOTA.setPassword(\"%s\");", ota_password);
+      codegen_emit_indent(gen);
+      codegen_emit(gen, "  ArduinoOTA.setPassword(");
+      esp32_emit_escaped_string(gen, ota_password);
+      codegen_emit(gen, ");\n");
     }
     codegen_emit_line(gen, "  ArduinoOTA.onStart([]() { Serial.println(\"OTA "
                            "Update starting...\"); });");

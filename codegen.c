@@ -109,6 +109,22 @@ void codegen_generate(CodeGen *gen, ASTNode *program) {
 static void codegen_expression(CodeGen *gen, ASTNode *node);
 static void codegen_statement(CodeGen *gen, ASTNode *node);
 
+/* Emit a C/C++ string literal with proper escaping */
+static void codegen_emit_escaped_string(CodeGen *gen, const char *s) {
+  codegen_emit(gen, "\"");
+  for (const char *p = s; *p; p++) {
+    switch (*p) {
+    case '\\': codegen_emit(gen, "\\\\"); break;
+    case '\"': codegen_emit(gen, "\\\""); break;
+    case '\n': codegen_emit(gen, "\\n"); break;
+    case '\r': codegen_emit(gen, "\\r"); break;
+    case '\t': codegen_emit(gen, "\\t"); break;
+    default:   fputc(*p, gen->output); break;
+    }
+  }
+  codegen_emit(gen, "\"");
+}
+
 // Generate expression
 static void codegen_expression(CodeGen *gen, ASTNode *node) {
   if (node == NULL)
@@ -124,7 +140,7 @@ static void codegen_expression(CodeGen *gen, ASTNode *node) {
     break;
 
   case NODE_STRING:
-    codegen_emit(gen, "\"%s\"", node->data.string.value);
+    codegen_emit_escaped_string(gen, node->data.string.value);
     break;
 
   case NODE_IDENTIFIER:
@@ -556,17 +572,24 @@ static void codegen_statement(CodeGen *gen, ASTNode *node) {
     break;
 
   /* ---- SPI ---- */
-  case NODE_SPI_OPEN:
+  case NODE_SPI_OPEN: {
+    /* Pick the closest valid AVR SPI divider: 2, 4, 8, 16, 32, 64, 128 */
+    int freq = node->data.spi_open.frequency > 0
+                   ? node->data.spi_open.frequency
+                   : 1000000;
+    int raw_div = 16000000 / freq;
+    int spi_div = raw_div >= 128 ? 128
+                : raw_div >= 64  ? 64
+                : raw_div >= 32  ? 32
+                : raw_div >= 16  ? 16
+                : raw_div >= 8   ? 8
+                : raw_div >= 4   ? 4
+                                 : 2;
     codegen_emit_line(gen,
                       "SPI.begin(); SPI.setClockDivider(SPI_CLOCK_DIV%d);\n",
-                      /* closest divider */
-                      (16000000 / (node->data.spi_open.frequency > 0
-                                       ? node->data.spi_open.frequency
-                                       : 1000000) >
-                               128
-                           ? 128
-                           : 16));
+                      spi_div);
     break;
+  }
 
   case NODE_SPI_TRANSFER:
     codegen_emit_indent(gen);
@@ -609,17 +632,20 @@ static void codegen_statement(CodeGen *gen, ASTNode *node) {
 
   /* ---- Error handling ---- */
   case NODE_TRY:
-    codegen_emit_line(gen, "try {\n");
+    /* AVR has no C++ exceptions — emit both blocks inline with error flag */
+    codegen_emit_line(gen, "{ /* try */\n");
     gen->indent_level++;
     codegen_statement(gen, node->data.try_stmt.try_block);
     gen->indent_level--;
-    codegen_emit_line(gen, "} catch (...) {\n");
+    codegen_emit_line(gen, "} /* end try */\n");
     if (node->data.try_stmt.error_block) {
+      codegen_emit_line(gen, "/* error handler (AVR: always skipped) */\n");
+      codegen_emit_line(gen, "if (0) {\n");
       gen->indent_level++;
       codegen_statement(gen, node->data.try_stmt.error_block);
       gen->indent_level--;
+      codegen_emit_line(gen, "}\n");
     }
-    codegen_emit_line(gen, "}\n");
     break;
 
   case NODE_WATCHDOG_ENABLE:
@@ -1361,7 +1387,7 @@ static void codegen_statement(CodeGen *gen, ASTNode *node) {
     codegen_emit(gen, ";\n");
     break;
 
-  case NODE_FUNCTION_DEF:
+  case NODE_FUNCTION_DEF: {
     // Emit function definition inline (for functions defined inside program
     // block)
     if (node->data.function_def.is_extern) {
@@ -1370,11 +1396,18 @@ static void codegen_statement(CodeGen *gen, ASTNode *node) {
                         node->data.function_def.name);
       break;
     }
-    codegen_emit_line(gen, "void %s(", node->data.function_def.name);
+    const char *ret_type = "void";
+    if (node->data.function_def.return_type)
+      ret_type = type_to_ctype(node->data.function_def.return_type);
+    codegen_emit_line(gen, "%s %s(", ret_type, node->data.function_def.name);
     for (int i = 0; i < node->data.function_def.param_count; i++) {
       if (i > 0)
         codegen_emit(gen, ", ");
-      codegen_emit(gen, "float %s", node->data.function_def.param_names[i]);
+      const char *pty = "float";
+      if (node->data.function_def.param_types &&
+          node->data.function_def.param_types[i])
+        pty = type_to_ctype(node->data.function_def.param_types[i]);
+      codegen_emit(gen, "%s %s", pty, node->data.function_def.param_names[i]);
     }
     codegen_emit(gen, ") {\n");
     gen->indent_level++;
@@ -1382,6 +1415,8 @@ static void codegen_statement(CodeGen *gen, ASTNode *node) {
     gen->indent_level--;
     codegen_emit_line(gen, "}\n");
     break;
+
+  }
 
   /* Wave 4: Advanced Robotics & Storage Statements */
   case NODE_IMU_ATTACH:
@@ -1733,15 +1768,16 @@ void codegen_generate_arduino(CodeGen *gen, ASTNode *program) {
   codegen_emit_line(gen, "}\n");
 
   codegen_emit_line(gen, "// Wave 7: Pathfinding (A*)");
+  /* AVR-safe grid/BFS: 16x16 grid + 256-entry queue = ~1KB total */
   codegen_emit_line(gen, "int _kx_grid_w = 0, _kx_grid_h = 0;");
-  codegen_emit_line(gen, "int _kx_grid[64][64];");
-  codegen_emit_line(gen, "int _kx_path_result[256];");
+  codegen_emit_line(gen, "static int _kx_grid[16][16];");
+  codegen_emit_line(gen, "int _kx_path_result[128];");
   codegen_emit_line(gen, "int _kx_path_len = 0;");
   codegen_emit_line(gen, "int _kx_path_compute(int sx, int sy, int gx, int gy) {");
   codegen_emit_line(gen, "  _kx_path_len = 0;");
   codegen_emit_line(gen, "  if (sx == gx && sy == gy) return 0;");
-  codegen_emit_line(gen, "  int visited[64][64]; memset(visited, 0, sizeof(visited));");
-  codegen_emit_line(gen, "  int qx[4096], qy[4096], qp[4096]; int qf=0, qb=0;");
+  codegen_emit_line(gen, "  static int visited[16][16]; memset(visited, 0, sizeof(visited));");
+  codegen_emit_line(gen, "  static int qx[256], qy[256], qp[256]; int qf=0, qb=0;");
   codegen_emit_line(gen, "  qx[qb]=sx; qy[qb]=sy; qp[qb]=-1; qb++; visited[sy][sx]=1;");
   codegen_emit_line(gen, "  int dx[]={1,-1,0,0}, dy[]={0,0,1,-1};");
   codegen_emit_line(gen, "  while(qf<qb) {");
@@ -1753,7 +1789,7 @@ void codegen_generate_arduino(CodeGen *gen, ASTNode *program) {
   codegen_emit_line(gen, "    for(int i=0;i<4;i++){");
   codegen_emit_line(gen, "      int nx=cx+dx[i],ny=cy+dy[i];");
   codegen_emit_line(gen, "      if(nx>=0&&nx<_kx_grid_w&&ny>=0&&ny<_kx_grid_h&&!visited[ny][nx]&&!_kx_grid[ny][nx]){");
-  codegen_emit_line(gen, "        visited[ny][nx]=1; qx[qb]=nx; qy[qb]=ny; qp[qb]=cp; qb++;");
+  codegen_emit_line(gen, "        visited[ny][nx]=1; qx[qb]=nx; qy[qb]=ny; qp[qb]=cp; if(qb<255) qb++;");
   codegen_emit_line(gen, "      }");
   codegen_emit_line(gen, "    }");
   codegen_emit_line(gen, "  }");
@@ -1868,8 +1904,11 @@ void codegen_generate_arduino(CodeGen *gen, ASTNode *program) {
       ASTNode *stmt = block->data.block.statements[i];
       if (stmt && stmt->type == NODE_FUNCTION_DEF) {
         if (stmt->data.function_def.is_extern) {
-          codegen_emit_line(gen, "extern void %s(",
-                            stmt->data.function_def.name);
+          const char *ext_ret = "void";
+          if (stmt->data.function_def.return_type)
+            ext_ret = type_to_ctype(stmt->data.function_def.return_type);
+          codegen_emit_line(gen, "extern %s %s(",
+                            ext_ret, stmt->data.function_def.name);
           for (int j = 0; j < stmt->data.function_def.param_count; j++) {
             if (j > 0)
               codegen_emit(gen, ", ");

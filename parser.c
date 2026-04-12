@@ -219,6 +219,12 @@ void lexer_next_token(Lexer *lexer) {
       lexer->current_token.type = TOK_NEQ;
       strcpy(lexer->current_token.value, "!=");
       lexer_advance(lexer);
+    } else {
+      /* Lone '!' is not a valid operator — report a lexical error */
+      error_report(lexer->errors, ERROR_LEXICAL, lexer->line, lexer->column,
+                   "Unexpected character '!' (did you mean '!='?)");
+      lexer->current_token.type = TOK_ID;
+      strcpy(lexer->current_token.value, "!");
     }
     return;
   }
@@ -241,14 +247,18 @@ void lexer_next_token(Lexer *lexer) {
       strcpy(lexer->current_token.value, ">=");
       lexer_advance(lexer);
     } else if (lexer->current_char == '-') {
-      /* Check for -> */
-      lexer_advance(lexer);
-      if (lexer->current_char == '>') {
+      /* Check for >-> (unlikely but guard) */
+      int peeked = fgetc(lexer->file);
+      if (peeked == '>') {
+        lexer_advance(lexer); /* consume the '-' */
         lexer->current_token.type = TOK_ARROW;
         strcpy(lexer->current_token.value, "->");
-        lexer_advance(lexer);
+        lexer_advance(lexer); /* consume the '>' */
       } else {
-        /* It was a lone > followed by - : emit > now, handle - next time */
+        /* It was a lone > followed by - : emit > and put '-' back */
+        if (peeked != EOF)
+          ungetc(peeked, lexer->file);
+        /* Do NOT consume the '-'; leave it for the next token */
         lexer->current_token.type = TOK_GT;
         strcpy(lexer->current_token.value, ">");
       }
@@ -3379,11 +3389,10 @@ static ASTNode *parse_statement(Parser *parser) {
      In statements context, catch "read i2c device" array operations
      that look like expressions but execute statelessly into buffers */
   if (parser_match(parser, TOK_READ)) {
-    // We will push back if not I2C array read, or we can just parse it as an
-    // expression statement. Since `read` is usually an expression, if it sits
-    // as a statement, we can just parse an expression.
+    // Parse 'read' as an expression statement (covers read pin, read analog,
+    // read i2c device array, etc.)  Return the AST node directly.
     ASTNode *expr = parse_expression(parser);
-    if (expr && expr->type == NODE_I2C_DEVICE_READ_ARRAY) {
+    if (expr) {
       return expr;
     }
   }
@@ -3755,6 +3764,7 @@ static ASTNode *parse_block(Parser *parser) {
                        : "NULL");
       lexer_next_token(parser->lexer); // Advance to prevent infinite loop
     }
+    free(start_tok.value); // Free the strdup'd copy used only for line tracking
   }
 
   return ast_block(statements, count);
@@ -3818,7 +3828,9 @@ ASTNode *parser_parse(Parser *parser) {
             }
           }
           fclose(inc_file);
-          // Do not free inc_parser entirely as strings exist in the unified AST
+          // AST string values are strdup'd into the nodes, so it is safe to
+          // free the parser and its lexer here.
+          parser_free(inc_parser);
         }
       } else {
         error_report(parser->errors, ERROR_SYNTAX,
@@ -3862,6 +3874,10 @@ ASTNode *parser_parse(Parser *parser) {
            !parser_match(parser, TOK_EOF)) {
       ASTNode *stmt = parse_statement(parser);
       if (stmt) {
+        if (count >= capacity) {
+          capacity *= 2;
+          statements = realloc(statements, sizeof(ASTNode *) * capacity);
+        }
         statements[count++] = stmt;
       } else {
         error_report(

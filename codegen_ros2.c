@@ -22,9 +22,22 @@ static void ros2_expr(CodeGen *gen, ASTNode *node) {
   case NODE_NUMBER:
     codegen_emit(gen, "%g", node->data.number.value);
     break;
-  case NODE_STRING:
-    codegen_emit(gen, "std::string(\"%s\")", node->data.string.value);
+  case NODE_STRING: {
+    /* Escape for C++ string literal */
+    codegen_emit(gen, "std::string(\"");
+    for (const char *p = node->data.string.value; *p; p++) {
+      switch (*p) {
+      case '\\': codegen_emit(gen, "\\\\"); break;
+      case '"':  codegen_emit(gen, "\\\""); break;
+      case '\n': codegen_emit(gen, "\\n"); break;
+      case '\r': codegen_emit(gen, "\\r"); break;
+      case '\t': codegen_emit(gen, "\\t"); break;
+      default:   fputc(*p, gen->output); break;
+      }
+    }
+    codegen_emit(gen, "\")");
     break;
+  }
   case NODE_BOOL:
     codegen_emit(gen, "%s", node->data.boolean.value ? "true" : "false");
     break;
@@ -267,19 +280,24 @@ static void ros2_stmt(CodeGen *gen, ASTNode *node) {
   if (!node)
     return;
   switch (node->type) {
-  case NODE_VAR_DECL:
+  case NODE_VAR_DECL: {
     codegen_emit_indent(gen);
     if (node->data.var_decl.is_const) {
       codegen_emit(gen, "const ");
     }
-    codegen_emit(gen, "double %s_", node->data.var_decl.name);
+    /* Use declared type instead of hardcoding double */
+    const char *vtype = "double";
+    if (node->data.var_decl.declared_type)
+      vtype = type_to_ctype(node->data.var_decl.declared_type);
+    codegen_emit(gen, "%s %s_", vtype, node->data.var_decl.name);
     if (node->data.var_decl.initializer) {
       codegen_emit(gen, " = ");
       ros2_expr(gen, node->data.var_decl.initializer);
     } else
-      codegen_emit(gen, " = 0.0");
+      codegen_emit(gen, " = 0");
     codegen_emit(gen, ";\n");
     break;
+  }
   case NODE_ASSIGNMENT:
     codegen_emit_indent(gen);
     ros2_expr(gen, node->data.assignment.target);
@@ -449,11 +467,21 @@ static void ros2_stmt(CodeGen *gen, ASTNode *node) {
                         node->data.function_def.name);
       break;
     }
-    codegen_emit_line(gen, "double %s(", node->data.function_def.name);
+    {
+      const char *ret = "double";
+      if (node->data.function_def.return_type)
+        ret = type_to_ctype(node->data.function_def.return_type);
+      codegen_emit_line(gen, "%s %s(", ret, node->data.function_def.name);
+    }
     for (int i = 0; i < node->data.function_def.param_count; i++) {
       if (i > 0)
         codegen_emit(gen, ", ");
-      codegen_emit(gen, "double %s", node->data.function_def.param_names[i]);
+      const char *pty = "double";
+      if (node->data.function_def.param_types &&
+          node->data.function_def.param_types[i])
+        pty = type_to_ctype(node->data.function_def.param_types[i]);
+      /* Append underscore to match NODE_IDENTIFIER mangling */
+      codegen_emit(gen, "%s %s_", pty, node->data.function_def.param_names[i]);
     }
     codegen_emit(gen, ") {\n");
     gen->indent_level++;
@@ -1068,12 +1096,27 @@ void codegen_generate_ros2(CodeGen *gen, ASTNode *program) {
   codegen_emit_line(gen, "    RCLCPP_INFO(this->get_logger(), \"Drone mix: p=%.1f r=%.1f y=%.1f t=%.1f\", pitch, roll, yaw, throttle);");
   codegen_emit_line(gen, "  }\n");
 
+  /* Hoist variable declarations as class member initializations (not in loop) */
+  codegen_emit_line(gen, "  /* User variable declarations (hoisted from loop) */");
+  if (block && block->type == NODE_BLOCK) {
+    for (int i = 0; i < block->data.block.statement_count; i++) {
+      ASTNode *s = block->data.block.statements[i];
+      if (s && (s->type == NODE_VAR_DECL || s->type == NODE_SHARED_DECL ||
+               s->type == NODE_ARRAY_DECL || s->type == NODE_BUFFER_DECL))
+        ros2_stmt(gen, s);
+    }
+  }
+  codegen_emit_line(gen, "");
+
   codegen_emit_line(gen, "  void loop() {");
   gen->indent_level++;
   if (block && block->type == NODE_BLOCK) {
     for (int i = 0; i < block->data.block.statement_count; i++) {
       ASTNode *s = block->data.block.statements[i];
-      if (s && s->type != NODE_FUNCTION_DEF)
+      /* Skip declarations (hoisted above) and function defs (emitted inline) */
+      if (s && s->type != NODE_FUNCTION_DEF &&
+          s->type != NODE_VAR_DECL && s->type != NODE_SHARED_DECL &&
+          s->type != NODE_ARRAY_DECL && s->type != NODE_BUFFER_DECL)
         ros2_stmt(gen, s);
     }
   } else if (block) {

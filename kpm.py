@@ -17,7 +17,9 @@ import shutil
 import tarfile
 import io
 
-REGISTRY_URL = "http://localhost:5050"
+# Registry URL: set KPM_REGISTRY_URL env var, or deploy registry_server.py
+# and point this to your host. Default is localhost for local development only.
+REGISTRY_URL = os.environ.get("KPM_REGISTRY_URL", "http://localhost:5050")
 
 def cmd_init():
     if os.path.exists("kinetrix.json"):

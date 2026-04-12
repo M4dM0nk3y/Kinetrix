@@ -95,10 +95,10 @@ Upload the generated file to your board using Arduino IDE, `arduino-cli`, Thonny
 ### Variables & Types
 
 ```kinetrix
-make number speed = 100
-make string name = "robot1"
+make int speed = 100
+make var name = "robot1"
 make bool active = true
-const number MAX_SPEED = 255
+const int MAX_SPEED = 255
 ```
 
 ### GPIO Control
@@ -107,8 +107,8 @@ const number MAX_SPEED = 255
 turn on pin 13
 turn off pin 13
 set pin 9 to 128              # PWM
-make number val = read pin 2   # Digital read
-make number a = read analog pin 34  # Analog read
+make int val = read pin 2   # Digital read
+make int a = read analog pin 34  # Analog read
 ```
 
 ### Control Flow
@@ -134,7 +134,7 @@ loop forever { /* main loop */ }
 ### Functions
 
 ```kinetrix
-define function clamp(val number, lo number, hi number) returns number {
+def clamp(val int, lo int, hi int) int {
     if val < lo { return lo }
     if val > hi { return hi }
     return val
@@ -155,7 +155,7 @@ make SensorData reading
 ### Concurrent Tasks
 
 ```kinetrix
-shared make number sensor_val = 0
+shared make int sensor_val = 0
 
 task sensor_loop {
     sensor_val = read analog pin 34
@@ -179,7 +179,7 @@ open i2c
 open spi at 1000000
 
 send serial "Hello"
-make number temp = read i2c device 0x68 register 0x41
+make int temp = read i2c device 0x68 register 0x41
 ```
 
 ### Interrupts
@@ -394,7 +394,7 @@ enable watchdog timeout 5000ms
 feed watchdog
 
 try {
-    make number val = read i2c device 0x68 register 0x3B
+    make int val = read i2c device 0x68 register 0x3B
 } on error {
     send serial "Sensor failed!"
 }
@@ -408,16 +408,16 @@ assert motor_speed < 255 else emergency_stop()
 make array readings size 10
 make buffer history size 5
 
-push sensor_val into history
+push history sensor_val
 readings[0] = 42
 ```
 
 ### Wireless Communication (ESP-NOW)
 
 ```kinetrix
-radio send 0 sensor_value    # Send to peer
-if radio available {
-    make number msg = radio read
+radio_send_peer(0, sensor_value)  # Send to peer
+if radio_available {
+    make int msg = radio_read
 }
 ```
 

@@ -29,23 +29,28 @@ KX_FILE=""
 TARGET="esp32"
 PASSWORD=""
 OUTPUT=""
+RPI_USER="pi"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --target|-t)  TARGET="$2"; shift 2 ;;
         --password|-p) PASSWORD="$2"; shift 2 ;;
         --output|-o)  OUTPUT="$2"; shift 2 ;;
+        --user|-u)    RPI_USER="$2"; shift 2 ;;
         --help|-h)
             echo "Kinetrix Fleet Push Tool"
             echo "========================"
-            echo "Usage: $0 <source.kx> [--target <target>] [--password <pass>]"
+            echo "Usage: $0 <source.kx> [--target <target>] [--password <pass>] [--user <ssh_user>]"
             echo ""
             echo "Targets: esp32 (default), rpi, pico"
+            echo ""
+            echo "Options:"
+            echo "  --user, -u    SSH username for RPi targets (default: pi)"
             echo ""
             echo "Examples:"
             echo "  $0 robot.kx                          # Push to all ESP32s"
             echo "  $0 robot.kx --target esp32 -p secret # With OTA password"
-            echo "  $0 robot.kx --target rpi              # Push to all RPis via SSH"
+            echo "  $0 robot.kx --target rpi --user soham # Push to all RPis via SSH"
             exit 0 ;;
         *)
             if [[ -z "$KX_FILE" ]]; then
@@ -163,7 +168,7 @@ if [[ ${#ROBOTS[@]} -eq 0 ]]; then
             echo "  espota.py:   python3 espota.py -i <ROBOT_IP> -p 3232 -f <firmware.bin>"
             ;;
         rpi)
-            echo "  scp $OUTPUT pi@<ROBOT_IP>:~/robot.py && ssh pi@<ROBOT_IP> 'python3 ~/robot.py'"
+            echo "  scp $OUTPUT <user>@<ROBOT_IP>:~/robot.py && ssh <user>@<ROBOT_IP> 'python3 ~/robot.py'"
             ;;
         pico)
             echo "  mpremote connect <ROBOT_IP> cp $OUTPUT :main.py"
@@ -195,10 +200,10 @@ for r in "${ROBOTS[@]}"; do
         esp32)
             # Use espota.py for ArduinoOTA push
             if command -v espota.py &>/dev/null; then
-                CMD="espota.py -i $ip -p 3232"
-                if [[ -n "$PASSWORD" ]]; then CMD="$CMD -a $PASSWORD"; fi
-                CMD="$CMD -f $OUTPUT"
-                if eval "$CMD" 2>/dev/null; then
+                CMD=(espota.py -i "$ip" -p 3232)
+                if [[ -n "$PASSWORD" ]]; then CMD+=(-a "$PASSWORD"); fi
+                CMD+=(-f "$OUTPUT")
+                if "${CMD[@]}" 2>/dev/null; then
                     echo -e "${GREEN}✓${NC}"
                     PUSH_OK=$((PUSH_OK + 1))
                 else
@@ -211,9 +216,9 @@ for r in "${ROBOTS[@]}"; do
             fi
             ;;
         rpi)
-            # Use SCP + SSH
-            if scp -q "$OUTPUT" "pi@$ip:~/kinetrix_update.py" 2>/dev/null; then
-                ssh -q "pi@$ip" "pkill -f kinetrix_update.py 2>/dev/null; nohup python3 ~/kinetrix_update.py &>/dev/null &" 2>/dev/null
+            # Use SCP + SSH (username configurable via --user flag)
+            if scp -q "$OUTPUT" "${RPI_USER}@${ip}:~/kinetrix_update.py" 2>/dev/null; then
+                ssh -q "${RPI_USER}@${ip}" "pkill -f kinetrix_update.py 2>/dev/null; nohup python3 ~/kinetrix_update.py &>/dev/null &" 2>/dev/null
                 echo -e "${GREEN}✓${NC}"
                 PUSH_OK=$((PUSH_OK + 1))
             else

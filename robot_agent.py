@@ -3,6 +3,10 @@
 Kinetrix Robot Agent
 Runs on the robot hardware (e.g., Raspberry Pi).
 Polls the Cloud Registry for OTA updates and applies them automatically.
+
+Security:
+  - Safe tar extraction (prevents Zip Slip / path traversal)
+  - Semantic version comparison (rejects downgrades)
 """
 
 import urllib.request
@@ -16,15 +20,51 @@ import tarfile
 import io
 import sys
 import shutil
+import re
 
 ROBOT_ID = os.environ.get("ROBOT_ID", "robot-001")
-REGISTRY_URL = "http://localhost:5050"
+REGISTRY_URL = os.environ.get("KPM_REGISTRY_URL", "http://localhost:5050")
 DEPLOY_DIR = "./robot_deployment"
 POLL_INTERVAL = 5  # seconds
 
 current_version = None
 current_pkg = None
 process = None
+
+
+def parse_semver(version_str):
+    """Parse a version string into a comparable tuple, e.g. '3.1.0' -> (3, 1, 0).
+    Returns (0, 0, 0) for unparseable strings like 'latest'."""
+    match = re.match(r'^v?(\d+)(?:\.(\d+))?(?:\.(\d+))?', str(version_str))
+    if not match:
+        return (0, 0, 0)
+    return (
+        int(match.group(1)),
+        int(match.group(2) or 0),
+        int(match.group(3) or 0),
+    )
+
+
+def is_version_upgrade(current_ver, new_ver):
+    """Return True if new_ver is strictly greater than current_ver.
+    Versions that can't be parsed (like 'latest') always trigger an update."""
+    current_tuple = parse_semver(current_ver)
+    new_tuple = parse_semver(new_ver)
+    # If both are unparseable (0,0,0), allow the update
+    if current_tuple == (0, 0, 0) or new_tuple == (0, 0, 0):
+        return True
+    return new_tuple > current_tuple
+
+
+def safe_extract_tar(tar, dest_dir):
+    """Extract tar members safely, rejecting any path traversal attempts."""
+    abs_dest = os.path.abspath(dest_dir)
+    for member in tar.getmembers():
+        member_path = os.path.abspath(os.path.join(dest_dir, member.name))
+        if not member_path.startswith(abs_dest + os.sep) and member_path != abs_dest:
+            raise Exception(f"Path traversal attempt blocked: {member.name}")
+    tar.extractall(path=dest_dir)
+
 
 def get_latest_deployment():
     url = f"{REGISTRY_URL}/api/ota/{ROBOT_ID}/poll"
@@ -51,7 +91,7 @@ def download_and_extract(pkg_name):
         os.makedirs(DEPLOY_DIR)
             
         with tarfile.open(fileobj=io.BytesIO(tar_data), mode="r:gz") as tar:
-            tar.extractall(path=DEPLOY_DIR)
+            safe_extract_tar(tar, DEPLOY_DIR)
             
         print(f"[{ROBOT_ID}] ✓ Extracted to {DEPLOY_DIR}")
         return True
@@ -105,11 +145,15 @@ def main():
             ver = deployment["version"]
             
             if pkg != current_pkg or ver != current_version:
-                print(f"\n[{ROBOT_ID}] OTA Update Detected: {pkg} v{ver}")
-                if download_and_extract(pkg):
-                    compile_and_run()
-                    current_pkg = pkg
-                    current_version = ver
+                # Reject version downgrades (only when both are parseable semver)
+                if current_version and not is_version_upgrade(current_version, ver):
+                    print(f"[{ROBOT_ID}] Rejecting downgrade: {current_version} -> {ver}")
+                else:
+                    print(f"\n[{ROBOT_ID}] OTA Update Detected: {pkg} v{ver}")
+                    if download_and_extract(pkg):
+                        compile_and_run()
+                        current_pkg = pkg
+                        current_version = ver
                 
         time.sleep(POLL_INTERVAL)
 

@@ -188,6 +188,7 @@ int main(int argc, char **argv) {
   FILE *source = fopen(merged_path, "r");
   if (!source) {
     fprintf(stderr, "Error: Could not read merged build file\n");
+    remove(merged_path);
     return 1;
   }
 
@@ -208,6 +209,7 @@ int main(int argc, char **argv) {
     }
     parser_free(parser);
     error_list_free(errors);
+    remove(merged_path);
     return 1;
   }
   printf("✓ Parsing successful\n");
@@ -224,6 +226,7 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Error: Could not open output '%s'\n", output_file);
     parser_free(parser);
     error_list_free(errors);
+    remove(merged_path);
     return 1;
   }
 

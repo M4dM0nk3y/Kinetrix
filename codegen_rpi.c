@@ -50,9 +50,20 @@ static void rpi_expression(CodeGen *gen, ASTNode *node) {
   case NODE_NUMBER:
     rpi_emit(gen, "%g", node->data.number.value);
     break;
-  case NODE_STRING:
-    rpi_emit(gen, "\"%s\"", node->data.string.value);
+  case NODE_STRING: {
+    /* Escape backslashes and quotes for Python string literal */
+    rpi_emit(gen, "\"");
+    for (const char *p = node->data.string.value; *p; p++) {
+      if (*p == '\\') rpi_emit(gen, "\\\\");
+      else if (*p == '"') rpi_emit(gen, "\\\"");
+      else if (*p == '\n') rpi_emit(gen, "\\n");
+      else if (*p == '\r') rpi_emit(gen, "\\r");
+      else if (*p == '\t') rpi_emit(gen, "\\t");
+      else fputc(*p, gen->output);
+    }
+    rpi_emit(gen, "\"");
     break;
+  }
   case NODE_BOOL:
     rpi_emit(gen, "%s", node->data.boolean.value ? "True" : "False");
     break;
@@ -1302,34 +1313,38 @@ static void rpi_statement(CodeGen *gen, ASTNode *node) {
     rpi_emit(gen, ")\n");
     break;
   case NODE_TONE:
-    // RPi PWM starts by verifying object doesn't exist yet, if not it registers
-    // it globally, and changes its frequency using GPIO.ChangeFrequency. Wait,
-    // we can simplify this.
+    /* RPi PWM: create per-pin PWM object, set frequency from AST */
     rpi_indent(gen);
-    rpi_emit(gen, "if '_pwm_%d' not in globals():\n", node->data.gpio.pin);
+    rpi_emit(gen, "_kx_tpin = int(");
+    rpi_expression(gen, node->data.gpio.pin);
+    rpi_emit(gen, ")\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "if f'_pwm_{_kx_tpin}' not in globals():\n");
     gen->indent_level++;
     rpi_indent(gen);
-    rpi_emit(gen, "GPIO.setup(%d, GPIO.OUT)\n", node->data.gpio.pin);
+    rpi_emit(gen, "GPIO.setup(_kx_tpin, GPIO.OUT)\n");
     rpi_indent(gen);
-    rpi_emit(gen, "globals()['_pwm_%d'] = GPIO.PWM(%d, 1)\n",
-             node->data.gpio.pin, node->data.gpio.pin);
+    rpi_emit(gen, "globals()[f'_pwm_{_kx_tpin}'] = GPIO.PWM(_kx_tpin, 1)\n");
     rpi_indent(gen);
-    rpi_emit(gen, "globals()['_pwm_%d'].start(50)\n", node->data.gpio.pin);
+    rpi_emit(gen, "globals()[f'_pwm_{_kx_tpin}'].start(50)\n");
     gen->indent_level--;
     rpi_indent(gen);
-    rpi_emit(gen, "globals()['_pwm_%d'].ChangeFrequency(",
-             node->data.gpio.value);
+    rpi_emit(gen, "globals()[f'_pwm_{_kx_tpin}'].ChangeFrequency(");
     rpi_expression(gen, node->data.gpio.value);
     rpi_emit(gen, ")\n");
     break;
   case NODE_NOTONE:
     rpi_indent(gen);
-    rpi_emit(gen, "if '_pwm_%d' in globals():\n", node->data.gpio.pin);
+    rpi_emit(gen, "_kx_tpin = int(");
+    rpi_expression(gen, node->data.gpio.pin);
+    rpi_emit(gen, ")\n");
+    rpi_indent(gen);
+    rpi_emit(gen, "if f'_pwm_{_kx_tpin}' in globals():\n");
     gen->indent_level++;
     rpi_indent(gen);
-    rpi_emit(gen, "globals()['_pwm_%d'].stop()\n", node->data.gpio.pin);
+    rpi_emit(gen, "globals()[f'_pwm_{_kx_tpin}'].stop()\n");
     rpi_indent(gen);
-    rpi_emit(gen, "del globals()['_pwm_%d']\n", node->data.gpio.pin);
+    rpi_emit(gen, "del globals()[f'_pwm_{_kx_tpin}']\n");
     gen->indent_level--;
     break;
 
@@ -1518,10 +1533,24 @@ void codegen_generate_rpi(CodeGen *gen, ASTNode *program) {
   rpi_emit_line(gen, "    import paho.mqtt.client as mqtt");
   rpi_emit_line(gen, "    import websocket");
   rpi_emit_line(gen, "except ImportError: pass\n");
-  rpi_emit_line(gen, "# GPIO setup");
+  rpi_emit_line(gen, "# GPIO setup — only configure pins actually used");
   rpi_emit_line(gen, "GPIO.setmode(GPIO.BCM)");
   rpi_emit_line(gen, "GPIO.setwarnings(False)");
-  rpi_emit_line(gen, "for _pin in range(2, 28): GPIO.setup(_pin, GPIO.OUT)\n");
+  /* Emit targeted OUTPUT pin setup from the program's pins_used array */
+  if (program->data.program.pins_used) {
+    for (int i = 0; i < program->data.program.pin_count; i++) {
+      rpi_emit_line(gen, "GPIO.setup(%d, GPIO.OUT)",
+                    program->data.program.pins_used[i]);
+    }
+  }
+  /* Emit targeted INPUT pin setup from the program's in_pins_used array */
+  if (program->data.program.in_pins_used) {
+    for (int i = 0; i < program->data.program.in_pin_count; i++) {
+      rpi_emit_line(gen, "GPIO.setup(%d, GPIO.IN)",
+                    program->data.program.in_pins_used[i]);
+    }
+  }
+  rpi_emit_line(gen, "");
   rpi_emit_line(gen, "# ADC setup (MCP3008 via SPI)");
   rpi_emit_line(gen, "try:");
   rpi_emit_line(gen, "    _spi = busio.SPI(clock=board.SCK, MISO=board.MISO, "

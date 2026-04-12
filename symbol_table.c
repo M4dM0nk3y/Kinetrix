@@ -27,7 +27,13 @@ static unsigned int hash(const char *str) {
 
 static Scope *scope_create(Scope *parent) {
   Scope *scope = malloc(sizeof(Scope));
+  if (!scope)
+    return NULL;
   scope->symbols = calloc(HASH_TABLE_SIZE, sizeof(Symbol *));
+  if (!scope->symbols) {
+    free(scope);
+    return NULL;
+  }
   scope->table_size = HASH_TABLE_SIZE;
   scope->parent = parent;
   scope->depth = parent ? parent->depth + 1 : 0;
@@ -59,7 +65,13 @@ static void scope_free(Scope *scope) {
 
 SymbolTable *symbol_table_create() {
   SymbolTable *table = malloc(sizeof(SymbolTable));
+  if (!table)
+    return NULL;
   table->global_scope = scope_create(NULL);
+  if (!table->global_scope) {
+    free(table);
+    return NULL;
+  }
   table->current_scope = table->global_scope;
   return table;
 }
@@ -69,7 +81,7 @@ void symbol_table_free(SymbolTable *table) {
     return;
 
   // Free all scopes (walk up from current to global)
-  Scope *scope = table->global_scope;
+  Scope *scope = table->current_scope;
   while (scope != NULL) {
     // Check for unused variables before freeing
     for (int i = 0; i < scope->table_size; i++) {
@@ -136,7 +148,13 @@ int symbol_table_add(SymbolTable *table, const char *name, SymbolKind kind,
   unsigned int index = hash(name);
 
   Symbol *sym = malloc(sizeof(Symbol));
+  if (!sym)
+    return 0;
   sym->name = strdup(name);
+  if (!sym->name) {
+    free(sym);
+    return 0;
+  }
   sym->kind = kind;
   sym->type = type_clone(type);
   sym->is_initialized = 0;
@@ -156,7 +174,13 @@ Symbol *symbol_table_add_device(SymbolTable *table, const char *name,
   unsigned int index = hash(name);
 
   Symbol *sym = malloc(sizeof(Symbol));
+  if (!sym)
+    return NULL;
   sym->name = strdup(name);
+  if (!sym->name) {
+    free(sym);
+    return NULL;
+  }
   sym->kind = SYMBOL_DEVICE;
   sym->type = type_void();
   sym->protocol = protocol;
